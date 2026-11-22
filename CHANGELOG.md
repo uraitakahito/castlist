@@ -2,6 +2,15 @@
 
 版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/v1/`）と DB の移行（`migrations/`）が変わったかを書く。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
 
+## 0.1.1
+
+API と移行の SQL は替わらない（0.1.0 と同じ volume で起き、0.1.0 へもそのまま戻せる）。
+
+- 画面の字を直した: 状態（稼働中・停止）・図の名（系図・タイムライン・相関図。まとめは図 A・B・C）・時刻ずれあり・ラベル・説明の文は です・ます（Product Manager が決めた字の一覧の通り）。
+- docs: container の名を `castlist.box` にした（同じ network の container が DNS の domain `box` で名で引くため。置き場の pagetray は `http://castlist.box:8080` で聞く）。`Host` の検査が断るのは機械の外とほかの browser のページだけで、同じ network の container からは届くことを書いた。1 台の機械を指す言い方を、どの機械でも通じる言い方に直した。
+- repo の設定: pm-only の守りの match に、新しい名 `castlist.box` を足した（前の名も残す）。
+- CI: 「動かす」の container の命令が名 `castlist.box` を指し、pm-only の守りに当たるかを見る `ci/check-run-docs.sh`。公開する字に、1 台を指す言い方・前の画面の字が無いかを見る `ci/check-wording.sh`。
+
 ## 0.1.0
 
 初めの版。API は `/v1/`。移行の SQL は `0001_init.sql`・`0002_search.sql`。
