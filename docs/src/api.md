@@ -176,7 +176,7 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 |---|---|
 | `label=鍵:値` | そのラベルを持つ。何度でも付けられ、どれも持つ者だけ |
 | `binding=種類:値` | その付随する id を、`at` の時（無ければ今）に最後に受けたアクター（1 つまで）。workspace のように使い回される物を、時刻で引き分ける |
-| `at` | `binding` の時刻。`binding` 無しでは 400 |
+| `at` | `binding` の時点。castlist の時計（`received_at`）での時刻で、送り手の時刻（`sent_at`）ではない。`binding` 無しでは 400 |
 | `active_from`・`active_to` | 稼働した期間が窓に掛かる。稼働した期間は、最初の登場から最後の退場まで。最新の稼働・停止の出来事が退場でなければ、今まで稼働中。登場の無いアクターは入らない |
 | `kind` | `ai` か `human` |
 | `model`・`effort` | その名の settings の行を、1 つでも持つ（今の物でなくてよい） |
@@ -230,7 +230,7 @@ Auditor の使い方:
 
 ### `GET /v1/actors/{id}/settings` X の時刻 T の model と effort
 
-- `?at=時刻`: その時に効いていた 1 行（受けた時刻が `at` 以前で、seq の最大）。まだ無ければ `"setting": null`。
+- `?at=時刻`: その時点（castlist の時計 `received_at` での時刻。送り手の時刻 `sent_at` ではない）に効いていた 1 行（受けた時刻が `at` 以前で、seq の最大）。答えの `at` は、問いの時点をそのまま返す。まだ無ければ `"setting": null`。
 - `at` が無ければ、全部を受けた順で（`"settings": […]`）。
 
 ```json
