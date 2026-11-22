@@ -50,13 +50,6 @@ const CURRENT_SETTINGS: &str = "select actor_id, model, effort, source, at, rece
      from actor_current_settings where actor_id = ?1";
 const CURRENT_BINDINGS: &str = "select issuer, type, value, is_key, at, received_at
      from actor_current_bindings where actor_id = ?1 order by type";
-/// その時（received_at がそれより前）に、その付随する id を持っていたアクター。
-const BINDING_AT: &str = "select a.id, a.name, a.kind from actors a where a.id = (
-       select b.actor_id from bindings b
-       where b.type = ?1 and b.value = ?2 and b.received_at <= ?3
-       order by b.received_at desc, b.seq desc limit 1)";
-const LABEL: &str = "select a.id, a.name, a.kind from labels l join actors a on a.id = l.actor_id
-     where l.key = ?1 and l.value = ?2 order by a.seq";
 /// 図の点と線: ラベルと時刻の窓で絞ったアクター。
 const GRAPH_LABEL: &str = "select a.id from labels l join actors a on a.id = l.actor_id
      where l.key = ?1 and l.value = ?2 and a.received_at >= ?3 and a.received_at <= ?4 order by a.seq";
@@ -97,8 +90,6 @@ pub const LOOKUPS: &[(&str, &str)] = &[
     ("state", STATE),
     ("current_settings", CURRENT_SETTINGS),
     ("current_bindings", CURRENT_BINDINGS),
-    ("binding_at", BINDING_AT),
-    ("label", LABEL),
     ("graph_label", GRAPH_LABEL),
     ("graph_links", GRAPH_LINKS),
     ("graph_actors", GRAPH_ACTORS),
@@ -1015,29 +1006,6 @@ impl Db {
         };
         tx.commit().await?;
         Ok(Some(detail))
-    }
-
-    /// その時（received_at が `at` 以前）に、その付随する id を持っていたアクター。
-    pub async fn actor_at(&self, r: &Ref, at: &str) -> Result<Option<ActorRef>, sqlx::Error> {
-        sqlx::query_as(BINDING_AT)
-            .bind(&r.kind)
-            .bind(&r.value)
-            .bind(at)
-            .fetch_optional(&self.read)
-            .await
-    }
-
-    /// そのラベルを持つアクター（登録の順）。
-    pub async fn actors_with_label(
-        &self,
-        key: &str,
-        value: &str,
-    ) -> Result<Vec<ActorRef>, sqlx::Error> {
-        sqlx::query_as(LABEL)
-            .bind(key)
-            .bind(value)
-            .fetch_all(&self.read)
-            .await
     }
 
     /// 図の点と線。ラベル（無ければ全部）と、登録の時刻の窓で絞る。絞った組から出る線の先のアクターも、一歩だけ含める。
