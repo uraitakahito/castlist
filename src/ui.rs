@@ -499,6 +499,11 @@ async fn profile_page(db: Db, id: &str) -> Result<Option<ProfilePage>, ApiError>
     }))
 }
 
+/// `GET /graph/tree?label=…&from=…&to=…`: 系図（相関図 A）。
+pub async fn tree(State(_db): State<Db>, _q: Result<Query<Pairs>, QueryRejection>) -> Response {
+    StatusCode::NOT_IMPLEMENTED.into_response()
+}
+
 /// 起こした人の鎖: このアクターから、起こした・継がせた線を上り、人で止める。根から順に返す。
 /// 両方の線がある時は、起こした（launched）方を辿る。
 fn chain(
