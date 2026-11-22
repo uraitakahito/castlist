@@ -12,7 +12,7 @@
 use crate::api::{ApiError, GRAPH_PARAMS, GraphQuery};
 use crate::db::{self, ActorDetail, Db};
 use crate::search::{self, ActorItem, ActorQuery, MAX_DEPTH, Pairs, Params};
-use crate::timeline::{self, END_ROOM, LABEL_PAD, MARGIN, Presence, ROW_H};
+use crate::timeline::{self, END_ROOM, MARGIN, Presence, ROW_H};
 use crate::tree::{self, text_width};
 use askama::Template;
 use axum::extract::rejection::QueryRejection;
@@ -1230,9 +1230,8 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
             h: s.h,
             title: format!("{name} · {what} · {} から {until}", clock(s.start)),
             label: s
-                .labelled
-                .then(|| row.map(|(c, _)| (s.x + LABEL_PAD, mid + 4, c.label.clone())))
-                .flatten(),
+                .label_x
+                .and_then(|x| row.map(|(c, _)| (x, mid + 4, c.label.clone()))),
             open_end: s.open_end.then(|| {
                 let x = s.x + s.w;
                 format!("M{x},{} L{},{mid} L{x},{}z", s.y, x + END_ROOM, s.y + s.h)
