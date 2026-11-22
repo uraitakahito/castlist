@@ -12,7 +12,7 @@ Apple Container（`container` CLI）で、release の image を動かす。`127.
 | image | `ghcr.io/uraitakahito/castlist:v<version>`（[release](https://github.com/uraitakahito/castlist/releases) に digest がある。arm64） |
 | container | `castlist`（`127.0.0.1:8802` → 中の 8080。メモリは Apple Container の下限の 200 MiB、CPU は 1） |
 | URL | `http://127.0.0.1:8802/`（[画面](ui.md)。[API](api.md) は `/v1/`） |
-| DB | 名前つきの volume `castlist-data`（中の `/data/castlist.db`）。Mac の folder は mount しない |
+| DB | 名前つきの volume `castlist-data`（中の `/data/castlist.db`）。host（castlist を動かす機械）の folder は mount しない |
 | 設定 | 環境変数 `CASTLIST_DB`（既定 `/data/castlist.db`）・`CASTLIST_LISTEN`（既定 `0.0.0.0:8080`）。image の既定のままでよい |
 
 ## 初めて起こす
@@ -39,7 +39,7 @@ container start castlist
 ```
 
 - 止めている間、castlist は答えない（担当の登録と出来事は送れない）。DB は volume に残る。
-- Mac を起こし直すと止まったままになる。`container system start` の後に `container start castlist` を打ち、「確かめる」をする。
+- host の機械を起こし直すと止まったままになる。`container system start` の後に `container start castlist` を打ち、「確かめる」をする。
 
 ## 確かめる
 

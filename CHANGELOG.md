@@ -15,7 +15,7 @@
 - 相関図の点と線（`GET /v1/graph`）と、動かしたまま取れる DB の写し（`GET /v1/backup`）。`GET /healthz` は版と castlist の今の時刻を返す。
 - 画面: アクターの一覧（`/`）・プロフィール（`/actors/{id}`）・系図（相関図 A。`/graph/tree`）・時間の帯（相関図 B。`/graph/timeline`）・関係の網（相関図 C。`/graph/network`）。関係の網だけが script を使い、ほかは script なしで読める。
 - 守り:
-  - `Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求を 403 で断る（この Mac の browser の中のページから書けない）。
+  - `Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求を 403 で断る（castlist を動かす機械の browser で開いた、ほかのページからは書けない）。
   - 画面の応答に CSP（`default-src 'none'; script-src 'self'; style-src 'self'; …`）を付け、inline の script と style を使わない。
   - 関係の網が使う cytoscape 3.35.0（MIT）は、CDN から読まず、`static/vendor/` に取り込んで binary に埋め込んで配る。npm の物と同じかを `ci/check-vendor.sh` が CI で見る。
 - 動かす物: 空の image に binary 1 つ（`castlist-server`）と空の `/data`。止める合図（SIGTERM）で、走っている物を終えてから閉じる。並列の問い合わせを待たせない（塞ぐ呼び出しと、鍵を握ったままの await を clippy で断る）。負荷の試験（50 の客で 10 秒）を CI で流す。

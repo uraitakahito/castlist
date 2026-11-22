@@ -97,7 +97,7 @@ jobs:
           retention-days: 7
   image:
     if: github.event_name != 'schedule'
-    # 動かす Mac と同じ CPU の種類（arm64）で作る。
+    # 動かす機械（Apple Container の動く Apple silicon）と同じ CPU の種類（arm64）で作る。
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

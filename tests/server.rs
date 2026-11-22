@@ -15,7 +15,7 @@ fn healthz_は版と今の時刻を返す() {
     let body: serde_json::Value = serde_json::from_str(&answer.body).expect("JSON");
     assert_eq!(body["status"], "ok");
     assert_eq!(body["version"], env!("CARGO_PKG_VERSION"));
-    // 時計の差を測る（tpm が Mac の時刻と比べる）ための、castlist の今の時刻（RFC 3339・UTC）。
+    // 時計の差を測る（送り手の tpm が、自分の動く機械の時刻と比べる）ための、castlist の今の時刻（RFC 3339・UTC）。
     let now = body["now"].as_str().expect("now");
     assert!(
         now.len() >= 20 && now.contains('T') && now.ends_with('Z'),

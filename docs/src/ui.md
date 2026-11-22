@@ -1,6 +1,6 @@
 # 画面
 
-castlist が HTML を組んで返す画面（askama。`templates/`）。この Mac の browser で `http://127.0.0.1:8802/` を開く。
+castlist が HTML を組んで返す画面（askama。`templates/`）。castlist を動かす機械の browser で `http://127.0.0.1:8802/` を開く。
 
 - 字はみな HTML として逃がす（札・名・出来事の `detail` など、送り手が書いた字も）。
 - script を使うのは関係の網（相関図 C）だけで、castlist が配る file（`GET /static/network.js` と、取り込んだ cytoscape）だけを読む。inline の script は無い。style は castlist が配る CSS（`GET /static/site.css`）だけで、inline の style も無い。どの file も binary に埋め込む。

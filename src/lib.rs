@@ -1,7 +1,7 @@
 //! アクターの台帳のサーバー。Claude Code の session 1 つ（起動 1 回）ごとに、本当の id と名を出し、
 //! 登場・退場と、誰が誰を起こしたかを足すだけの記録で持つ（[`db`]・[`api`]）。監査の検索は [`search`]。
 //!
-//! この Mac の中からの要求だけを受ける（[`guard`]）。画面の応答には、外の script と inline の script を
+//! castlist を動かす機械の中からの要求だけを受ける（[`guard`]）。画面の応答には、外の script と inline の script を
 //! 断る Content-Security-Policy を付ける（[`stamp`]）。
 
 pub mod api;
@@ -71,7 +71,7 @@ async fn timeout(request: Request, next: Next) -> Response {
     }
 }
 
-/// 生きているかと、版と、castlist の今の時刻（tpm が Mac の時計との差を測る）。
+/// 生きているかと、版と、castlist の今の時刻（送り手の tpm が、自分の動く機械の時計との差を測る）。
 async fn healthz() -> Json<serde_json::Value> {
     let now = OffsetDateTime::now_utc()
         .format(&Rfc3339)
@@ -79,7 +79,7 @@ async fn healthz() -> Json<serde_json::Value> {
     Json(json!({ "status": "ok", "version": env!("CARGO_PKG_VERSION"), "now": now }))
 }
 
-/// この Mac の中からの要求だけを受ける。
+/// castlist を動かす機械の中からの要求だけを受ける。
 /// - `Host` が 127.0.0.1・localhost でなければ断る（外の site が名前を付け替えて届ける要求を防ぐ）。
 /// - 書く要求に `Origin` が付いていれば断る（browser の中のページからは書かせない。tpm と `curl` は付けない）。
 async fn guard(request: Request, next: Next) -> Response {
