@@ -62,7 +62,7 @@ check volume '[]' '(.Volumes // {}) | keys'
 check user '""' '.User // ""'
 
 # --- 3. 秘密の走査 ---
-# binary の中の字は ci/scan-binary.sh が見る（release に付ける CLI にも、同じ script を掛ける）。
+# binary の中の字は ci/scan-binary.sh が見る。
 "$here/scan-binary.sh" "$work/rootfs/$BIN" || ng "binary の走査に落ちた"
 if command -v gitleaks >/dev/null; then
   gitleaks dir --no-banner --redact "$source_dir" || ng "gitleaks が source で見つけた"

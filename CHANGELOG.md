@@ -1,0 +1,21 @@
+# 変えたこと
+
+版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/v1/`）と DB の移行（`migrations/`）が変わったかを書く。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
+
+## 0.1.0
+
+初めの版。API は `/v1/`。移行の SQL は `0001_init.sql`・`0002_search.sql`。
+
+- アクターの台帳。Claude Code の session 1 つ（起動 1 回）と、人（Product Manager）を、それぞれ 1 つのアクターとし、本当の id（UUID v7）と名（`<接頭辞>.<n>`）を castlist が出す。Claude Code の session の id などは「付随する id」として残す。
+  - API: 登録（`POST /v1/actors`。鍵の付随する id で 1 つにまとめる）・出来事（`PUT /v1/events/{id}`。登場・退場など 10 の種類）・線（`PUT /v1/links/{id}`。起こした・継いだ）・model と effort（`PUT /v1/settings/{id}`）・引き当て（`POST /v1/resolve`）・1 つのアクター（`GET /v1/actors/{id}`）。同じ id で同じ本文は 200、違う本文は 409。
+- 足すだけの記録。どの表にも、書き替えと消しを断る trigger がある。Rust の source に書き替える・消す SQL が無いかを、`ci/check-sql.sh` が CI で見る。
+- 外のキー（消す・替える時は断る）。起きる時に `PRAGMA foreign_key_check` を流し、崩れた行があれば起きない。
+- model と effort の名の一覧（master の表 `models`・`efforts`）。知らない名は足す。`effort` は low・medium・high・xhigh・max を初めから持つ。
+- 監査の検索: アクターを探す（`GET /v1/actors`）・誰が起こしたか・誰を起こしたか（`GET /v1/actors/{id}/lineage`）・時刻 T の model と effort（`GET /v1/actors/{id}/settings`）・model と effort の行（`GET /v1/settings`）・出来事（`GET /v1/events`）。
+- 相関図の点と線（`GET /v1/graph`）と、動かしたまま取れる DB の写し（`GET /v1/backup`）。`GET /healthz` は版と castlist の今の時刻を返す。
+- 画面: アクターの一覧（`/`）・プロフィール（`/actors/{id}`）・系図（相関図 A。`/graph/tree`）・時間の帯（相関図 B。`/graph/timeline`）・関係の網（相関図 C。`/graph/network`）。関係の網だけが script を使い、ほかは script なしで読める。
+- 守り:
+  - `Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求を 403 で断る（この Mac の browser の中のページから書けない）。
+  - 画面の応答に CSP（`default-src 'none'; script-src 'self'; style-src 'self'; …`）を付け、inline の script と style を使わない。
+  - 関係の網が使う cytoscape 3.35.0（MIT）は、CDN から読まず、`static/vendor/` に取り込んで binary に埋め込んで配る。npm の物と同じかを `ci/check-vendor.sh` が CI で見る。
+- 動かす物: 空の image に binary 1 つ（`castlist-server`）と空の `/data`。止める合図（SIGTERM）で、走っている物を終えてから閉じる。並列の問い合わせを待たせない（塞ぐ呼び出しと、鍵を握ったままの await を clippy で断る）。負荷の試験（50 の客で 10 秒）を CI で流す。
