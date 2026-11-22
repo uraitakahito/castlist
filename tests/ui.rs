@@ -443,7 +443,6 @@ async fn 一覧の引数の誤りは_引数の名を書いた_400_の画面() {
     let s = sample().await;
     for (uri, name) in [
         ("/?colour=red", "colour"),
-        ("/?active_from=きのう", "active_from"),
         ("/?label=nocolon", "label"),
         ("/?after=zz", "after"),
     ] {
@@ -761,8 +760,6 @@ async fn 系図の引数の誤りは_引数の名を書いた_400_の画面() {
     let s = sample().await;
     for (uri, name) in [
         ("/graph/tree?colour=red", "colour"),
-        ("/graph/tree?from=きのう", "from"),
-        ("/graph/tree?to=きのう", "to"),
         ("/graph/tree?label=nocolon", "label"),
         ("/graph/tree?label=a:b&label=c:d", "label"),
     ] {
@@ -1007,8 +1004,6 @@ async fn タイムラインの引数の誤りは_引数の名を書いた_400_�
     let s = sample().await;
     for (uri, name) in [
         ("/graph/timeline?colour=red", "colour"),
-        ("/graph/timeline?from=きのう", "from"),
-        ("/graph/timeline?to=きのう", "to"),
         ("/graph/timeline?label=nocolon", "label"),
         ("/graph/timeline?label=a:b&label=c:d", "label"),
     ] {
@@ -1184,8 +1179,6 @@ async fn 相関図の引数の誤りは_引数の名を書いた_400_の画面()
     let s = sample().await;
     for (uri, name) in [
         ("/graph/network?colour=red", "colour"),
-        ("/graph/network?from=きのう", "from"),
-        ("/graph/network?to=きのう", "to"),
         ("/graph/network?label=nocolon", "label"),
         ("/graph/network?label=a:b&label=c:d", "label"),
     ] {
@@ -1842,19 +1835,35 @@ async fn 期間をすぐ選ぶ_link_は_今の条件のまま_期間だけを日
 }
 
 #[tokio::test]
-async fn 日時の欄の読めない値は_引数の名を書いた_400_の画面() {
+async fn 日時の欄の読めない値は_欄の名と直し方を_です_ます_で書いた_400_の画面() {
     let s = sample().await;
-    for (uri, name) in [
-        ("/?active_from=2026-11-22T25:00", "active_from"),
-        ("/?active_to=2026-11-22T11", "active_to"),
-        ("/graph/tree?from=2026-13-01T00:00", "from"),
-        ("/graph/timeline?to=2026-11-22%2011:00", "to"),
-        ("/graph/network?from=2026-11-22T11:00Z", "from"),
+    for (uri, field) in [
+        ("/?active_from=2026-11-22T25:00", "稼働した期間（から）"),
+        ("/?active_to=2026-11-22T11", "稼働した期間（まで）"),
+        ("/?active_from=きのう", "稼働した期間（から）"),
+        ("/graph/tree?from=2026-13-01T00:00", "登録した期間（から）"),
+        ("/graph/tree?to=きのう", "登録した期間（まで）"),
+        (
+            "/graph/timeline?to=2026-11-22%2011:00",
+            "登録した期間（まで）",
+        ),
+        ("/graph/timeline?from=きのう", "登録した期間（から）"),
+        (
+            "/graph/network?from=2026-11-22T11:00Z",
+            "登録した期間（から）",
+        ),
+        ("/graph/network?to=きのう", "登録した期間（まで）"),
     ] {
         let (status, headers, body) = page(&s.app, uri).await;
         assert_eq!(status, StatusCode::BAD_REQUEST, "{uri}: {body}");
         assert_html(uri, &headers, &body);
-        assert!(body.contains(name), "{uri}: {name} を書かない\n{body}");
+        // 欄の名（画面の見出しの字）と、直し方（日時の欄で選ぶ・打つ形の例）を、です・ますで書く。
+        let want = format!(
+            "「{field}」の日時を読めません。日時の欄で選ぶか、2026-11-22T13:00 の形で入れてください。"
+        );
+        assert!(body.contains(&want), "{uri}: {want} が無い\n{body}");
+        // API の字（RFC 3339）は画面に出さない。
+        assert!(!body.contains("RFC 3339"), "{uri}: API の字を出す\n{body}");
     }
 }
 
