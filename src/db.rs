@@ -74,6 +74,12 @@ const GRAPH_STATE: &str =
      where actor_id in (select value from json_each(?1))";
 const GRAPH_SETTINGS: &str = "select actor_id, model, effort, source, at, received_at
      from actor_current_settings where actor_id in (select value from json_each(?1))";
+/// 時間の帯: アクターの組の、出来事と model と effort の全部（seq の順）。
+const TIMELINE_EVENTS: &str = "select actor_id, type, received_at from events
+     where actor_id in (select value from json_each(?1)) order by seq";
+const TIMELINE_SETTINGS: &str = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.at, s.received_at, s.clock_skew
+     from settings s join models m on m.id = s.model_id join efforts f on f.id = s.effort_id
+     where s.actor_id in (select value from json_each(?1)) order by s.seq";
 
 /// 引き当てと見る SQL（名と SQL）。試験が `explain query plan` で、大きな表を端から読まないかを見る。
 pub const LOOKUPS: &[(&str, &str)] = &[
@@ -95,6 +101,8 @@ pub const LOOKUPS: &[(&str, &str)] = &[
     ("graph_actors", GRAPH_ACTORS),
     ("graph_state", GRAPH_STATE),
     ("graph_settings", GRAPH_SETTINGS),
+    ("timeline_events", TIMELINE_EVENTS),
+    ("timeline_settings", TIMELINE_SETTINGS),
 ];
 
 /// どの表の最新の received_at より前にならないよう、表ごとの最新（seq の大きい方）を見る。
@@ -256,6 +264,23 @@ pub struct Node {
 pub struct Graph {
     pub nodes: Vec<Node>,
     pub edges: Vec<Link>,
+}
+
+/// 時間の帯の出来事（帯と印に要る物だけ）。
+#[derive(Debug, FromRow)]
+pub struct Moment {
+    pub actor_id: String,
+    #[sqlx(rename = "type")]
+    pub kind: String,
+    pub received_at: String,
+}
+
+/// 時間の帯: 相関図の点と線と、点の出来事と model と effort の全部（どれも seq の順）。
+#[derive(Debug)]
+pub struct Timeline {
+    pub graph: Graph,
+    pub events: Vec<Moment>,
+    pub settings: Vec<Setting>,
 }
 
 /// 付随する id 1 つ（`type:value`）。
@@ -795,6 +820,77 @@ async fn insert_binding(
     Ok(())
 }
 
+/// 相関図の組を引く（読みの transaction の中で）。点と線と、点の id の組（JSON の配列の字）を返す。
+async fn graph_in(
+    tx: &mut Transaction<'_, Sqlite>,
+    label: Option<(&str, &str)>,
+    from: &str,
+    to: &str,
+) -> Result<(Graph, String), sqlx::Error> {
+    let ids: Vec<String> = match label {
+        Some((key, value)) => {
+            sqlx::query_scalar(GRAPH_LABEL)
+                .bind(key)
+                .bind(value)
+                .bind(from)
+                .bind(to)
+                .fetch_all(&mut **tx)
+                .await?
+        }
+        None => {
+            sqlx::query_scalar(GRAPH_WINDOW)
+                .bind(from)
+                .bind(to)
+                .fetch_all(&mut **tx)
+                .await?
+        }
+    };
+    let json = |ids: &[String]| Value::from(ids.to_vec()).to_string();
+    let edges: Vec<Link> = sqlx::query_as(GRAPH_LINKS)
+        .bind(json(&ids))
+        .fetch_all(&mut **tx)
+        .await?;
+    let mut all = ids.clone();
+    let mut seen: std::collections::HashSet<String> = ids.into_iter().collect();
+    for edge in &edges {
+        for end in [&edge.from_actor, &edge.to_actor] {
+            if seen.insert(end.clone()) {
+                all.push(end.clone());
+            }
+        }
+    }
+    let all = json(&all);
+    let actors: Vec<Actor> = sqlx::query_as(GRAPH_ACTORS)
+        .bind(&all)
+        .fetch_all(&mut **tx)
+        .await?;
+    let mut states: std::collections::HashMap<String, State> =
+        sqlx::query_as::<_, State>(GRAPH_STATE)
+            .bind(&all)
+            .fetch_all(&mut **tx)
+            .await?
+            .into_iter()
+            .map(|s| (s.actor_id.clone(), s))
+            .collect();
+    let mut settings: std::collections::HashMap<String, CurrentSettings> =
+        sqlx::query_as::<_, CurrentSettings>(GRAPH_SETTINGS)
+            .bind(&all)
+            .fetch_all(&mut **tx)
+            .await?
+            .into_iter()
+            .map(|s| (s.actor_id.clone(), s))
+            .collect();
+    let nodes = actors
+        .into_iter()
+        .map(|actor| Node {
+            state: states.remove(&actor.id),
+            current_settings: settings.remove(&actor.id),
+            actor,
+        })
+        .collect();
+    Ok((Graph { nodes, edges }, all))
+}
+
 /// そのアクターの最新の model と effort の番号。
 async fn latest_setting(
     tx: &mut Transaction<'_, Sqlite>,
@@ -934,69 +1030,34 @@ impl Db {
         to: &str,
     ) -> Result<Graph, sqlx::Error> {
         let mut tx = self.read.begin().await?;
-        let ids: Vec<String> = match label {
-            Some((key, value)) => {
-                sqlx::query_scalar(GRAPH_LABEL)
-                    .bind(key)
-                    .bind(value)
-                    .bind(from)
-                    .bind(to)
-                    .fetch_all(&mut *tx)
-                    .await?
-            }
-            None => {
-                sqlx::query_scalar(GRAPH_WINDOW)
-                    .bind(from)
-                    .bind(to)
-                    .fetch_all(&mut *tx)
-                    .await?
-            }
-        };
-        let json = |ids: &[String]| Value::from(ids.to_vec()).to_string();
-        let edges: Vec<Link> = sqlx::query_as(GRAPH_LINKS)
-            .bind(json(&ids))
-            .fetch_all(&mut *tx)
-            .await?;
-        let mut all = ids.clone();
-        let mut seen: std::collections::HashSet<String> = ids.into_iter().collect();
-        for edge in &edges {
-            for end in [&edge.from_actor, &edge.to_actor] {
-                if seen.insert(end.clone()) {
-                    all.push(end.clone());
-                }
-            }
-        }
-        let all = json(&all);
-        let actors: Vec<Actor> = sqlx::query_as(GRAPH_ACTORS)
+        let (graph, _) = graph_in(&mut tx, label, from, to).await?;
+        tx.commit().await?;
+        Ok(graph)
+    }
+
+    /// 時間の帯: 相関図と同じ組（[`Db::graph`]）と、その点の出来事と model と effort の全部。1 つの読みの中で引く。
+    pub async fn timeline(
+        &self,
+        label: Option<(&str, &str)>,
+        from: &str,
+        to: &str,
+    ) -> Result<Timeline, sqlx::Error> {
+        let mut tx = self.read.begin().await?;
+        let (graph, all) = graph_in(&mut tx, label, from, to).await?;
+        let events: Vec<Moment> = sqlx::query_as(TIMELINE_EVENTS)
             .bind(&all)
             .fetch_all(&mut *tx)
             .await?;
-        let mut states: std::collections::HashMap<String, State> =
-            sqlx::query_as::<_, State>(GRAPH_STATE)
-                .bind(&all)
-                .fetch_all(&mut *tx)
-                .await?
-                .into_iter()
-                .map(|s| (s.actor_id.clone(), s))
-                .collect();
-        let mut settings: std::collections::HashMap<String, CurrentSettings> =
-            sqlx::query_as::<_, CurrentSettings>(GRAPH_SETTINGS)
-                .bind(&all)
-                .fetch_all(&mut *tx)
-                .await?
-                .into_iter()
-                .map(|s| (s.actor_id.clone(), s))
-                .collect();
+        let settings: Vec<Setting> = sqlx::query_as(TIMELINE_SETTINGS)
+            .bind(&all)
+            .fetch_all(&mut *tx)
+            .await?;
         tx.commit().await?;
-        let nodes = actors
-            .into_iter()
-            .map(|actor| Node {
-                state: states.remove(&actor.id),
-                current_settings: settings.remove(&actor.id),
-                actor,
-            })
-            .collect();
-        Ok(Graph { nodes, edges })
+        Ok(Timeline {
+            graph,
+            events,
+            settings,
+        })
     }
 
     /// 動かしたまま、DB の揃った写しを 1 つの file に作る（DB の隣に置く。呼んだ側が読み終えたら消す）。

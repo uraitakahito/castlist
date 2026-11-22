@@ -9,6 +9,8 @@
 //! - 帯の字は、帯の幅に収まる時だけ書く（はみ出さない）。
 //! - 同じ入力からは、いつも同じ答え。
 
+use crate::tree::text_width;
+
 /// 図の縁の余白。
 pub const MARGIN: u32 = 16;
 /// 上の目盛りの字の段の高さ。
@@ -158,21 +160,327 @@ pub struct Layout {
 
 impl Layout {
     /// 時刻の横の置き場（窓の外は端に寄せる）。
-    pub fn x(&self, _t: i64) -> u32 {
-        0
+    pub fn x(&self, t: i64) -> u32 {
+        x_in(self.start, self.end, self.plot_x, self.plot_w, t)
     }
 }
 
-/// 行と線を並べる。
-pub fn layout(_lanes: &[Lane], _links: &[Link], _window: Window) -> Layout {
-    Layout::default()
+/// 右の縁の余白（開いた端の印と、右の端の目盛りの字の半分が収まる幅）。
+const RIGHT_ROOM: u32 = 64;
+
+/// 窓 [start, end] の中の時刻を、左の端 `plot_x` から幅 `plot_w` の横の置き場にする（切り捨て）。
+fn x_in(start: i64, end: i64, plot_x: u32, plot_w: u32, t: i64) -> u32 {
+    let span = i128::from((end - start).max(1));
+    let off = i128::from(t.clamp(start, end) - start) * i128::from(plot_w) / span;
+    plot_x + u32::try_from(off).unwrap_or(plot_w)
 }
+
+/// 行と線を並べる。
+pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
+    let n = lanes.len();
+    if n == 0 {
+        return Layout::default();
+    }
+    let (start, end) = span_of(lanes, links, window);
+    let label_w = lanes.iter().map(|l| l.label_width).max().unwrap_or(0);
+    let plot_x = MARGIN + label_w + GAP;
+    let x = |t: i64| x_in(start, end, plot_x, PLOT_W, t);
+
+    // 行: 人を先に、ほかは並べる順の鍵の順（同じなら添字の順）。
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by_key(|&i| (!lanes[i].human, lanes[i].order, i));
+    let mut rows = vec![0_u32; n];
+    for (rank, &i) in order.iter().enumerate() {
+        rows[i] = AXIS_H + u32::try_from(rank).unwrap_or(u32::MAX / ROW_H) * ROW_H;
+    }
+    let band_top = |i: usize| rows[i] + (ROW_H - BAND_H) / 2;
+
+    let mut segments = Vec::new();
+    let mut marks = Vec::new();
+    for (li, lane) in lanes.iter().enumerate() {
+        let top = band_top(li);
+        for (s, e) in stays(&lane.presence) {
+            let e_raw = e.unwrap_or(end.max(s));
+            if s > end || e_raw < start {
+                continue;
+            }
+            let (cs, ce) = (s.max(start), e_raw.min(end));
+            let open_start = s < start;
+            let open_end = e.is_none_or(|e| e > end);
+            let parts = pieces(&lane.changes, cs, ce);
+            for (k, &(ps, change)) in parts.iter().enumerate() {
+                let pe = parts.get(k + 1).map_or(ce, |p| p.0);
+                let x0 = x(ps);
+                let w = (x(pe) - x0).max(1);
+                let labelled = change.is_some_and(|c| {
+                    text_width(&lane.changes[c].label, LABEL_PX) + LABEL_PAD * 2 <= w
+                });
+                segments.push(Segment {
+                    lane: li,
+                    change,
+                    start: ps,
+                    end: pe,
+                    x: x0,
+                    y: top,
+                    w,
+                    h: BAND_H,
+                    open_start: open_start && k == 0,
+                    open_end: open_end && k + 1 == parts.len(),
+                    labelled,
+                });
+            }
+        }
+        for (mi, &t) in lane.marks.iter().enumerate() {
+            if (start..=end).contains(&t) {
+                marks.push(MarkAt {
+                    lane: li,
+                    mark: mi,
+                    x: x(t),
+                    y0: top - 4,
+                    y1: top + BAND_H + 4,
+                });
+            }
+        }
+    }
+
+    let arrows = links
+        .iter()
+        .enumerate()
+        .filter(|(_, l)| l.from < n && l.to < n && l.from != l.to)
+        .filter_map(|(i, l)| {
+            let of = |lane: usize| segments.iter().filter(move |s| s.lane == lane);
+            let t1 = of(l.to).map(|s| s.start).min().unwrap_or(l.at);
+            let t0 = match l.kind {
+                Kind::Launched => l.at,
+                Kind::Continued => of(l.from)
+                    .map(|s| s.end)
+                    .filter(|&e| e <= t1)
+                    .max()
+                    .or_else(|| of(l.from).map(|s| s.end).max())
+                    .unwrap_or(l.at),
+            };
+            let outside = |t: i64| {
+                if t < start {
+                    -1
+                } else if t > end {
+                    1
+                } else {
+                    0
+                }
+            };
+            if outside(t0) != 0 && outside(t0) == outside(t1) {
+                return None;
+            }
+            let (x0, x1) = (x(t0), x(t1));
+            let down = rows[l.to] > rows[l.from];
+            let (near, far) = if down {
+                (band_top(l.from) + BAND_H, band_top(l.to))
+            } else {
+                (band_top(l.from), band_top(l.to) + BAND_H)
+            };
+            // 横にほとんど動かなければ、縦の線で帯の縁へ。動けば、先の行の真ん中の高さで折れて帯の初めへ。
+            let (y1, d) = if x0.abs_diff(x1) <= 2 {
+                (far, format!("M{x0},{near} V{far}"))
+            } else {
+                let mid = rows[l.to] + ROW_H / 2;
+                (mid, format!("M{x0},{near} V{mid} H{x1}"))
+            };
+            Some(Arrow {
+                link: i,
+                kind: l.kind,
+                x0,
+                y0: near,
+                x1,
+                y1,
+                d,
+            })
+        })
+        .collect();
+
+    let rank_rows = u32::try_from(n).unwrap_or(u32::MAX / ROW_H);
+    Layout {
+        width: plot_x + PLOT_W + RIGHT_ROOM,
+        height: AXIS_H + rank_rows * ROW_H + MARGIN / 2,
+        start,
+        end,
+        plot_x,
+        plot_w: PLOT_W,
+        order,
+        rows,
+        segments,
+        arrows,
+        marks,
+        ticks: ticks(start, end, plot_x, PLOT_W, window.offset_s),
+    }
+}
+
+/// 時刻の窓。`from`・`to` が無ければ、居た間・印・線の時刻の初めから終わりまで（居るままの者がいれば今まで）。
+/// 窓が無くて 1 分より短ければ、右に延ばす。終わりが初めより前なら、初めから 1 分。
+fn span_of(lanes: &[Lane], links: &[Link], w: Window) -> (i64, i64) {
+    let times = lanes
+        .iter()
+        .flat_map(|l| {
+            l.presence
+                .iter()
+                .map(|p| p.0)
+                .chain(l.marks.iter().copied())
+        })
+        .chain(links.iter().map(|l| l.at));
+    let (lo, hi) = times.fold((None, None), |(lo, hi): (Option<i64>, Option<i64>), t| {
+        (
+            Some(lo.map_or(t, |v| v.min(t))),
+            Some(hi.map_or(t, |v| v.max(t))),
+        )
+    });
+    let open = lanes
+        .iter()
+        .any(|l| stays(&l.presence).last().is_some_and(|s| s.1.is_none()));
+    let hi = if open {
+        Some(hi.map_or(w.now, |v| v.max(w.now)))
+    } else {
+        hi
+    };
+    let start = w.from.or(lo).unwrap_or(w.now);
+    let end = match w.to {
+        Some(to) => to,
+        None => hi.unwrap_or(start).max(start + MIN_SPAN_MS),
+    };
+    if end <= start {
+        (start, start + MIN_SPAN_MS)
+    } else {
+        (start, end)
+    }
+}
+
+/// 居た間（初め・終わり。居るままなら終わりは None）。居る間の登場と、居ない間の退場は、何もしない。
+fn stays(presence: &[(i64, Presence)]) -> Vec<(i64, Option<i64>)> {
+    let mut out = Vec::new();
+    let mut open: Option<i64> = None;
+    for &(t, p) in presence {
+        match (p, open) {
+            (Presence::In, None) => open = Some(t),
+            (Presence::Out, Some(s)) => {
+                out.push((s, Some(t.max(s))));
+                open = None;
+            }
+            _ => {}
+        }
+    }
+    if let Some(s) = open {
+        out.push((s, None));
+    }
+    out
+}
+
+/// [start, end] の帯を、model と effort の替わり目で切る。切れの初めの時刻と、その間の替わり目（添字）の並び。
+/// 替わり目は与えた順（seq の順）に効かせる。前の替わり目より前の時刻の物は、前の替わり目と同じ時刻とみなす。
+/// 同じ時刻の替わり目は後の物が効き、同じ字が続けば切らない。
+fn pieces(changes: &[Change], start: i64, end: i64) -> Vec<(i64, Option<usize>)> {
+    let label = |c: Option<usize>| c.map(|i| changes[i].label.as_str());
+    let mut out: Vec<(i64, Option<usize>)> = vec![(start, None)];
+    let mut floor = i64::MIN;
+    for (i, c) in changes.iter().enumerate() {
+        let at = c.at.max(floor);
+        floor = at;
+        if at > start && at >= end {
+            break;
+        }
+        let t = at.max(start);
+        let len = out.len();
+        if out[len - 1].0 == t {
+            out[len - 1].1 = Some(i);
+            if len >= 2 && label(out[len - 2].1) == Some(c.label.as_str()) {
+                out.pop();
+            }
+        } else if label(out[len - 1].1) != Some(c.label.as_str()) {
+            out.push((t, Some(i)));
+        }
+    }
+    out
+}
+
+const SEC: i64 = 1000;
+const MINUTE: i64 = 60 * SEC;
+const HOUR: i64 = 60 * MINUTE;
+const DAY: i64 = 24 * HOUR;
+
+/// 目盛りの間の候補（ミリ秒。短い方から）。
+const STEPS: [i64; 21] = [
+    10 * SEC,
+    15 * SEC,
+    30 * SEC,
+    MINUTE,
+    2 * MINUTE,
+    5 * MINUTE,
+    10 * MINUTE,
+    15 * MINUTE,
+    30 * MINUTE,
+    HOUR,
+    2 * HOUR,
+    3 * HOUR,
+    6 * HOUR,
+    12 * HOUR,
+    DAY,
+    2 * DAY,
+    7 * DAY,
+    14 * DAY,
+    30 * DAY,
+    90 * DAY,
+    365 * DAY,
+];
 
 /// 目盛り: 窓の長さに合わせて、秒・分・時・日の切りのよい間（`offset_s` だけずらした時刻で）を選ぶ。
 /// 間は `MIN_TICK_PX` より狭くしない。字は、間が 1 日より短ければ `時:分`（秒の間なら `時:分:秒`）で、
 /// 初めの目盛りと日が替わった目盛りには `月-日` を前に付ける。1 日より長ければ `月-日`。
-pub fn ticks(_start: i64, _end: i64, _plot_x: u32, _plot_w: u32, _offset_s: i64) -> Vec<Tick> {
-    Vec::new()
+pub fn ticks(start: i64, end: i64, plot_x: u32, plot_w: u32, offset_s: i64) -> Vec<Tick> {
+    if end <= start || plot_w == 0 {
+        return Vec::new();
+    }
+    let span = i128::from(end - start);
+    let wide = |step: i64| i128::from(step) * i128::from(plot_w) >= i128::from(MIN_TICK_PX) * span;
+    let step = STEPS.iter().copied().find(|&s| wide(s)).unwrap_or_else(|| {
+        let years = span * i128::from(MIN_TICK_PX) / i128::from(plot_w) / i128::from(365 * DAY);
+        i64::try_from(years + 1).unwrap_or(1) * 365 * DAY
+    });
+    let shift = offset_s * SEC;
+    let offset = time::UtcOffset::from_whole_seconds(i32::try_from(offset_s).unwrap_or(0))
+        .unwrap_or(time::UtcOffset::UTC);
+    let local = start + shift;
+    let mut t = local.div_euclid(step) * step - shift;
+    if t < start {
+        t += step;
+    }
+    let mut out = Vec::new();
+    let mut day = None;
+    while t <= end {
+        let Ok(at) = time::OffsetDateTime::from_unix_timestamp_nanos(i128::from(t) * 1_000_000)
+        else {
+            break;
+        };
+        let at = at.to_offset(offset);
+        let date = format!("{:02}-{:02}", u8::from(at.month()), at.day());
+        let label = if step >= DAY {
+            date
+        } else {
+            let clock = if step < MINUTE {
+                format!("{:02}:{:02}:{:02}", at.hour(), at.minute(), at.second())
+            } else {
+                format!("{:02}:{:02}", at.hour(), at.minute())
+            };
+            if day.as_ref() == Some(&date) {
+                clock
+            } else {
+                day = Some(date.clone());
+                format!("{date} {clock}")
+            }
+        };
+        out.push(Tick {
+            x: x_in(start, end, plot_x, plot_w, t),
+            label,
+        });
+        t += step;
+    }
+    out
 }
 
 #[cfg(test)]
