@@ -2,7 +2,7 @@
 
 castlist が HTML を組んで返す画面（askama。`templates/`）。castlist を動かす機械の browser で `http://127.0.0.1:8802/` を開く。
 
-- 字はみな HTML として逃がす（札・名・出来事の `detail` など、送り手が書いた字も）。
+- 字はみな HTML として逃がす（ラベル・名・出来事の `detail` など、送り手が書いた字も）。
 - script を使うのは関係の網（相関図 C）だけで、castlist が配る file（`GET /static/network.js` と、取り込んだ cytoscape）だけを読む。inline の script は無い。style は castlist が配る CSS（`GET /static/site.css`）だけで、inline の style も無い。どの file も binary に埋め込む。
 - どの画面にも Content-Security-Policy を付ける: `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`。`form-action 'self'` は、一覧の絞りの form を castlist 自身へ送るため。
 - 時刻は、castlist が受けた時刻（`received_at`）を日本の時刻（UTC+9）で出す。ISO の字は `<time datetime>` と `title` に置く（字に重ねると出る）。
@@ -17,7 +17,7 @@ castlist が HTML を組んで返す画面（askama。`templates/`）。castlist
 | 名 | プロフィールへの link |
 | 種類 | AI か 人 |
 | 居るか | いる・いない と、居る・居ないを替える出来事の最新（日本語の名） |
-| Key・役 | 札 `tpm.key`・`tpm.role` |
+| Key・役 | ラベル `tpm.key`・`tpm.role` |
 | model · effort | 最新の model と effort |
 | 初めの登場・最後の退場 | 受けた時刻 |
 | ずれ | アクター・出来事・model と effort のどれかに、送り手の時計がずれた行がある |
@@ -26,7 +26,7 @@ castlist が HTML を組んで返す画面（askama。`templates/`）。castlist
 
 - form は空の欄も送るので、空の値は付けなかったのと同じにする。
 - `order` が無ければ `desc`（新しい順）、`limit` が無ければ 100。
-- 絞る条件が無ければ、`active_from` を今から 7 日前にして出し、そう書く（API は条件の無い検索を断るので。窓の条件は索引で引ける）。登場の記録の無いアクターは、この既定では出ない。札などで絞ると出る。
+- 絞る条件が無ければ、`active_from` を今から 7 日前にして出し、そう書く（API は条件の無い検索を断るので。窓の条件は索引で引ける）。登場の記録の無いアクターは、この既定では出ない。ラベルなどで絞ると出る。
 - 次の頁は「次の頁」の link（`rel="next"`）。条件はそのままで、API の `next` を `after` に付ける。
 - 引数の誤りは、API と同じ訳の 400 の画面。
 
@@ -36,7 +36,7 @@ castlist が HTML を組んで返す画面（askama。`templates/`）。castlist
 |---|---|
 | 頭 | 名・種類・id・出し手・登録の受けた時刻 |
 | 今の様子 | 居るか（最新の出来事の名）・最新の model と effort（頼んだ・見た と受けた時刻）・初めの登場・最後の退場・ずれの印 |
-| 札 | 札の全部 |
+| ラベル | ラベルの全部 |
 | 付随する id | 受けた順の全部（履歴）。鍵の物に「鍵」、種類ごとの最新に「今」 |
 | 起こした人 | 起こした（`launched`）・継がせた（`continued`）線を上り、人の根までの鎖（根から順）。両方あれば起こした方を辿る |
 | 起こした者 | このアクターが `launched` で起こした者 |

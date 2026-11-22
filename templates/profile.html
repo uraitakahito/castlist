@@ -20,7 +20,7 @@
 </section>
 
 <section id="labels">
-<h2>札</h2>
+<h2>ラベル</h2>
 {% if me.labels.is_empty() %}<p class="empty">無い。</p>{% else %}
 <ul class="chips">
 {% for (key, value) in me.labels %}<li><span class="chip"><span class="muted">{{ key }}</span> {{ value }}</span></li>

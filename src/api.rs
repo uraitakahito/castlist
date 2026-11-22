@@ -70,7 +70,7 @@ pub(crate) type Answer = Result<Response, ApiError>;
 
 // --- 形を見る ---
 
-/// model・effort・出し手・付随する id の種類・札の鍵の名: 英小文字・数字・`-`・`.` で 64 字まで。
+/// model・effort・出し手・付随する id の種類・ラベルの鍵の名: 英小文字・数字・`-`・`.` で 64 字まで。
 pub fn is_name(s: &str) -> bool {
     (1..=64).contains(&s.len())
         && s.bytes()
@@ -457,7 +457,7 @@ pub async fn actor(State(db): State<Db>, Path(id): Path<String>) -> Answer {
 /// 相関図の引数の名（`GET /v1/graph` と、画面の `GET /graph/tree`）。どれも 1 つだけ。
 pub(crate) const GRAPH_PARAMS: &[&str] = &["label", "from", "to"];
 
-/// 相関図の絞り: 札（鍵・値）と、登録の受けた時刻の窓。
+/// 相関図の絞り: ラベル（鍵・値）と、登録の受けた時刻の窓。
 pub(crate) struct GraphQuery {
     pub(crate) label: Option<(String, String)>,
     pub(crate) from: String,

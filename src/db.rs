@@ -57,7 +57,7 @@ const BINDING_AT: &str = "select a.id, a.name, a.kind from actors a where a.id =
        order by b.received_at desc, b.seq desc limit 1)";
 const LABEL: &str = "select a.id, a.name, a.kind from labels l join actors a on a.id = l.actor_id
      where l.key = ?1 and l.value = ?2 order by a.seq";
-/// 相関図: 札と時刻の窓で絞ったアクター。
+/// 相関図: ラベルと時刻の窓で絞ったアクター。
 const GRAPH_LABEL: &str = "select a.id from labels l join actors a on a.id = l.actor_id
      where l.key = ?1 and l.value = ?2 and a.received_at >= ?3 and a.received_at <= ?4 order by a.seq";
 const GRAPH_WINDOW: &str =
@@ -1027,7 +1027,7 @@ impl Db {
             .await
     }
 
-    /// その札を持つアクター（登録の順）。
+    /// そのラベルを持つアクター（登録の順）。
     pub async fn actors_with_label(
         &self,
         key: &str,
@@ -1040,7 +1040,7 @@ impl Db {
             .await
     }
 
-    /// 相関図。札（無ければ全部）と、登録の時刻の窓で絞る。絞った組から出る線の先のアクターも、一歩だけ含める。
+    /// 相関図。ラベル（無ければ全部）と、登録の時刻の窓で絞る。絞った組から出る線の先のアクターも、一歩だけ含める。
     pub async fn graph(
         &self,
         label: Option<(&str, &str)>,

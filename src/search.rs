@@ -59,7 +59,7 @@ const ACTOR_ITEM: &str =
        (select f.name from settings s join efforts f on f.id = s.effort_id
         where s.actor_id = a.id order by s.seq desc limit 1) as effort
      from actors a where 1";
-/// 一覧の頁のアクターの札（JSON の配列の id で）。
+/// 一覧の頁のアクターのラベル（JSON の配列の id で）。
 const ACTOR_LABELS: &str = "select actor_id, key, value from labels
      where actor_id in (select value from json_each(?1)) order by key";
 /// アクターの種類（無ければ行が無い）。線を上る時に、人で止める。
@@ -126,7 +126,7 @@ impl Sort {
 /// アクターを探す条件（どれも AND）。
 #[derive(Clone, Debug, Default)]
 pub struct ActorQuery {
-    /// 札（鍵・値）。
+    /// ラベル（鍵・値）。
     pub labels: Vec<(String, String)>,
     /// 付随する id（種類・値）と時刻: その時に、その値を最後に受けたアクター。
     pub binding: Option<(String, String, String)>,
@@ -278,7 +278,7 @@ pub struct Lineage {
 // --- SQL を組む ---
 
 impl ActorQuery {
-    /// 索引で引ける条件（札・付随する id・窓・model・effort・起こした者・時計のずれ・今居る・id の組）があるか。
+    /// 索引で引ける条件（ラベル・付随する id・窓・model・effort・起こした者・時計のずれ・今居る・id の組）があるか。
     /// これが無いと、アクターの表を端から読むことになる。
     pub fn narrowed(&self) -> bool {
         !self.labels.is_empty()

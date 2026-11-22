@@ -36,7 +36,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | 表 | 中身 | 外のキー・決まり |
 |---|---|---|
 | `actors` | アクター。`id`（UUID v7・castlist が出す）・`issuer`・`kind`（`ai`・`human`）・`prefix`・`n`・`name`（`<prefix>.<n>`） | `unique(issuer, name)`・`unique(issuer, prefix, n)`。`n` は同じ出し手と接頭辞のアクターの数 ＋ 1（書く transaction の中で数える。数を持つ行は作らない） |
-| `labels` | 札（`key`・`value`）。登録の時に 1 度だけ書く | `actor_id → actors(id)`・`unique(actor_id, key)` |
+| `labels` | ラベル（`key`・`value`）。登録の時に 1 度だけ書く | `actor_id → actors(id)`・`unique(actor_id, key)` |
 | `bindings` | 付随する id（`issuer`・`type`・`value`・`is_key`） | `actor_id → actors(id)`。鍵（`is_key = 1`）は `(issuer, type, value)` で 1 つだけ（部分の unique 索引）。鍵でない物は、そのアクターの同じ種類の最新と違う時だけ足す |
 | `links` | 線（`launched`・`continued`）。`id` は送り手の id、`body_hash` は本文の写し | `from_actor`・`to_actor → actors(id)`。`launched` は `to_actor` ごとに 1 つ（部分の unique 索引） |
 | `events` | 出来事（10 の種類）。`detail` は JSON の物 | `actor_id → actors(id)`。`type` と `detail` は CHECK で見る |
@@ -64,7 +64,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `actors(clock_skew)`・`events(clock_skew)`・`settings(clock_skew)` | `skewed=true`（時計のずれた行を持つアクター・出来事・model と effort）。後ろに seq が付くので、受けた順にも引ける |
 | `events(received_at)`・`settings(received_at)` | `from`・`to` の窓だけで引く出来事と model と effort（「T から後に起きた物」） |
 
-ほかの検索の条件は、0001 の索引で引く: 札（`labels(key, value, actor_id)`）・時刻での付随する id（`bindings(type, value, received_at)`）・居た間の窓（`events(type, received_at)`）・アクターごとの初めの登場と最後の退場（`events(actor_id, type, seq)`）・起こした者と線の上下（`links(from_actor, type, seq)`・`links(to_actor, type)`）・model と effort の名（`settings(model_id, received_at)`・`settings(effort_id, received_at)`）・その時の model と effort（`settings(actor_id, seq)`）。
+ほかの検索の条件は、0001 の索引で引く: ラベル（`labels(key, value, actor_id)`）・時刻での付随する id（`bindings(type, value, received_at)`）・居た間の窓（`events(type, received_at)`）・アクターごとの初めの登場と最後の退場（`events(actor_id, type, seq)`）・起こした者と線の上下（`links(from_actor, type, seq)`・`links(to_actor, type)`）・model と effort の名（`settings(model_id, received_at)`・`settings(effort_id, received_at)`）・その時の model と effort（`settings(actor_id, seq)`）。
 
 引き当てと見る SQL（`src/db.rs` の `LOOKUPS`）と、検索の SQL（`src/search.rs` の `plans()`。条件ごとと、全部を重ねた物）は、試験が `EXPLAIN QUERY PLAN` で、大きな表を端から読まないことを見る（`tests/db.rs`・`tests/search.rs`）。
 
