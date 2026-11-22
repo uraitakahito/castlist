@@ -6,6 +6,7 @@
 
 pub mod api;
 pub mod db;
+pub mod runlog;
 pub mod search;
 pub mod timeline;
 pub mod ui;
@@ -20,6 +21,8 @@ use serde_json::json;
 use std::time::Duration;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
+use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
+use tracing::Level;
 
 /// 画面の応答に付ける Content-Security-Policy。script と style は、castlist 自身が配る file だけを許す。
 /// form は castlist 自身へだけ送れる（一覧の絞りの form は GET で `/` に送る）。
@@ -28,8 +31,17 @@ pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; 
 /// 1 つの問い合わせにかけてよい長さ。過ぎれば 503 で返す。
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// 問い合わせの道。
+/// 問い合わせの道（記録を読む道 `GET /v1/logs` は無い。試験と、記録の置き場が無い時）。
 pub fn router(db: db::Db) -> Router {
+    router_with(db, None)
+}
+
+/// 問い合わせの道。`runlog` があれば、残した記録を読む道 `GET /v1/logs` も付く。
+pub fn router_with(db: db::Db, runlog: Option<runlog::RunLog>) -> Router {
+    let logs = match runlog {
+        Some(runlog) => Router::new().route("/v1/logs", get(move || api::logs(runlog.clone()))),
+        None => Router::new(),
+    };
     Router::new()
         .route("/healthz", get(healthz))
         .route("/", get(ui::list))
@@ -52,8 +64,15 @@ pub fn router(db: db::Db) -> Router {
         .route("/v1/graph", get(api::graph))
         .route("/v1/backup", get(api::backup))
         .with_state(db)
+        .merge(logs)
         .layer(middleware::from_fn(timeout))
         .layer(middleware::from_fn(guard))
+        // 問い合わせごとの 1 行（記録の file にだけ書く。src/runlog.rs の init）。guard が断った物も残る。
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(DefaultOnResponse::new().level(Level::INFO)),
+        )
         // 一番外に置く。guard が断った答えにも付く。
         .layer(middleware::from_fn(stamp))
 }

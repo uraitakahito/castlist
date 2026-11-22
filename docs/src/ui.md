@@ -3,7 +3,7 @@
 castlist が HTML を組んで返す画面（askama。`templates/`）。castlist を動かす機械の browser で `http://127.0.0.1:8802/` を開く。
 
 - 字はみな HTML として逃がす（ラベル・名・出来事の `detail` など、送り手が書いた字も）。
-- script を使うのは相関図（図 C）だけで、castlist が配る file（`GET /static/network.js` と、取り込んだ cytoscape）だけを読む。inline の script は無い。style は castlist が配る CSS（`GET /static/site.css`）だけで、inline の style も無い。どの file も binary に埋め込む。
+- script を使うのは相関図だけで、castlist が配る file（`GET /static/network.js` と、取り込んだ cytoscape）だけを読む。inline の script は無い。style は castlist が配る CSS（`GET /static/site.css`）だけで、inline の style も無い。どの file も binary に埋め込む。
 - どの画面にも Content-Security-Policy を付ける: `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`。`form-action 'self'` は、一覧の絞りの form を castlist 自身へ送るため。
 - 時刻は、castlist が受け取った時刻（`received_at`）を日本時間（UTC+9）で表示する。ISO 8601 の字は `<time datetime>` と `title` に置く（時刻にマウスを重ねると表示される）。画面の下に「表示した時刻」を書く。
 - 明るい色と暗い色の両方を持つ（`prefers-color-scheme`）。
@@ -56,7 +56,7 @@ castlist が HTML を組んで返す画面（askama。`templates/`）。castlist
 
 無い id は 404 の画面。無い物は「ありません。」（起動した人が無い人の起点は「ありません（起点）。」）と書く。
 
-## `GET /graph/timeline` タイムライン（図 B）
+## `GET /graph/timeline` タイムライン
 
 アクターが稼働していた期間を、横を時刻にした帯で表示する。サーバーが SVG を組んでページに埋め込む（script は使わない）。一覧の頭の「タイムライン」と、相関図の頭から行ける（タイムラインの頭からは、一覧と相関図へ行ける）。
 
@@ -78,7 +78,7 @@ castlist が HTML を組んで返す画面（askama。`templates/`）。castlist
 
 並べ方（`src/timeline.rs`。DB に触らない純な計算で、単体の試験を持つ）は、行ごとの稼働・停止の出来事と替わり目と印の時刻（ミリ秒）、線、期間を受けて、帯の切れ・矢印・印・目盛りの置き場を返す。同じ入力からは、いつも同じ図。並べる計算と HTML を組むのは `tokio::task::spawn_blocking` の糸で行う。色は `site.css` の class で決める（明るい色と暗い色）。矢印は帯の下に、帯の字は印の上に（縁取りを付けて）描く。
 
-## `GET /graph/network` 相関図（図 C）
+## `GET /graph/network` 相関図
 
 誰が誰を起動し、誰が誰から引き継いだかを、点と線の相関図で表示する。script を使う唯一の画面。一覧の頭の「相関図」と、タイムラインの頭から行ける（相関図の頭からは、一覧とタイムラインへ行ける）。
 

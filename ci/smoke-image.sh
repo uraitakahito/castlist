@@ -81,4 +81,20 @@ docker stop "$name"
 test "$(docker inspect -f '{{.State.ExitCode}}' "$name")" = 0
 docker start "$name"
 up
+# 終わり方の印（volume の logs/）: 止める合図で止めた後の起動は「きれいに止まった」と出す。
+# （grep -q に pipe でつながない: grep が先に終わると、書く側が SIGPIPE で落ち、pipefail で全体が落ちる）
+logs=$(mktemp)
+docker logs "$name" >"$logs" 2>&1
+grep -q 'previous: stopped cleanly (' "$logs"
+# 合図なしで切った（SIGKILL）後の起動は「停止の印なし」と、最後に生きていた時刻を出す。
+docker kill "$name"
+docker start "$name"
+up
+docker logs "$name" >"$logs" 2>&1
+grep -q 'previous: no stop mark (.*; last alive 20' "$logs"
+# 残した記録は、止めずに読める。起こし直す前の問い合わせの行も、時刻つきで残っている。
+curl -fsS -o "$logs" "$url/v1/logs"
+grep -q ' start version=' "$logs"
+grep -q 'uri=/healthz' "$logs"
+rm -f "$logs"
 echo "image は動く: $image"

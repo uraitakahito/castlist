@@ -300,6 +300,10 @@ Auditor の使い方:
 }
 ```
 
+## `GET /v1/logs` 残した記録
+
+残した記録（終わり方の印と、時刻つきの行）を、古い順の字で返す（0.3.0 から。`text/plain; charset=utf-8`。多くて 4 MiB と 64 KiB）。`curl -s http://127.0.0.1:8802/v1/logs`。castlist を止めずに、落ちた後の調べに使う。中身の file と行の読み方は [動かす](run.md) の「落ちた後に調べる」。行の形は、この API の決まりに入らない（人が読むための字）。届く所の守りは、ほかの道と同じ（[動かす](run.md) の「同じ network の container からは届く」）。
+
 ## `GET /v1/backup` DB のバックアップ
 
 動かしたまま、揃ったバックアップを 1 つの SQLite の file で返す（`application/vnd.sqlite3`）。`curl -fsS -o castlist-backup-$(date +%Y%m%d-%H%M).db http://127.0.0.1:8802/v1/backup`。バックアップは DB の隣の一時の file に `VACUUM INTO` で作り、送り始めたら消す。

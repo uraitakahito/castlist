@@ -38,7 +38,8 @@ mdbook build docs                                                  # この本�
 | 負荷 | 本物の binary を一時の DB で起こし、50 の客が 10 秒叩く（読む物の 2 割は監査の検索。ふだんは流さない）。CI では一時の DB を memory の上（`TMPDIR=/dev/shm`）に置く（CI の機械の disk の書き込みの詰まりを測らないため） | `tests/load.rs`（CI の job `load`） |
 | 単体 | DB に触らない純な関数 | 各 file の `#[cfg(test)]` |
 | browser | 本物の castlist-server を空いた port と一時の DB で起こし、API で見本を置き、Chromium で相関図を開く。点と線の数・押した先・model と effort の絞り・色（明るい・暗い）・console の誤りと CSP の違反が 0・script を切った時の字を見る。一覧とタイムラインの期間の欄（日時の欄で入れた日本時間で絞る・送り直しても同じ値・期間をすぐ選ぶ link）も見る | `e2e/`（Playwright。CI の job `e2e`。Node の依存の弱点は job `advisories` の `pnpm audit`） |
-| image | 空の image の中で起き、断るべき物を断り、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せる | `ci/smoke-image.sh`（CI の job `image` と release の `check`） |
+| 終わり方と記録 | 本物の binary を、試験ごとの空の folder の DB で起こす。止める合図・合図なしの切断・DB を開けない、の後に起こし直して、前回の終わり方の行を見る。問い合わせの行が記録の file にだけ残ること・多く問い合わせた後の `logs/` の大きさが上限の内であること・読む道 `GET /v1/logs` も見る | `tests/runlog.rs`（書き手と印の単体は `src/runlog.rs`） |
+| image | 空の image の中で起き、断るべき物を断り、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せて、前回の終わり方を次の起動で出す | `ci/smoke-image.sh`（CI の job `image` と release の `check`） |
 | release の版 | tag と `Cargo.toml` の版・`CHANGELOG.md` の節の突き合わせを、通る形と落ちる形で打つ | `ci/test-check-release-version.sh`（CI の job `test`） |
 
 ## 待たせない書き方
@@ -48,3 +49,4 @@ mdbook build docs                                                  # この本�
 - handler はみな `async`。tokio の糸を塞ぐ呼び出し（`std::thread::sleep`・`std::fs` の読み書き・同期の `TcpStream::connect` など）は、`clippy.toml` の `disallowed-methods` で断る（`cargo clippy` が誤りにする）。代わりに `tokio::time`・`tokio::fs`・`tokio::net` を使う。
 - 鍵を握ったままの `await`（`clippy::await_holding_lock`）も誤りにする。
 - 試験の道具（`tests/`）は同期で書くので、その file の頭で `disallowed_methods` の断りを外している。
+- **`src/` で断りを外すのは `src/runlog.rs` だけ**（終わり方の印と、大きさで回す記録の file。[動かす](run.md) の「落ちた後に調べる」）。わざとの例外で、記録の 1 行を同期で書く。裏の糸に渡して書く形は、`panic = "abort"` では渡したままの行を落とすので、知りたい「落ちる直前の行」が残らない。1 行の write は短い。急がない物（生きている印・読む道）は `spawn_blocking` に出す。上限（`LOG_FILE_MAX`・`LOG_FILES`・`RUNS_MAX`）を変えたら、「落ちた後に調べる」の表も直す。log に出す新しい行は、英語の `名=値` の形で書く。
