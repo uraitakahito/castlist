@@ -1361,7 +1361,7 @@ async fn 一覧は_状態を稼働中と停止で書き_絞り込みの欄と説
         &body,
         &[
             "<a href=\"/graph/tree\">系図</a> ・ <a href=\"/graph/timeline\">タイムライン</a> ・ <a href=\"/graph/network\">相関図</a>",
-            "<legend>絞り込み（すべての条件に合うアクターを表示します。空の欄は使いません）</legend>",
+            "<legend>絞り込み</legend>",
             "状態 <select name=\"active\">",
             "<option value=\"\">すべて</option>",
             ">稼働中</option>",
@@ -1445,7 +1445,7 @@ async fn 系図は_見出しと行き来と絞り込みと凡例を決めた字�
         &[
             "<title>系図 ・ castlist</title>",
             "<a href=\"/\">一覧へ</a> ・ <a href=\"/graph/timeline\">タイムラインへ</a> ・ <a href=\"/graph/network\">相関図へ</a>",
-            "<legend>絞り込み（条件に合うアクターと、その 1 本先の線の相手を表示します。空の欄は使いません）</legend>",
+            "<legend>絞り込み</legend>",
             "登録した期間（から）",
             "（まで）",
             ">絞り込む</button>",
@@ -1508,7 +1508,7 @@ async fn 相関図は_見出しと行き来と説明と凡例と_script_を切�
         &[
             "<title>相関図 ・ castlist</title>",
             "<h1>相関図 <span class=\"kind\"><a href=\"/\">一覧へ</a> ・ <a href=\"/graph/tree\">系図へ</a> ・ <a href=\"/graph/timeline\">タイムラインへ</a>",
-            "<legend>表示する点を選ぶ（このページの中だけで、合わない点とその線を隠します）</legend>",
+            "<legend>表示する点を選ぶ</legend>",
             "<option value=\"\">すべて</option>",
             "点は 1 つのアクターで、名前を下に書きます。色は最新の model、形は種類です。薄い点は停止したアクターです。点を押すとプロフィールを、名前にマウスを重ねると model · effort と状態を表示します。点はドラッグで動かせます（元の並びに戻すには、ページを読み直します）。",
             "角のある形: 人",
@@ -1890,4 +1890,26 @@ async fn どの画面も_種類の印は人だけに付け_ai_とは書かない
     // 前の URL の kind=ai は、今と同じく AI のアクターだけに絞る。
     let ai = html(&s.app, "/?kind=ai").await;
     assert!(ai.contains(">se.1<") && !ai.contains(">pm.1<"), "{ai}");
+}
+
+#[tokio::test]
+async fn どの画面も_枠の見出しに括弧書きを付けない() {
+    let s = sample().await;
+    let mut pages = Vec::new();
+    for path in ["/", "/graph/tree", "/graph/timeline"] {
+        pages.push((path, html(&s.app, path).await));
+    }
+    pages.push((
+        "/graph/network",
+        network_html(&s.app, "/graph/network").await,
+    ));
+    for (path, body) in &pages {
+        for legend in body.split("<legend>").skip(1) {
+            let text = legend.split("</legend>").next().unwrap_or_default();
+            assert!(
+                !text.contains('（'),
+                "{path} の枠の見出しに括弧書きがある: {text}"
+            );
+        }
+    }
 }
