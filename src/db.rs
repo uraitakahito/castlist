@@ -445,6 +445,12 @@ impl Db {
             .busy_timeout(Duration::from_secs(5))
             .pragma("recursive_triggers", "ON")
             .pragma("temp_store", "MEMORY");
+        let options = match std::env::var("DIAG_MODE").as_deref() {
+            Ok("normal") => options.synchronous(sqlx::sqlite::SqliteSynchronous::Normal),
+            Ok("nockpt") => options.pragma("wal_autocheckpoint", "0"),
+            _ => options,
+        };
+        eprintln!("DIAG mode={:?}", std::env::var("DIAG_MODE"));
         let write = SqlitePoolOptions::new()
             .max_connections(1)
             .acquire_timeout(WRITE_WAIT)

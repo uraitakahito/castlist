@@ -55,7 +55,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        n: [1, 2, 3, 4, 5, 6, 7, 8]
+        n: [1, 2, 3, 4, 5]
+        mode: [full, normal, nockpt]
+    env:
+      DIAG_MODE: ${{ matrix.mode }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
@@ -64,7 +67,7 @@ jobs:
           set +e
           cargo test --locked --release --test load -- --ignored --nocapture 2>&1 | tee load.log
           st=$?
-          echo "DIAG lines: $(grep -c DIAG load.log)"
+          echo "DIAG lines: $(grep -c DIAG load.log) commit>50ms: $(grep -cE 'commit=([5-9][0-9]|[0-9]{3,})(\.[0-9]+)?ms|commit=[0-9.]+s' load.log)"
           grep DIAG load.log | head -120
           exit $st
   e2e:
