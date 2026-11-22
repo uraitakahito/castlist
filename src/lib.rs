@@ -7,6 +7,7 @@
 pub mod api;
 pub mod db;
 pub mod search;
+pub mod timeline;
 pub mod tree;
 pub mod ui;
 
@@ -35,6 +36,7 @@ pub fn router(db: db::Db) -> Router {
         .route("/", get(ui::list))
         .route("/actors/{id}", get(ui::profile))
         .route("/graph/tree", get(ui::tree))
+        .route("/graph/timeline", get(ui::timeline))
         .route("/static/site.css", get(ui::site_css))
         .route("/v1/actors", post(api::register).get(search::actors))
         .route("/v1/actors/{id}", get(api::actor))

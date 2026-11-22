@@ -481,6 +481,12 @@ impl GraphQuery {
         let label = self.label.as_ref().map(|(k, v)| (k.as_str(), v.as_str()));
         Ok(db.graph(label, &self.from, &self.to).await?)
     }
+
+    /// 時間の帯（`GET /graph/timeline`）: 同じ組と、その点の出来事と model と effort の全部。
+    pub(crate) async fn timeline(&self, db: &Db) -> Result<db::Timeline, ApiError> {
+        let label = self.label.as_ref().map(|(k, v)| (k.as_str(), v.as_str()));
+        Ok(db.timeline(label, &self.from, &self.to).await?)
+    }
 }
 
 /// `GET /v1/graph?label=key:value&from=…&to=…`: 相関図（点と線）。

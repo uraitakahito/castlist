@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # image が、空の image の中で起き、/healthz に答え、外の Host と browser からの書き込みを断り、
-# 画面と CSS が CSP の決まりどおりに出て、止める合図で自分から終わり、起こし直しても答えるかを見る。
+# 画面（一覧・系図・時間の帯）と CSS が CSP の決まりどおりに出て、止める合図で自分から終わり、起こし直しても答えるかを見る。
 # 使い方: ci/smoke-image.sh <image>
 # container の名は smoke-castlist にする（castlist の設定の「PM だけ」の match（--name castlist など）に当てないため）。
 set -euo pipefail
@@ -42,6 +42,14 @@ if grep -qiE '<script|<style|style=' "$tmp/tree.html"; then
   exit 1
 fi
 grep -qF '当たるアクターはいない' "$tmp/tree.html"
+# 時間の帯: 同じ CSP が付き、inline の script と style が無い（空の DB なので、当たる者がいないと書く）。
+curl -fsS -D "$tmp/timeline-head.txt" -o "$tmp/timeline.html" "$url/graph/timeline"
+tr -d '\r' <"$tmp/timeline-head.txt" | grep -qixF "content-security-policy: $csp"
+if grep -qiE '<script|<style|style=' "$tmp/timeline.html"; then
+  echo "NG: 時間の帯に inline の script か style がある" >&2
+  exit 1
+fi
+grep -qF '当たるアクターはいない' "$tmp/timeline.html"
 curl -fsS -D "$tmp/css-head.txt" -o "$tmp/site.css" "$url/static/site.css"
 tr -d '\r' <"$tmp/css-head.txt" | grep -qi '^content-type: text/css'
 test -s "$tmp/site.css"

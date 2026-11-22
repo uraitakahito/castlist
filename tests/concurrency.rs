@@ -325,3 +325,91 @@ async fn アクター_500_の系図を組む間も_引き当ては_100_ms_で答
     assert!(rendered > 0, "系図を 1 度も組めていない");
     println!("一番遅い引き当て: {slowest:?}・組んだ系図: {rendered}");
 }
+
+/// 時間の帯を組む重い計算も、tokio の糸の外（spawn_blocking）で走る。500 のアクター（登場と model の替わり目つき）の
+/// 時間の帯を並べて組ませている間も、引き当て（/v1/resolve）は 100 ms で答える。
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn アクター_500_の時間の帯を組む間も_引き当ては_100_ms_で答える() {
+    let app = App::start().await;
+    app.register(&common::app::human("pm")).await;
+    let root_ref = "tpm.person:pm".to_owned();
+    for i in 0..500 {
+        app.register(&ai("se", &format!("s-{i}"))).await;
+        let me = format!("claude.session:s-{i}");
+        let from = if i == 0 {
+            root_ref.clone()
+        } else {
+            format!("claude.session:s-{}", (i - 1) / 3)
+        };
+        let (status, answer) = app
+            .put(
+                &format!("/v1/links/l-{i}"),
+                &common::app::link("launched", &from, &me),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{answer}");
+        let (status, answer) = app
+            .put(
+                &format!("/v1/events/e-{i}"),
+                &common::app::event(&me, "entered", &at(0)),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{answer}");
+        let (status, answer) = app
+            .put(
+                &format!("/v1/settings/t-{i}"),
+                &setting(&me, "claude-opus-5-5", "high", &at(0)),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{answer}");
+    }
+    let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let renders: Vec<_> = (0..4)
+        .map(|_| {
+            let router = app.app.clone();
+            let stop = stop.clone();
+            tokio::spawn(async move {
+                let mut done = 0;
+                while !stop.load(std::sync::atomic::Ordering::Relaxed) {
+                    let response = router
+                        .clone()
+                        .oneshot(request("GET", "/graph/timeline", None))
+                        .await
+                        .unwrap();
+                    assert_eq!(response.status(), StatusCode::OK);
+                    let bytes = http_body_util::BodyExt::collect(response.into_body())
+                        .await
+                        .unwrap()
+                        .to_bytes();
+                    let body = String::from_utf8(bytes.to_vec()).unwrap();
+                    assert_eq!(body.matches("href=\"/actors/").count(), 501);
+                    done += 1;
+                }
+                done
+            })
+        })
+        .collect();
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    let mut slowest = Duration::ZERO;
+    for _ in 0..20 {
+        let started = Instant::now();
+        let (status, answer) = app
+            .post(
+                "/v1/resolve",
+                &json!({ "issuer": "tpm", "refs": ["claude.session:s-1"] }),
+            )
+            .await;
+        let took = started.elapsed();
+        assert_eq!(status, StatusCode::OK, "{answer}");
+        assert!(took < Duration::from_millis(100), "{took:?}");
+        slowest = slowest.max(took);
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    stop.store(true, std::sync::atomic::Ordering::Relaxed);
+    let mut rendered = 0;
+    for task in renders {
+        rendered += task.await.unwrap();
+    }
+    assert!(rendered > 0, "時間の帯を 1 度も組めていない");
+    println!("一番遅い引き当て: {slowest:?}・組んだ時間の帯: {rendered}");
+}

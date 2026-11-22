@@ -1,4 +1,5 @@
-//! 画面: アクターの一覧（`/`）とプロフィール（`/actors/{id}`）と系図（`/graph/tree`）と、それが読む CSS（`/static/site.css`）。
+//! 画面: アクターの一覧（`/`）とプロフィール（`/actors/{id}`）と系図（`/graph/tree`）と時間の帯（`/graph/timeline`）と、
+//! それが読む CSS（`/static/site.css`）。
 //!
 //! - サーバーが HTML を組んで返す（askama。`templates/`）。字はみな HTML として逃がす。script は使わない。
 //! - CSP（[`crate::CSP`]）が inline の script と style を断るので、style は castlist が配る CSS の file だけ。
@@ -8,6 +9,7 @@
 use crate::api::{ApiError, GRAPH_PARAMS, GraphQuery};
 use crate::db::{self, ActorDetail, Db};
 use crate::search::{self, ActorItem, ActorQuery, MAX_DEPTH, Pairs, Params};
+use crate::timeline::{self, END_ROOM, LABEL_PAD, MARGIN, Presence, ROW_H};
 use crate::tree::{self, text_width};
 use askama::Template;
 use axum::extract::rejection::QueryRejection;
@@ -729,6 +731,359 @@ fn tree_svg(graph: &db::Graph) -> Option<TreeSvg> {
 /// model の名を短くする（`claude-opus-5-5` → `opus-5-5`）。
 fn short_model(model: &str) -> &str {
     model.strip_prefix("claude-").unwrap_or(model)
+}
+
+/// `GET /graph/timeline?label=…&from=…&to=…`: 時間の帯（相関図 B）。引数は系図と同じ（空の値は付けなかったのと同じ）。
+/// `from`・`to` を付ければ、横の時刻もその窓にする（無ければ記録の初めから終わりまで）。
+/// 並べる計算と HTML を組むのは、spawn_blocking の糸で行う。
+pub async fn timeline(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Response {
+    match timeline_page(db, q).await {
+        Ok(response) => response,
+        Err(e) => error_page(e),
+    }
+}
+
+async fn timeline_page(
+    db: Db,
+    q: Result<Query<Pairs>, QueryRejection>,
+) -> Result<Response, ApiError> {
+    let mut pairs = search::pairs(q)?;
+    pairs.retain(|(_, v)| !v.is_empty());
+    let form = TreeForm::new(&pairs);
+    let p = Params::new(pairs, GRAPH_PARAMS, &[])?;
+    let query = GraphQuery::new(&p)?;
+    let (from, to) = (p.time("from")?, p.time("to")?);
+    let as_of = db::now();
+    let data = query.timeline(&db).await?;
+    tokio::task::spawn_blocking(move || {
+        let window = timeline::Window {
+            from: from.as_deref().and_then(millis),
+            to: to.as_deref().and_then(millis),
+            now: millis(&as_of).unwrap_or_default(),
+            offset_s: i64::from(OFFSET.whole_seconds()),
+        };
+        let page = TimelinePage {
+            css: &CSS_HREF,
+            count: data.graph.nodes.len(),
+            legend: legend(&data.settings),
+            svg: timeline_svg(&data, window),
+            form,
+            as_of: time(&as_of),
+        };
+        render(StatusCode::OK, &page)
+    })
+    .await
+    .map_err(|e| {
+        eprintln!("時間の帯を組めない: {e}");
+        ApiError(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "時間の帯を組めない".to_owned(),
+        )
+    })
+}
+
+#[derive(Template)]
+#[template(path = "timeline.html")]
+struct TimelinePage {
+    css: &'static str,
+    form: TreeForm,
+    count: usize,
+    /// 凡例の model（短い名と色の class）。
+    legend: Vec<(String, &'static str)>,
+    /// 点が無ければ無い。
+    svg: Option<TimelineSvg>,
+    as_of: Time,
+}
+
+struct TimelineSvg {
+    width: u32,
+    height: u32,
+    /// 目盛りの字の下の線と、目盛りの縦の線の上と下。
+    tick_y: u32,
+    grid_y0: u32,
+    grid_y1: u32,
+    row_h: u32,
+    ticks: Vec<timeline::Tick>,
+    /// 今の時刻の縦の線（窓の中なら）。
+    now: Option<u32>,
+    /// 上からの順。
+    lanes: Vec<LaneView>,
+    arrows: Vec<TreeLine>,
+}
+
+/// 時間の帯の行 1 つ。
+struct LaneView {
+    href: String,
+    name: String,
+    kind: &'static str,
+    human: bool,
+    /// 行の上と、名の字の下の線と、種類の字の左。
+    y: u32,
+    text_y: u32,
+    kind_x: u32,
+    segs: Vec<SegView>,
+    marks: Vec<MarkView>,
+}
+
+struct SegView {
+    class: String,
+    x: u32,
+    y: u32,
+    w: u32,
+    h: u32,
+    title: String,
+    /// 帯に書く字と、その置き場（収まらなければ無い）。
+    label: Option<(u32, u32, String)>,
+    /// 開いた端の印の path（居るまま・窓の外へ続く）。
+    open_end: Option<String>,
+    open_start: Option<String>,
+}
+
+struct MarkView {
+    kind: String,
+    x: u32,
+    y0: u32,
+    y1: u32,
+    title: String,
+}
+
+/// 印を付ける出来事。
+const MARK_EVENTS: [&str; 3] = ["compacted", "reported_in", "model_unreadable"];
+
+/// model の名から、帯の色の class（同じ名はいつも同じ class）。知らない種類はみな `m-other`。
+fn tone(model: &str) -> &'static str {
+    ["opus", "sonnet", "haiku"]
+        .into_iter()
+        .zip(["m-opus", "m-sonnet", "m-haiku"])
+        .find(|(family, _)| model.contains(family))
+        .map_or("m-other", |(_, class)| class)
+}
+
+/// 凡例の model: 出てくる model の短い名（名の順）と色の class。
+fn legend(settings: &[db::Setting]) -> Vec<(String, &'static str)> {
+    let names: std::collections::BTreeSet<&str> =
+        settings.iter().map(|s| short_model(&s.model)).collect();
+    names.into_iter().map(|m| (m.to_owned(), tone(m))).collect()
+}
+
+/// RFC 3339 の時刻を、UNIX の時からのミリ秒に。
+fn millis(iso: &str) -> Option<i64> {
+    let t = OffsetDateTime::parse(iso, &Rfc3339).ok()?;
+    i64::try_from(t.unix_timestamp_nanos() / 1_000_000).ok()
+}
+
+/// 時間の帯の SVG に置く物。点が無ければ None。
+fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<TimelineSvg> {
+    let nodes = &data.graph.nodes;
+    if nodes.is_empty() {
+        return None;
+    }
+    let index: BTreeMap<&str, usize> = nodes
+        .iter()
+        .enumerate()
+        .map(|(i, n)| (n.actor.id.as_str(), i))
+        .collect();
+    let mut lanes: Vec<timeline::Lane> = nodes
+        .iter()
+        .map(|n| {
+            let kind = kind_name(&n.actor.kind);
+            let order = n
+                .state
+                .as_ref()
+                .and_then(|s| s.entered_at.as_deref())
+                .unwrap_or(&n.actor.received_at);
+            timeline::Lane {
+                human: n.actor.kind == "human",
+                order: millis(order).unwrap_or(i64::MAX),
+                label_width: name_width(&n.actor.name) + 6 + text_width(kind, SUB_PX),
+                ..timeline::Lane::default()
+            }
+        })
+        .collect();
+    // 出来事の印（行ごとに、印の順の種類と時刻）と、model と effort の替わり目（行ごとに、元の行）。
+    let mut marks: Vec<Vec<(&str, &str)>> = vec![Vec::new(); nodes.len()];
+    for e in &data.events {
+        let (Some(&i), Some(t)) = (index.get(e.actor_id.as_str()), millis(&e.received_at)) else {
+            continue;
+        };
+        match e.kind.as_str() {
+            "entered" | "reentered" | "forked" => lanes[i].presence.push((t, Presence::In)),
+            "cleared" | "exited" | "closed" => lanes[i].presence.push((t, Presence::Out)),
+            kind if MARK_EVENTS.contains(&kind) => {
+                lanes[i].marks.push(t);
+                marks[i].push((kind, &e.received_at));
+            }
+            _ => {}
+        }
+    }
+    let mut changes: Vec<Vec<(&db::Setting, bool)>> = vec![Vec::new(); nodes.len()];
+    let mut requested: BTreeMap<usize, (&str, &str)> = BTreeMap::new();
+    for s in &data.settings {
+        let (Some(&i), Some(t)) = (index.get(s.actor_id.as_str()), millis(&s.received_at)) else {
+            continue;
+        };
+        // 見た行が、その前の最新の頼んだ行と違うか（プロフィールの印と同じ決め方）。
+        let pair = (s.model.as_str(), s.effort.as_str());
+        let mismatch = s.source == "observed" && requested.get(&i).is_some_and(|r| *r != pair);
+        if s.source == "requested" {
+            requested.insert(i, pair);
+        }
+        lanes[i].changes.push(timeline::Change {
+            at: t,
+            label: format!("{} · {}", short_model(&s.model), s.effort),
+        });
+        changes[i].push((s, mismatch));
+    }
+    let links: Vec<timeline::Link> = data
+        .graph
+        .edges
+        .iter()
+        .filter_map(|e| {
+            let kind = match e.kind.as_str() {
+                "launched" => timeline::Kind::Launched,
+                "continued" => timeline::Kind::Continued,
+                _ => return None,
+            };
+            Some(timeline::Link {
+                from: *index.get(e.from_actor.as_str())?,
+                to: *index.get(e.to_actor.as_str())?,
+                kind,
+                at: millis(&e.received_at)?,
+            })
+        })
+        .collect();
+    let layout = timeline::layout(&lanes, &links, window);
+    let clock = |t: i64| {
+        OffsetDateTime::from_unix_timestamp_nanos(i128::from(t) * 1_000_000)
+            .ok()
+            .and_then(|t| t.format(&Rfc3339).ok())
+            .map(|iso| time(&iso).local)
+            .unwrap_or_default()
+    };
+    let mut views: Vec<LaneView> = layout
+        .order
+        .iter()
+        .map(|&i| {
+            let n = &nodes[i];
+            let y = layout.rows[i];
+            LaneView {
+                href: format!("/actors/{}", n.actor.id),
+                name: n.actor.name.clone(),
+                kind: kind_name(&n.actor.kind),
+                human: lanes[i].human,
+                y,
+                text_y: y + ROW_H / 2 + 4,
+                kind_x: MARGIN + name_width(&n.actor.name) + 6,
+                segs: Vec::new(),
+                marks: Vec::new(),
+            }
+        })
+        .collect();
+    let rank: BTreeMap<usize, usize> = layout
+        .order
+        .iter()
+        .enumerate()
+        .map(|(r, &i)| (i, r))
+        .collect();
+    for s in &layout.segments {
+        let name = &nodes[s.lane].actor.name;
+        let row = s
+            .change
+            .map(|c| (&lanes[s.lane].changes[c], changes[s.lane][c]));
+        let (class, what) = match row {
+            Some((change, (setting, mismatch))) => (
+                format!("seg {}", tone(&setting.model)),
+                format!(
+                    "{}（{}{}）",
+                    change.label,
+                    source_name(&setting.source),
+                    if mismatch {
+                        "・頼んだ物と違う"
+                    } else {
+                        ""
+                    }
+                ),
+            ),
+            None => (
+                "seg m-none".to_owned(),
+                "model と effort の記録なし".to_owned(),
+            ),
+        };
+        let until = if s.open_end {
+            "続く".to_owned()
+        } else {
+            clock(s.end)
+        };
+        let mid = s.y + s.h / 2;
+        views[rank[&s.lane]].segs.push(SegView {
+            class,
+            x: s.x,
+            y: s.y,
+            w: s.w,
+            h: s.h,
+            title: format!("{name} · {what} · {} から {until}", clock(s.start)),
+            label: s
+                .labelled
+                .then(|| row.map(|(c, _)| (s.x + LABEL_PAD, mid + 4, c.label.clone())))
+                .flatten(),
+            open_end: s.open_end.then(|| {
+                let x = s.x + s.w;
+                format!("M{x},{} L{},{mid} L{x},{}z", s.y, x + END_ROOM, s.y + s.h)
+            }),
+            open_start: s.open_start.then(|| {
+                format!(
+                    "M{},{} L{},{mid} L{},{}z",
+                    s.x,
+                    s.y,
+                    s.x.saturating_sub(6),
+                    s.x,
+                    s.y + s.h
+                )
+            }),
+        });
+    }
+    for m in &layout.marks {
+        let (kind, at) = marks[m.lane][m.mark];
+        views[rank[&m.lane]].marks.push(MarkView {
+            kind: kind.to_owned(),
+            x: m.x,
+            y0: m.y0,
+            y1: m.y1,
+            title: format!("{} · {}", event_name(kind), time(at).local),
+        });
+    }
+    let now = (layout.start..=layout.end)
+        .contains(&window.now)
+        .then(|| layout.x(window.now));
+    let arrows = layout
+        .arrows
+        .into_iter()
+        .map(|a| TreeLine {
+            class: match a.kind {
+                timeline::Kind::Launched => "link launched",
+                timeline::Kind::Continued => "link continued",
+            },
+            d: a.d,
+        })
+        .collect();
+    let grid_y0 = timeline::AXIS_H - 6;
+    Some(TimelineSvg {
+        width: layout.width,
+        height: layout.height,
+        tick_y: timeline::AXIS_H - 10,
+        grid_y0,
+        grid_y1: layout.height,
+        row_h: ROW_H,
+        now,
+        ticks: layout.ticks,
+        lanes: views,
+        arrows,
+    })
+}
+
+/// 行の名の字の幅（太字は 1 px 大きく見積もる）。
+fn name_width(name: &str) -> u32 {
+    text_width(name, NAME_PX + 1)
 }
 
 /// 起こした人の鎖: このアクターから、起こした・継がせた線を上り、人で止める。根から順に返す。
