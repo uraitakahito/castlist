@@ -32,7 +32,7 @@ fn seat(prefix: &str, session: &str, role: &str, workspace: &str) -> Value {
             { "type": "cmux.workspace.ref", "value": workspace },
         ],
         "settings": { "model": OPUS, "effort": "high" },
-        "at": at(0),
+        "sent_at": at(0),
     })
 }
 
@@ -43,20 +43,20 @@ fn person(prefix: &str, person: &str) -> Value {
         "name_prefix": prefix,
         "labels": { "project": "castlist", "tpm.role": "product-manager" },
         "bindings": [{ "type": "tpm.person", "value": person }],
-        "at": at(0),
+        "sent_at": at(0),
     })
 }
 
 fn ev(by: &str, kind: &str, detail: Value, at: &str) -> Value {
-    json!({ "issuer": "tpm", "by": by, "type": kind, "detail": detail, "at": at })
+    json!({ "issuer": "tpm", "by": by, "type": kind, "detail": detail, "sent_at": at })
 }
 
 fn line(kind: &str, from: &str, to: &str) -> Value {
-    json!({ "issuer": "tpm", "type": kind, "from": from, "to": to, "at": at(0) })
+    json!({ "issuer": "tpm", "type": kind, "from": from, "to": to, "sent_at": at(0) })
 }
 
 fn observed(by: &str, model: &str, effort: &str) -> Value {
-    json!({ "issuer": "tpm", "by": by, "model": model, "effort": effort, "source": "observed", "at": at(0) })
+    json!({ "issuer": "tpm", "by": by, "model": model, "effort": effort, "source": "observed", "sent_at": at(0) })
 }
 
 const OWNER: &str = "tpm.person:owner";
@@ -610,7 +610,7 @@ async fn 問い_x_の時刻_t_の_model_と_effort() {
         "{row}"
     );
     assert!(
-        row["at"].is_string() && row["received_at"].is_string(),
+        row["sent_at"].is_string() && row["received_at"].is_string(),
         "{row}"
     );
     assert_eq!(row["clock_skew"], false);
@@ -738,7 +738,7 @@ async fn 問い_出来事を種類と時刻で_アクターをまたいで() {
         answer["events"][0]["detail"]["reason"],
         "statusline-missing"
     );
-    assert!(answer["events"][0]["at"].is_string());
+    assert!(answer["events"][0]["sent_at"].is_string());
     assert!(answer["events"][0]["received_at"].is_string());
     assert_eq!(answer["events"][0]["clock_skew"], false);
     assert_eq!(answer["next"], Value::Null);
@@ -804,7 +804,7 @@ async fn 問い_送り手の時計がずれた行() {
     assert_eq!(field(&answer["events"], "id"), ["e-skew"], "{answer}");
     let row = &answer["events"][0];
     assert_eq!(row["clock_skew"], true);
-    assert_ne!(row["at"], row["received_at"]);
+    assert_ne!(row["sent_at"], row["received_at"]);
     let answer = ok(
         &s.app,
         &format!("/v1/actors?skewed=true&label=tpm.key:{KEY}"),

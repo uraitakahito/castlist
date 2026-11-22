@@ -31,12 +31,12 @@ async fn filled() -> (App, String) {
 
 /// 表と、1 行を指す列と、書き替えを試す列。
 const TABLES: &[(&str, &str, &str)] = &[
-    ("actors", "seq", "at"),
+    ("actors", "seq", "sent_at"),
     ("labels", "seq", "value"),
     ("bindings", "seq", "value"),
-    ("links", "seq", "at"),
-    ("events", "seq", "at"),
-    ("settings", "seq", "at"),
+    ("links", "seq", "sent_at"),
+    ("events", "seq", "sent_at"),
+    ("settings", "seq", "sent_at"),
     ("models", "id", "name"),
     ("efforts", "id", "name"),
 ];
@@ -310,6 +310,80 @@ async fn docs_の列の表は_移行した_db_の列と合う() {
             "db.md の {name} の列（列・型・NULL・既定）が、移行した DB と合わない"
         );
     }
+    db.close().await;
+    remove_db(&path);
+}
+
+#[tokio::test]
+async fn 前の版の_db_を開くと_送り手の時刻の列は_sent_at_になり_値はそのまま() {
+    let path = temp_db("v01");
+    // 前の版（移行 0002 まで）の DB に、送り手の時刻（at）の付いた行を入れる。
+    let options = SqliteConnectOptions::new()
+        .filename(&path)
+        .create_if_missing(true)
+        .foreign_keys(true);
+    let pool = sqlx::SqlitePool::connect_with(options).await.unwrap();
+    sqlx::migrate!().run_to(2, &pool).await.unwrap();
+    let sent = "2026-11-22T13:00:00.123+09:00";
+    let got = "2026-11-22T04:00:00.000Z";
+    for sql in [
+        "insert into actors(id, issuer, kind, prefix, n, name, at, received_at, clock_skew)
+         values('a1', 'tpm', 'ai', 'se', 1, 'se.1', ?1, ?2, 0)",
+        "insert into actors(id, issuer, kind, prefix, n, name, at, received_at, clock_skew)
+         values('a2', 'tpm', 'ai', 'se', 2, 'se.2', ?1, ?2, 0)",
+        "insert into bindings(actor_id, issuer, type, value, is_key, at, received_at)
+         values('a1', 'tpm', 'claude.session', 's-1', 1, ?1, ?2)",
+        "insert into links(id, type, from_actor, to_actor, at, received_at, clock_skew, body_hash)
+         values('l1', 'launched', 'a1', 'a2', ?1, ?2, 0, 'h')",
+        "insert into events(id, actor_id, type, at, received_at, clock_skew, body_hash)
+         values('e1', 'a1', 'entered', ?1, ?2, 0, 'h')",
+        "insert into models(name, first_seen_at) values('claude-opus-5-5', ?2)",
+        "insert into settings(actor_id, model_id, effort_id, source, at, received_at, clock_skew)
+         values('a1', 1, 1, 'requested', ?1, ?2, 0)",
+    ] {
+        sqlx::query(sql)
+            .bind(sent)
+            .bind(got)
+            .execute(&pool)
+            .await
+            .unwrap_or_else(|e| panic!("{sql}: {e}"));
+    }
+    pool.close().await;
+
+    // 新しい版で開く（移行 0003 が当たる）。
+    let db = Db::open(&path).await.unwrap();
+    for table in ["actors", "bindings", "links", "events", "settings"] {
+        let values: Vec<String> =
+            sqlx::query_scalar(sqlx::AssertSqlSafe(format!("select sent_at from {table}")))
+                .fetch_all(db.read())
+                .await
+                .unwrap_or_else(|e| panic!("{table}: {e}"));
+        assert!(
+            !values.is_empty() && values.iter().all(|v| v == sent),
+            "{table}: {values:?}"
+        );
+    }
+    // どの表と view にも、もう at の列は無い。view の今の model と effort・付随する id も sent_at で出す。
+    let at: Vec<String> = sqlx::query_scalar(
+        "select s.name from sqlite_schema s join pragma_table_xinfo(s.name) c
+         where s.type in ('table', 'view') and c.name = 'at'",
+    )
+    .fetch_all(db.read())
+    .await
+    .unwrap();
+    assert!(at.is_empty(), "at の列が残る: {at:?}");
+    let current: String =
+        sqlx::query_scalar("select sent_at from actor_current_settings where actor_id = 'a1'")
+            .fetch_one(db.read())
+            .await
+            .unwrap();
+    assert_eq!(current, sent);
+    let current: String =
+        sqlx::query_scalar("select sent_at from actor_current_bindings where actor_id = 'a1'")
+            .fetch_one(db.read())
+            .await
+            .unwrap();
+    assert_eq!(current, sent);
     db.close().await;
     remove_db(&path);
 }

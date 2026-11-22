@@ -143,7 +143,7 @@ async fn 登録の形が違えば_422() {
             "bindings",
             json!([{ "type": "claude.session", "value": "" }]),
         ),
-        ("at", json!("きのう")),
+        ("sent_at", json!("きのう")),
     ];
     for (field, value) in cases {
         let mut body = ai("se", "s-1");
@@ -799,4 +799,119 @@ async fn backup_は_外のキーの検査に通る_sqlite_の_file_を返す() {
     assert_eq!(actors, 3);
     conn.close().await.unwrap();
     remove_db(&path);
+}
+
+// --- 送り手の時刻の名（sent_at） ---
+
+/// 答えのどこにも `at` の鍵が無いか（送り手の時刻は `sent_at`）。
+fn assert_no_at(path: &str, v: &Value) {
+    match v {
+        Value::Object(map) => {
+            assert!(!map.contains_key("at"), "{path}: 答えに at の鍵がある: {v}");
+            for (k, child) in map {
+                assert_no_at(&format!("{path}.{k}"), child);
+            }
+        }
+        Value::Array(items) => items.iter().for_each(|c| assert_no_at(path, c)),
+        _ => {}
+    }
+}
+
+#[tokio::test]
+async fn 送り手の時刻は_sent_at_で受け_答えも_sent_at_で返す() {
+    let app = App::start().await;
+    let (se1, _, pm) = three(&app).await;
+    let id = se1["id"].as_str().unwrap();
+    let sent = "2026-11-22T13:00:00.123+09:00";
+    let mut answers = Vec::new();
+    for (path, mut body) in [
+        ("/v1/links/s-1", link("launched", PM, SE1)),
+        ("/v1/links/s-2", link("continued", SE1, SE2)),
+        ("/v1/events/s-3", event(SE1, "entered", sent)),
+        (
+            "/v1/settings/s-4",
+            setting(SE1, "claude-opus-5-5", "high", sent),
+        ),
+    ] {
+        body["sent_at"] = json!(sent);
+        let (status, answer) = app.put(path, &body).await;
+        assert_eq!(status, StatusCode::CREATED, "{path}: {answer}");
+        assert_eq!(
+            answer["sent_at"], sent,
+            "{path}: 送った字のまま返す: {answer}"
+        );
+        answers.push((path.to_owned(), answer));
+    }
+    for path in [
+        format!("/v1/actors/{id}"),
+        format!("/v1/actors/{id}/lineage"),
+        format!("/v1/actors/{id}/settings"),
+        "/v1/actors?label=project:castlist".to_owned(),
+        "/v1/events?type=entered".to_owned(),
+        "/v1/settings?source=observed".to_owned(),
+        "/v1/graph".to_owned(),
+    ] {
+        let (status, answer) = app.get(&path).await;
+        assert_eq!(status, StatusCode::OK, "{path}: {answer}");
+        answers.push((path, answer));
+    }
+    for (path, answer) in &answers {
+        assert_no_at(path, answer);
+    }
+    let (_, actor) = app.get(&format!("/v1/actors/{id}")).await;
+    assert!(actor["sent_at"].is_string(), "{actor}");
+    assert!(actor["bindings"][0]["sent_at"].is_string(), "{actor}");
+    assert!(
+        actor["current_bindings"][0]["sent_at"].is_string(),
+        "{actor}"
+    );
+    assert_eq!(actor["events"][0]["sent_at"], sent);
+    assert_eq!(actor["current_settings"]["sent_at"], sent);
+    assert_eq!(actor["links_in"][0]["from"], pm["id"]);
+    assert!(actor["links_in"][0]["sent_at"].is_string(), "{actor}");
+}
+
+#[tokio::test]
+async fn 移る間は_古い名_at_も受け_同じ_id_の送り直しは_どちらの名でも_200() {
+    let app = App::start().await;
+    let mut old = ai("se", "s-1");
+    let sent = old.as_object_mut().unwrap().remove("sent_at").unwrap();
+    old["at"] = sent;
+    let (status, answer) = app.post("/v1/actors", &old).await;
+    assert_eq!(status, StatusCode::CREATED, "{answer}");
+    app.register(&human("pm")).await;
+    let t = at(0);
+    for (path, body) in [
+        ("/v1/events/o-1", event(SE1, "entered", &t)),
+        ("/v1/links/o-2", link("launched", PM, SE1)),
+        (
+            "/v1/settings/o-3",
+            setting(SE1, "claude-opus-5-5", "high", &t),
+        ),
+    ] {
+        // 前の版の送り手は at で送る。
+        let mut old = body.clone();
+        let sent = old.as_object_mut().unwrap().remove("sent_at").unwrap();
+        old["at"] = sent;
+        let (status, answer) = app.put(path, &old).await;
+        assert_eq!(status, StatusCode::CREATED, "{path}: {answer}");
+        assert_eq!(answer["sent_at"], old["at"], "{path}: {answer}");
+        // 新しい名で同じ物を送り直しても、同じ物（409 にしない）。
+        let (status, answer) = app.put(path, &body).await;
+        assert_eq!(status, StatusCode::OK, "{path}: {answer}");
+    }
+}
+
+#[tokio::test]
+async fn sent_at_と_at_を両方付けると_422() {
+    let app = App::start().await;
+    three(&app).await;
+    let mut body = event(SE1, "entered", &at(0));
+    body["at"] = body["sent_at"].clone();
+    let (status, answer) = app.put("/v1/events/b-1", &body).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{answer}");
+    let mut body = ai("se", "s-9");
+    body["at"] = body["sent_at"].clone();
+    let (status, answer) = app.post("/v1/actors", &body).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{answer}");
 }

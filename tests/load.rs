@@ -106,7 +106,7 @@ fn register(session: &str, group: &str, workspace: usize) -> Value {
             { "type": "cmux.workspace.ref", "value": format!("workspace:{workspace}") },
         ],
         "settings": { "model": "claude-opus-5-5", "effort": "high" },
-        "at": now(),
+        "sent_at": now(),
     })
 }
 
@@ -133,13 +133,13 @@ async fn 五十の客が_10_秒叩いても_誤りが無く_p99_が_1_秒未満(
             .await;
         assert_eq!(status, 201, "{answer}");
         ids.push(answer["id"].as_str().expect("id").to_owned());
-        let event = json!({ "issuer": "tpm", "by": format!("claude.session:s-{i}"), "type": "entered", "at": now() });
+        let event = json!({ "issuer": "tpm", "by": format!("claude.session:s-{i}"), "type": "entered", "sent_at": now() });
         let (status, _) = setup
             .send("PUT", &format!("/v1/events/setup-{i}"), Some(&event))
             .await;
         assert_eq!(status, 201);
         if i >= GROUPS {
-            let link = json!({ "issuer": "tpm", "type": "launched", "from": format!("claude.session:s-{}", i - GROUPS), "to": format!("claude.session:s-{i}"), "at": now() });
+            let link = json!({ "issuer": "tpm", "type": "launched", "from": format!("claude.session:s-{}", i - GROUPS), "to": format!("claude.session:s-{i}"), "sent_at": now() });
             let (status, _) = setup
                 .send("PUT", &format!("/v1/links/setup-{i}"), Some(&link))
                 .await;
@@ -187,14 +187,14 @@ async fn 五十の客が_10_秒叩いても_誤りが無く_p99_が_1_秒未満(
                         70..80 => (
                             "PUT",
                             format!("/v1/events/load-{c}-{n}"),
-                            Some(json!({ "issuer": "tpm", "by": by, "type": "reported_in", "detail": { "n": n }, "at": now() })),
+                            Some(json!({ "issuer": "tpm", "by": by, "type": "reported_in", "detail": { "n": n }, "sent_at": now() })),
                         ),
                         80..90 => {
                             let effort = ["low", "medium", "high", "xhigh", "max"][rng.below(5)];
                             (
                                 "PUT",
                                 format!("/v1/settings/load-{c}-{n}"),
-                                Some(json!({ "issuer": "tpm", "by": by, "model": "claude-opus-5-5", "effort": effort, "source": "observed", "at": now() })),
+                                Some(json!({ "issuer": "tpm", "by": by, "model": "claude-opus-5-5", "effort": effort, "source": "observed", "sent_at": now() })),
                             )
                         }
                         _ => (
