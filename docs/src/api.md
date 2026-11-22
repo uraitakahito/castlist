@@ -123,7 +123,7 @@
 }
 ```
 
-`state.present` は、状態（稼働中・停止）を替える出来事の最新（seq で）が `entered`・`reentered`・`forked` なら `true`、`cleared`・`exited`・`closed` なら `false`（まだ無ければ `false`・`presence` は `null`）。`state.inferred` は、その最新の出来事が推しの幕引き（`closed` で `detail.inferred` が JSON の true）なら `true`（再登場などで状態が替われば `false`。字の `"true"` は数えない）。無いアクターは 404。
+`state.present` は、状態（稼働中・停止）を替える出来事の最新（seq で）が `entered`・`reentered`・`forked` なら `true`、`cleared`・`exited`・`closed` なら `false`（まだ無ければ `false`・`presence` は `null`）。`state.inferred` は、今の帯を終わらせた出来事（最後の稼働にする出来事より後の、初めの停止にする出来事。タイムラインの帯と同じく、停止中の退場は数えない）が推しの幕引き（`closed` で `detail.inferred` が JSON の true）なら `true`。稼働中なら `false`。字の `"true"` は数えない。なので、推しの幕引きの後に遅れて来た退場では `true` のままで、退場の後に来た推しの幕引きでは `false` のまま。無いアクターは 404。
 
 ## 監査の検索
 

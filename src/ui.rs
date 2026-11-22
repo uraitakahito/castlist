@@ -873,6 +873,15 @@ struct MarkView {
     title: String,
 }
 
+/// 推しの幕引きの訳（`detail.reason`）の字。知らない訳と、訳の無い物は、推した者だけを書く。
+fn lost_reason(reason: Option<&str>) -> &'static str {
+    match reason {
+        Some("workspace_gone") => "居場所が消えた",
+        Some("superseded") => "居場所に別の session が入った",
+        _ => "tpm が落ちたと推した",
+    }
+}
+
 /// 印を付ける出来事。
 const MARK_EVENTS: [&str; 3] = ["compacted", "reported_in", "model_unreadable"];
 
@@ -933,13 +942,18 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
         .collect();
     // 出来事の印（行ごとに、印の順の種類と時刻）と、model と effort の替わり目（行ごとに、元の行）。
     let mut marks: Vec<Vec<(&str, &str)>> = vec![Vec::new(); nodes.len()];
+    // 推しの幕引き（行ごとに、受けた時刻と訳）。推しの切れの説明に使う。
+    let mut lost: Vec<Vec<(i64, Option<&str>)>> = vec![Vec::new(); nodes.len()];
     for e in &data.events {
         let (Some(&i), Some(t)) = (index.get(e.actor_id.as_str()), millis(&e.received_at)) else {
             continue;
         };
         match e.kind.as_str() {
             "entered" | "reentered" | "forked" => lanes[i].presence.push((t, Presence::In)),
-            "closed" if e.inferred => lanes[i].presence.push((t, Presence::Lost)),
+            "closed" if e.inferred => {
+                lanes[i].presence.push((t, Presence::Lost));
+                lost[i].push((t, e.reason.as_deref()));
+            }
             "cleared" | "exited" | "closed" => lanes[i].presence.push((t, Presence::Out)),
             kind if MARK_EVENTS.contains(&kind) => {
                 lanes[i].marks.push(t);
@@ -1037,13 +1051,20 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
                 "model と effort の記録なし".to_owned(),
             ),
         };
-        let until = if s.open_end {
+        // 推しの切れの訳: その切れの終わりか後の、初めの推しの幕引き。
+        let why = || {
+            let reason = lost[s.lane]
+                .iter()
+                .find(|(t, _)| *t >= s.end)
+                .and_then(|(_, r)| *r);
+            lost_reason(reason)
+        };
+        let until = if s.inferred && s.open_end {
+            format!("続く（表示する期間の後に推しの幕引き: {}）", why())
+        } else if s.open_end {
             "続く".to_owned()
         } else if s.inferred {
-            format!(
-                "{}（推し: 便りが途絶えた後、tpm が落ちたと推して閉じた）",
-                clock(s.end)
-            )
+            format!("{}（推し: {}）", clock(s.end), why())
         } else {
             clock(s.end)
         };

@@ -308,11 +308,28 @@ pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
         })
         .collect();
 
-    for s in &mut segments {
-        if let Some(c) = s.change {
-            let need = text_width(&lanes[s.lane].changes[c].label, LABEL_PX) + LABEL_PAD * 2;
-            s.label_x = room(s, &arrows, need).map(|x| x + LABEL_PAD);
+    // 帯の字は、同じ替わり目の切れが続く（推しの切れで切った）所では、続きを合わせた幅で探し、初めの切れにだけ書く。
+    let mut k = 0;
+    while k < segments.len() {
+        let mut j = k + 1;
+        while j < segments.len()
+            && segments[j].lane == segments[k].lane
+            && segments[j].change == segments[k].change
+            && segments[j].start == segments[j - 1].end
+        {
+            j += 1;
         }
+        if let Some(c) = segments[k].change {
+            let need =
+                text_width(&lanes[segments[k].lane].changes[c].label, LABEL_PX) + LABEL_PAD * 2;
+            let last = &segments[j - 1];
+            let run = Segment {
+                w: last.x + last.w - segments[k].x,
+                ..segments[k].clone()
+            };
+            segments[k].label_x = room(&run, &arrows, need).map(|x| x + LABEL_PAD);
+        }
+        k = j;
     }
 
     let rank_rows = u32::try_from(n).unwrap_or(u32::MAX / ROW_H);
@@ -1164,6 +1181,9 @@ mod tests {
         // 推しの切れも、その間の model と effort を持つ。
         assert_eq!(s[1].change, Some(0));
         assert!(!s[1].open_end);
+        // 同じ替わり目の字は、続く切れを合わせた幅で探し、初めの切れにだけ書く。
+        assert!(s[0].label_x.is_some(), "{l:?}");
+        assert_eq!(s[1].label_x, None, "{l:?}");
     }
 
     #[test]

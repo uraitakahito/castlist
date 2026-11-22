@@ -884,16 +884,18 @@ async fn 推しの幕引きで終わった者は_便りの後を推しの帯で�
     )
     .await;
     let body = html(&app, "/graph/timeline").await;
-    let lane = lane(svg(&body), &id);
-    let classes = segs(lane);
-    assert_eq!(classes.len(), 2, "{lane}");
-    assert!(!classes[0].contains("inferred"), "{lane}");
-    assert!(classes[1].contains("inferred"), "{lane}");
-    assert!(!lane.contains("class=\"open-end\""), "{lane}");
+    let strip = lane(svg(&body), &id);
+    let classes = segs(strip);
+    assert_eq!(classes.len(), 2, "{strip}");
+    assert!(!classes[0].contains("inferred"), "{strip}");
+    assert!(classes[1].contains("inferred"), "{strip}");
+    assert!(!strip.contains("class=\"open-end\""), "{strip}");
     assert!(
-        lane.contains("（推し: 便りが途絶えた後、tpm が落ちたと推して閉じた）"),
-        "{lane}"
+        strip.contains("（推し: 居場所が消えた）</title>"),
+        "{strip}"
     );
+    // 帯の字は、推しの切れで 2 度書かない。
+    assert!(strip.matches("class=\"seg-label\"").count() <= 1, "{strip}");
     let legend = section(&body, "legend");
     assert!(
         legend.contains("<span class=\"inferred-key\"></span>点線の帯: 便りが途絶えた後、tpm が落ちたと推して閉じた（推しの幕引きまで）"),
@@ -910,13 +912,14 @@ async fn 推しの幕引きで終わった者は_便りの後を推しの帯で�
         profile.contains("<span class=\"state off\">停止（推し）</span>"),
         "{profile}"
     );
-    // ふつうの幕引きは「停止」のまま。
+    // ふつうの幕引きは「停止」のまま、帯も推しにしない。
     put(
         &app,
         "/v1/events/l-4",
         &ev(lost, "reentered", json!({}), &at(0)),
     )
     .await;
+    tick().await;
     put(
         &app,
         "/v1/events/l-5",
@@ -928,6 +931,51 @@ async fn 推しの幕引きで終わった者は_便りの後を推しの帯で�
     assert!(
         line.contains("<span class=\"state off\">停止</span>"),
         "{line}"
+    );
+    let body = html(&app, "/graph/timeline").await;
+    let classes = segs(lane(svg(&body), &id))
+        .iter()
+        .map(|c| c.to_string())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        classes.iter().filter(|c| c.contains("inferred")).count(),
+        1,
+        "{classes:?}"
+    );
+    assert!(!classes.last().unwrap().contains("inferred"), "{classes:?}");
+    // 推しの幕引きの後に遅れた退場が来ても、一覧もタイムラインも推しのまま（今の帯を終わらせた出来事で決める）。
+    put(
+        &app,
+        "/v1/events/l-6",
+        &ev(lost, "reentered", json!({}), &at(0)),
+    )
+    .await;
+    tick().await;
+    put(
+        &app,
+        "/v1/events/l-7",
+        &ev(
+            lost,
+            "closed",
+            json!({ "inferred": true, "reason": "superseded" }),
+            &at(0),
+        ),
+    )
+    .await;
+    put(
+        &app,
+        "/v1/events/l-8",
+        &ev(lost, "exited", json!({}), &at(0)),
+    )
+    .await;
+    let line = row(&html(&app, "/").await, &id).to_owned();
+    assert!(line.contains("停止（推し）"), "{line}");
+    let body = html(&app, "/graph/timeline").await;
+    let strip = lane(svg(&body), &id);
+    assert!(segs(strip).last().unwrap().contains("inferred"), "{strip}");
+    assert!(
+        strip.contains("（推し: 居場所に別の session が入った）</title>"),
+        "{strip}"
     );
 }
 

@@ -765,6 +765,39 @@ async fn 推しの幕引きの後は_停止で推しの印が立ち_再登場で
 }
 
 #[tokio::test]
+async fn 推しの印は_今の帯を終わらせた出来事で決め_停止中の退場では替わらない() {
+    let app = App::start().await;
+    let lost = |id: &str| {
+        json!({ "issuer": "tpm", "by": id, "type": "closed",
+        "detail": { "inferred": true, "reason": "workspace_gone" }, "sent_at": at(0) })
+    };
+    // 推しの幕引きの後に、遅れた退場（推しが誤りで、その session が後で SessionEnd を送った）: 推しのまま。
+    let se1 = app.register(&ai("se", "s-1")).await;
+    app.put("/v1/events/k-1", &event(SE1, "entered", &at(0)))
+        .await;
+    app.put("/v1/events/k-2", &lost(SE1)).await;
+    app.put("/v1/events/k-3", &event(SE1, "exited", &at(0)))
+        .await;
+    let (_, actor) = app
+        .get(&format!("/v1/actors/{}", se1["id"].as_str().unwrap()))
+        .await;
+    assert_eq!(actor["state"]["present"], false);
+    assert_eq!(actor["state"]["inferred"], true, "{actor}");
+    // 退場の後に、推しの幕引き（控えを読んだ後に SessionEnd が割り込んだ）: ふつうの停止。
+    let se2 = app.register(&ai("se", "s-2")).await;
+    app.put("/v1/events/k-4", &event(SE2, "entered", &at(0)))
+        .await;
+    app.put("/v1/events/k-5", &event(SE2, "exited", &at(0)))
+        .await;
+    app.put("/v1/events/k-6", &lost(SE2)).await;
+    let (_, actor) = app
+        .get(&format!("/v1/actors/{}", se2["id"].as_str().unwrap()))
+        .await;
+    assert_eq!(actor["state"]["present"], false);
+    assert_eq!(actor["state"]["inferred"], false, "{actor}");
+}
+
+#[tokio::test]
 async fn 図の点と線は_絞った外の一歩先も含める() {
     let app = App::start().await;
     let (se1, se2, pm) = three(&app).await;
