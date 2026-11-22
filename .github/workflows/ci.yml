@@ -55,16 +55,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        n: [1, 2, 3, 4, 5]
-        mode: [full, normal, nockpt]
+        n: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     env:
-      DIAG_MODE: ${{ matrix.mode }}
+      DIAG_MODE: full
+      TMPDIR: /dev/shm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
       # 本物の binary を起こし、50 の客が 10 秒叩く（誤りと 5xx が 0・p99 が 1 秒未満。tests/load.rs）。
       - run: |
           set +e
+          df -h /dev/shm | tail -1
           cargo test --locked --release --test load -- --ignored --nocapture 2>&1 | tee load.log
           st=$?
           echo "DIAG lines: $(grep -c DIAG load.log) commit>50ms: $(grep -cE 'commit=([5-9][0-9]|[0-9]{3,})(\.[0-9]+)?ms|commit=[0-9.]+s' load.log)"
