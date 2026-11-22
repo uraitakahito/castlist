@@ -9,7 +9,7 @@
 //! - 期間の欄は browser の日時の欄（`datetime-local`）。送られた字は日本時間として RFC 3339 にしてから、API と同じ引数で読む
 //!   （[`period`]。API の `/v1/` は RFC 3339 だけを受けるまま）。欄の横に、期間をすぐ選ぶ link（[`quick_links`]）を置く。
 
-use crate::api::{ApiError, GRAPH_PARAMS, GraphQuery};
+use crate::api::{ApiError, GRAPH_PARAMS, GraphQuery, bad_request};
 use crate::db::{self, ActorDetail, Db};
 use crate::search::{self, ActorItem, ActorQuery, MAX_DEPTH, Pairs, Params};
 use crate::timeline::{self, END_ROOM, MARGIN, Presence, ROW_H};
@@ -146,9 +146,17 @@ fn time(iso: &str) -> Time {
 const LIST_PERIOD: [&str; 2] = ["active_from", "active_to"];
 const GRAPH_PERIOD: [&str; 2] = ["from", "to"];
 
+/// 期間の欄の引数の名と、画面の見出しの字（読めない値の 400 の画面に書く）。
+const PERIOD_LABELS: [(&str, &str); 4] = [
+    ("active_from", "稼働した期間（から）"),
+    ("active_to", "稼働した期間（まで）"),
+    ("from", "登録した期間（から）"),
+    ("to", "登録した期間（まで）"),
+];
+
 /// 期間の欄の値を RFC 3339 にする。browser の日時の欄（`datetime-local`）が送る
 /// `YYYY-MM-DDTHH:MM`（`:SS`・`:SS.sss` も）は日本時間として `+09:00` を付ける。
-/// RFC 3339 の値（前の link）は、そのまま。どちらでもない値もそのまま返し、引数を読む所が 400 にする。
+/// RFC 3339 の値（前の link）は、そのまま。どちらでもない値もそのまま返す（[`period`] が 400 にする）。
 fn from_local(value: &str) -> String {
     if OffsetDateTime::parse(value, &Rfc3339).is_ok() {
         return value.to_owned();
@@ -191,13 +199,24 @@ fn to_local(value: &str) -> String {
     out
 }
 
-/// 引数のうち、期間の欄（`names`）の値を RFC 3339 にそろえる（[`from_local`]）。
-fn period(pairs: &mut Pairs, names: [&str; 2]) {
+/// 引数のうち、期間の欄（`names`）の値を RFC 3339 にそろえる（[`from_local`]）。読めない値は、欄の見出しと
+/// 直し方を書いた 400（API の字「RFC 3339 の時刻」は、欄から打つ人には硬いので、画面では使わない）。
+fn period(pairs: &mut Pairs, names: [&str; 2]) -> Result<(), ApiError> {
     for (name, value) in pairs.iter_mut() {
         if names.contains(&name.as_str()) {
             *value = from_local(value);
+            if OffsetDateTime::parse(value, &Rfc3339).is_err() {
+                let label = PERIOD_LABELS
+                    .iter()
+                    .find(|(n, _)| n == name)
+                    .map_or(name.as_str(), |(_, l)| l);
+                return Err(bad_request(format!(
+                    "「{label}」の日時を読めません。日時の欄で選ぶか、2026-11-22T13:00 の形で入れてください。"
+                )));
+            }
         }
     }
+    Ok(())
 }
 
 /// 期間をすぐ選ぶ link の名と、その期間（RFC 3339・`+09:00`。秒まで）。`now` から決める。
@@ -469,7 +488,7 @@ pub async fn list(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>)
 async fn list_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<ListPage, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
-    period(&mut pairs, LIST_PERIOD);
+    period(&mut pairs, LIST_PERIOD)?;
     let form = Form::new(&pairs);
     let now = OffsetDateTime::now_utc();
     let quick = quick_links("/", &pairs, LIST_PERIOD, now);
@@ -655,7 +674,7 @@ pub async fn tree(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>)
 async fn tree_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Response, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
-    period(&mut pairs, GRAPH_PERIOD);
+    period(&mut pairs, GRAPH_PERIOD)?;
     let form = TreeForm::new(&pairs);
     let now = OffsetDateTime::now_utc();
     let quick = quick_links("/graph/tree", &pairs, GRAPH_PERIOD, now);
@@ -893,7 +912,7 @@ pub async fn network(q: Result<Query<Pairs>, QueryRejection>) -> Response {
 fn network_page(q: Result<Query<Pairs>, QueryRejection>) -> Result<NetworkPage, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
-    period(&mut pairs, GRAPH_PERIOD);
+    period(&mut pairs, GRAPH_PERIOD)?;
     let form = TreeForm::new(&pairs);
     let quick = quick_links(
         "/graph/network",
@@ -950,7 +969,7 @@ async fn timeline_page(
 ) -> Result<Response, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
-    period(&mut pairs, GRAPH_PERIOD);
+    period(&mut pairs, GRAPH_PERIOD)?;
     let form = TreeForm::new(&pairs);
     let now = OffsetDateTime::now_utc();
     let quick = quick_links("/graph/timeline", &pairs, GRAPH_PERIOD, now);
@@ -1427,7 +1446,7 @@ mod tests {
             ("active_to", "2026-11-22T12:30:00+09:00"),
             ("at", "2026-11-22T11:00"),
         ]);
-        period(&mut list, LIST_PERIOD);
+        assert!(period(&mut list, LIST_PERIOD).is_ok());
         assert_eq!(
             list,
             pairs(&[
@@ -1439,7 +1458,7 @@ mod tests {
             ])
         );
         let mut graph = pairs(&[("from", "2026-11-22T00:00"), ("to", "2026-11-23T00:00")]);
-        period(&mut graph, GRAPH_PERIOD);
+        assert!(period(&mut graph, GRAPH_PERIOD).is_ok());
         assert_eq!(
             graph,
             pairs(&[
