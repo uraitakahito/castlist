@@ -736,6 +736,20 @@ async fn 相関図は_絞った外の一歩先も含める() {
     assert_eq!(status, StatusCode::OK, "{graph}");
     assert_eq!(graph["nodes"], json!([]));
     assert_eq!(graph["edges"], json!([]));
+
+    // 問い合わせの引数の誤りは 400 で、訳に引数の名が入る（監査の検索と同じ。docs/src/api.md）。
+    for (uri, name) in [
+        ("/v1/graph?colour=red", "colour"),
+        ("/v1/graph?from=きのう", "from"),
+        ("/v1/graph?to=2026-13-01", "to"),
+        ("/v1/graph?label=nocolon", "label"),
+        ("/v1/graph?label=a:b&label=c:d", "label"),
+    ] {
+        let (status, answer) = app.get(uri).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{uri}: {answer}");
+        let message = answer["error"].as_str().unwrap_or_default();
+        assert!(message.contains(name), "{uri}: {message}");
+    }
 }
 
 // --- そのほか ---
