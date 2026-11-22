@@ -5,7 +5,7 @@
 <h1>相関図 <span class="kind"><a href="/">一覧へ</a> ・ <a href="/graph/tree">系図へ</a> ・ <a href="/graph/timeline">タイムラインへ</a></span></h1>
 <form class="filters" method="get" action="/graph/network">
 <fieldset>
-<legend>絞り込み（系図と同じ条件です。条件に合うアクターと、その 1 本先の線の相手を表示します。空の欄は使いません）</legend>
+<legend>絞り込み</legend>
 <div class="fields">
 <label>ラベル <input name="label" value="{{ form.label }}" placeholder="tpm.key:t-23zs"></label>
 <label>登録した期間（から） <input type="datetime-local" step="any" name="from" value="{{ form.from }}"></label>
@@ -18,7 +18,7 @@
 <noscript><p class="noscript note">この画面は JavaScript で描きます。JavaScript を切っている時は、同じ条件の<a href="{{ tree }}">系図</a>か<a href="{{ timeline }}">タイムライン</a>をお使いください（どちらも JavaScript を使いません）。</p></noscript>
 <div id="network-controls" class="filters" hidden>
 <fieldset>
-<legend>表示する点を選ぶ（このページの中だけで、合わない点とその線を隠します）</legend>
+<legend>表示する点を選ぶ</legend>
 <div class="fields">
 <label>model <select id="f-model"><option value="">すべて</option></select></label>
 <label>effort <select id="f-effort"><option value="">すべて</option></select></label>
