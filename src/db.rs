@@ -18,6 +18,9 @@ use time::format_description::well_known::Rfc3339;
 
 /// 書く接続を待つ長さ。過ぎれば「混んでいる」で返す。
 pub const WRITE_WAIT: Duration = Duration::from_secs(2);
+/// 重い読み（相関図・時間の帯）だけが使う、読むだけの接続の本数。軽い読みの 4 本とは別にして、重い読みが
+/// 引き当てなどの軽い読みの接続を取らないようにする。
+pub const HEAVY_READS: u32 = 2;
 /// 出し手の時刻と castlist の時計が、これより離れていれば clock_skew を立てる。
 pub const SKEW: time::Duration = time::Duration::minutes(5);
 
@@ -119,6 +122,8 @@ const CLOCK: &str = "select max(t) from (
 #[derive(Clone)]
 pub struct Db {
     read: SqlitePool,
+    /// 重い読みだけが使う、読むだけの接続（[`HEAVY_READS`] 本）。
+    heavy: SqlitePool,
     write: SqlitePool,
     path: PathBuf,
 }
@@ -467,6 +472,12 @@ impl Db {
                     .collect(),
             ));
         }
+        let heavy = SqlitePoolOptions::new()
+            .max_connections(HEAVY_READS)
+            .acquire_timeout(Duration::from_secs(5))
+            .connect_with(options.clone().read_only(true))
+            .await
+            .map_err(OpenError::Db)?;
         let read = SqlitePoolOptions::new()
             .max_connections(4)
             .acquire_timeout(Duration::from_secs(5))
@@ -475,9 +486,15 @@ impl Db {
             .map_err(OpenError::Db)?;
         Ok(Self {
             read,
+            heavy,
             write,
             path: path.to_owned(),
         })
+    }
+
+    /// 重い読みだけが使う接続（[`HEAVY_READS`] 本・読むだけ）。
+    pub fn heavy(&self) -> &SqlitePool {
+        &self.heavy
     }
 
     /// 読む接続（4 本・読むだけ）。
@@ -492,6 +509,7 @@ impl Db {
 
     pub async fn close(&self) {
         self.read.close().await;
+        self.heavy.close().await;
         self.write.close().await;
     }
 }
@@ -1029,7 +1047,7 @@ impl Db {
         from: &str,
         to: &str,
     ) -> Result<Graph, sqlx::Error> {
-        let mut tx = self.read.begin().await?;
+        let mut tx = self.heavy.begin().await?;
         let (graph, _) = graph_in(&mut tx, label, from, to).await?;
         tx.commit().await?;
         Ok(graph)
@@ -1042,7 +1060,7 @@ impl Db {
         from: &str,
         to: &str,
     ) -> Result<Timeline, sqlx::Error> {
-        let mut tx = self.read.begin().await?;
+        let mut tx = self.heavy.begin().await?;
         let (graph, all) = graph_in(&mut tx, label, from, to).await?;
         let events: Vec<Moment> = sqlx::query_as(TIMELINE_EVENTS)
             .bind(&all)

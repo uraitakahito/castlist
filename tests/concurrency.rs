@@ -413,3 +413,67 @@ async fn アクター_500_の時間の帯を組む間も_引き当ては_100_ms_
     assert!(rendered > 0, "時間の帯を 1 度も組めていない");
     println!("一番遅い引き当て: {slowest:?}・組んだ時間の帯: {rendered}");
 }
+
+/// 重い読み（相関図・時間の帯）は、読む接続 4 本のうち 2 本までしか同時に使わない。残りの 2 本は、いつも引き当てなどの
+/// 軽い読みに空いている（4 本を重い読みが占めると、引き当てが空きを待ち、100 ms を超えることがあった。2026-11-23 の CI）。
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn 重い読みは読む接続を_2_本までしか使わない() {
+    let app = App::start().await;
+    app.register(&common::app::human("pm")).await;
+    for i in 0..300 {
+        app.register(&ai("se", &format!("s-{i}"))).await;
+        let me = format!("claude.session:s-{i}");
+        let (status, answer) = app
+            .put(
+                &format!("/v1/links/l-{i}"),
+                &common::app::link("launched", "tpm.person:pm", &me),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{answer}");
+        let (status, answer) = app
+            .put(
+                &format!("/v1/events/e-{i}"),
+                &common::app::event(&me, "entered", &at(0)),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{answer}");
+    }
+    let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let renders: Vec<_> = (0..8)
+        .map(|i| {
+            let router = app.app.clone();
+            let stop = stop.clone();
+            let path = if i % 2 == 0 {
+                "/graph/timeline"
+            } else {
+                "/graph/tree"
+            };
+            tokio::spawn(async move {
+                while !stop.load(std::sync::atomic::Ordering::Relaxed) {
+                    let response = router
+                        .clone()
+                        .oneshot(request("GET", path, None))
+                        .await
+                        .unwrap();
+                    assert_eq!(response.status(), StatusCode::OK);
+                    let _ = http_body_util::BodyExt::collect(response.into_body())
+                        .await
+                        .unwrap();
+                }
+            })
+        })
+        .collect();
+    let mut most = 0;
+    let started = Instant::now();
+    while started.elapsed() < Duration::from_secs(2) {
+        let pool = app.db.read();
+        let in_use = pool.size() as usize - pool.num_idle();
+        most = most.max(in_use);
+        tokio::time::sleep(Duration::from_millis(2)).await;
+    }
+    stop.store(true, std::sync::atomic::Ordering::Relaxed);
+    for task in renders {
+        task.await.unwrap();
+    }
+    assert!(most <= 2, "重い読みが同時に使った読む接続: {most} 本");
+}
