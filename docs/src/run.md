@@ -48,7 +48,6 @@ container stop castlist.box
 container start castlist.box
 ```
 
-- 止めている間、castlist は答えない（担当の登録と出来事は送れない）。DB は volume に残る。
 - host の機械を起こし直すと止まったままになる。`container system start` の後に `container start castlist.box` を打ち、「確かめる」をする。
 
 ## 確かめる
