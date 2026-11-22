@@ -454,24 +454,42 @@ pub async fn actor(State(db): State<Db>, Path(id): Path<String>) -> Answer {
     }
 }
 
+/// 相関図の引数の名（`GET /v1/graph` と、画面の `GET /graph/tree`）。どれも 1 つだけ。
+pub(crate) const GRAPH_PARAMS: &[&str] = &["label", "from", "to"];
+
+/// 相関図の絞り: 札（鍵・値）と、登録の受けた時刻の窓。
+pub(crate) struct GraphQuery {
+    pub(crate) label: Option<(String, String)>,
+    pub(crate) from: String,
+    pub(crate) to: String,
+}
+
+impl GraphQuery {
+    /// 引数を読む。誤りは、監査の検索と同じく 400（訳に引数の名）。
+    pub(crate) fn new(p: &Params) -> Result<Self, ApiError> {
+        Ok(Self {
+            label: p
+                .one("label")
+                .map(|v| pair("label", v, "鍵:値"))
+                .transpose()?,
+            from: p.time("from")?.unwrap_or_default(),
+            to: p.time("to")?.unwrap_or_else(|| "9999".to_owned()),
+        })
+    }
+
+    pub(crate) async fn run(&self, db: &Db) -> Result<db::Graph, ApiError> {
+        let label = self.label.as_ref().map(|(k, v)| (k.as_str(), v.as_str()));
+        Ok(db.graph(label, &self.from, &self.to).await?)
+    }
+}
+
 /// `GET /v1/graph?label=key:value&from=…&to=…`: 相関図（点と線）。
 /// 引数の誤りは、監査の検索と同じく 400（訳に引数の名）。
 pub async fn graph(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Answer {
-    let p = Params::parse(q, &["label", "from", "to"], &[])?;
-    let label = p
-        .one("label")
-        .map(|v| pair("label", v, "鍵:値"))
-        .transpose()?;
-    let from = p.time("from")?.unwrap_or_default();
-    let to = p.time("to")?.unwrap_or_else(|| "9999".to_owned());
+    let p = Params::parse(q, GRAPH_PARAMS, &[])?;
+    let query = GraphQuery::new(&p)?;
     let as_of = db::now();
-    let graph = db
-        .graph(
-            label.as_ref().map(|(k, v)| (k.as_str(), v.as_str())),
-            &from,
-            &to,
-        )
-        .await?;
+    let graph = query.run(&db).await?;
     Ok(Json(json!({ "as_of": as_of, "nodes": graph.nodes, "edges": graph.edges })).into_response())
 }
 

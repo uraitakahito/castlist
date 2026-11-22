@@ -1,13 +1,14 @@
-//! 画面: アクターの一覧（`/`）とプロフィール（`/actors/{id}`）と、それが読む CSS（`/static/site.css`）。
+//! 画面: アクターの一覧（`/`）とプロフィール（`/actors/{id}`）と系図（`/graph/tree`）と、それが読む CSS（`/static/site.css`）。
 //!
 //! - サーバーが HTML を組んで返す（askama。`templates/`）。字はみな HTML として逃がす。script は使わない。
 //! - CSP（[`crate::CSP`]）が inline の script と style を断るので、style は castlist が配る CSS の file だけ。
 //! - 一覧の絞りは、監査の検索の API（`GET /v1/actors`）と同じ引数を URL に置く（[`search::actor_query`] で読む）。
 //! - 時刻は、castlist が受けた時刻（UTC）を日本の時刻（[`OFFSET`]）で出し、ISO の字を `<time datetime>` と `title` に置く。
 
-use crate::api::ApiError;
+use crate::api::{ApiError, GRAPH_PARAMS, GraphQuery};
 use crate::db::{self, ActorDetail, Db};
 use crate::search::{self, ActorItem, ActorQuery, MAX_DEPTH, Pairs, Params};
+use crate::tree::{self, text_width};
 use askama::Template;
 use axum::extract::rejection::QueryRejection;
 use axum::extract::{Path, Query, State};
@@ -499,9 +500,235 @@ async fn profile_page(db: Db, id: &str) -> Result<Option<ProfilePage>, ApiError>
     }))
 }
 
-/// `GET /graph/tree?label=…&from=…&to=…`: 系図（相関図 A）。
-pub async fn tree(State(_db): State<Db>, _q: Result<Query<Pairs>, QueryRejection>) -> Response {
-    StatusCode::NOT_IMPLEMENTED.into_response()
+/// `GET /graph/tree?label=…&from=…&to=…`: 系図（相関図 A）。引数は `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
+/// 並べる計算と HTML を組むのは、tokio の糸を塞がないよう spawn_blocking の糸で行う。
+pub async fn tree(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Response {
+    match tree_page(db, q).await {
+        Ok(response) => response,
+        Err(e) => error_page(e),
+    }
+}
+
+async fn tree_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Response, ApiError> {
+    let mut pairs = search::pairs(q)?;
+    pairs.retain(|(_, v)| !v.is_empty());
+    let form = TreeForm::new(&pairs);
+    let p = Params::new(pairs, GRAPH_PARAMS, &[])?;
+    let query = GraphQuery::new(&p)?;
+    let as_of = db::now();
+    let graph = query.run(&db).await?;
+    tokio::task::spawn_blocking(move || {
+        let page = TreePage {
+            css: &CSS_HREF,
+            count: graph.nodes.len(),
+            svg: tree_svg(&graph),
+            form,
+            as_of: time(&as_of),
+        };
+        render(StatusCode::OK, &page)
+    })
+    .await
+    .map_err(|e| {
+        eprintln!("系図を組めない: {e}");
+        ApiError(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "系図を組めない".to_owned(),
+        )
+    })
+}
+
+#[derive(Template)]
+#[template(path = "tree.html")]
+struct TreePage {
+    css: &'static str,
+    form: TreeForm,
+    count: usize,
+    /// 点が無ければ無い。
+    svg: Option<TreeSvg>,
+    as_of: Time,
+}
+
+/// 系図の絞りの form（今の値）。
+#[derive(Default)]
+struct TreeForm {
+    label: String,
+    from: String,
+    to: String,
+}
+
+impl TreeForm {
+    fn new(pairs: &Pairs) -> Self {
+        let mut form = Self::default();
+        for (name, value) in pairs {
+            match name.as_str() {
+                "label" => form.label.clone_from(value),
+                "from" => form.from.clone_from(value),
+                "to" => form.to.clone_from(value),
+                _ => {}
+            }
+        }
+        form
+    }
+}
+
+struct TreeSvg {
+    width: u32,
+    height: u32,
+    boxes: Vec<TreeBox>,
+    lines: Vec<TreeLine>,
+}
+
+/// 系図の箱 1 つ（置き場と 3 行の字）。
+struct TreeBox {
+    href: String,
+    name: String,
+    human: bool,
+    x: u32,
+    y: u32,
+    w: u32,
+    h: u32,
+    /// 字を置く横の真ん中と、3 行の字の下の線。
+    cx: u32,
+    y1: u32,
+    y2: u32,
+    y3: u32,
+    /// 2 行目: 種類と、最新の model · effort（`claude-` を落とす）。
+    detail: String,
+    present: bool,
+    /// 3 行目の、居るかの後の出来事の名（無ければ空）。
+    presence: String,
+}
+
+struct TreeLine {
+    class: &'static str,
+    d: String,
+}
+
+/// 名の字の大きさ（太字）と、2・3 行目の字の大きさ（px。site.css の `.tree` と同じ）。
+const NAME_PX: u32 = 13;
+const SUB_PX: u32 = 11;
+/// 箱の字の左右の余白と、箱の狭さの下限。
+const BOX_PAD: u32 = 12;
+const BOX_MIN: u32 = 96;
+
+/// 系図の SVG に置く物。点が無ければ None。
+fn tree_svg(graph: &db::Graph) -> Option<TreeSvg> {
+    if graph.nodes.is_empty() {
+        return None;
+    }
+    let index: BTreeMap<&str, usize> = graph
+        .nodes
+        .iter()
+        .enumerate()
+        .map(|(i, n)| (n.actor.id.as_str(), i))
+        .collect();
+    let texts: Vec<(String, String, String)> = graph
+        .nodes
+        .iter()
+        .map(|n| {
+            let kind = kind_name(&n.actor.kind);
+            let detail = match &n.current_settings {
+                Some(s) => format!("{kind} · {} · {}", short_model(&s.model), s.effort),
+                None => kind.to_owned(),
+            };
+            let state = n.state.as_ref();
+            let present = if state.is_some_and(|s| s.present) {
+                "いる"
+            } else {
+                "いない"
+            };
+            let presence = state
+                .and_then(|s| s.presence.as_deref())
+                .map(|p| format!("{present} · {}", event_name(p)))
+                .unwrap_or_else(|| present.to_owned());
+            (n.actor.name.clone(), detail, presence)
+        })
+        .collect();
+    let nodes: Vec<tree::Node> = graph
+        .nodes
+        .iter()
+        .zip(&texts)
+        .map(|(n, (name, detail, presence))| tree::Node {
+            // 太字は 1 px 大きく見積もる。
+            width: (text_width(name, NAME_PX + 1)
+                .max(text_width(detail, SUB_PX))
+                .max(text_width(presence, SUB_PX))
+                + BOX_PAD * 2)
+                .max(BOX_MIN),
+            order: n
+                .state
+                .as_ref()
+                .and_then(|s| s.entered_at.clone())
+                .unwrap_or_else(|| n.actor.received_at.clone()),
+        })
+        .collect();
+    let edges: Vec<tree::Edge> = graph
+        .edges
+        .iter()
+        .filter_map(|e| {
+            let kind = match e.kind.as_str() {
+                "launched" => tree::Kind::Launched,
+                "continued" => tree::Kind::Continued,
+                _ => return None,
+            };
+            Some(tree::Edge {
+                from: *index.get(e.from_actor.as_str())?,
+                to: *index.get(e.to_actor.as_str())?,
+                kind,
+            })
+        })
+        .collect();
+    let layout = tree::layout(&nodes, &edges);
+    let boxes = graph
+        .nodes
+        .iter()
+        .zip(texts)
+        .zip(&layout.boxes)
+        .map(|((n, (name, detail, _)), r)| {
+            let state = n.state.as_ref();
+            TreeBox {
+                href: format!("/actors/{}", n.actor.id),
+                name,
+                human: n.actor.kind == "human",
+                x: r.x,
+                y: r.y,
+                w: r.w,
+                h: r.h,
+                cx: r.x + r.w / 2,
+                y1: r.y + 20,
+                y2: r.y + 37,
+                y3: r.y + 52,
+                detail,
+                present: state.is_some_and(|s| s.present),
+                presence: state
+                    .and_then(|s| s.presence.as_deref())
+                    .map(|p| event_name(p).to_owned())
+                    .unwrap_or_default(),
+            }
+        })
+        .collect();
+    let lines = layout
+        .lines
+        .into_iter()
+        .map(|l| TreeLine {
+            class: match l.kind {
+                tree::Kind::Launched => "edge launched",
+                tree::Kind::Continued => "edge continued",
+            },
+            d: l.d,
+        })
+        .collect();
+    Some(TreeSvg {
+        width: layout.width,
+        height: layout.height,
+        boxes,
+        lines,
+    })
+}
+
+/// model の名を短くする（`claude-opus-5-5` → `opus-5-5`）。
+fn short_model(model: &str) -> &str {
+    model.strip_prefix("claude-").unwrap_or(model)
 }
 
 /// 起こした人の鎖: このアクターから、起こした・継がせた線を上り、人で止める。根から順に返す。

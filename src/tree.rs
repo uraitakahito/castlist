@@ -7,7 +7,13 @@
 //! - 部分木ごとに横の幅を取って並べるので、箱は重ならない。同じ入力からは、いつも同じ答え。
 
 /// 箱の高さ（3 行）。
-pub const BOX_H: u32 = 0;
+pub const BOX_H: u32 = 58;
+/// 兄弟の箱の間（横）。
+pub const H_GAP: u32 = 24;
+/// 段の間（縦）。
+pub const V_GAP: u32 = 48;
+/// 図の縁の余白。
+pub const MARGIN: u32 = 16;
 
 /// 線の種類。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -61,13 +67,182 @@ pub struct Layout {
 }
 
 /// 字の幅（px）の見積もり。字の大きさ `px` に、ASCII は 0.62 字、ほか（漢字・仮名・記号）は 1 字を掛けて足し、切り上げる。
-pub fn text_width(_s: &str, _px: u32) -> u32 {
-    0
+pub fn text_width(s: &str, px: u32) -> u32 {
+    // 百分の一の字で数える（小数を使わない）。
+    let hundredths: u32 = s.chars().map(|c| if c.is_ascii() { 62 } else { 100 }).sum();
+    (hundredths * px).div_ceil(100)
 }
 
 /// 点と線を並べる。
-pub fn layout(_nodes: &[Node], _edges: &[Edge]) -> Layout {
-    Layout::default()
+pub fn layout(nodes: &[Node], edges: &[Edge]) -> Layout {
+    let n = nodes.len();
+    if n == 0 {
+        return Layout::default();
+    }
+    let edges: Vec<&Edge> = edges
+        .iter()
+        .filter(|e| e.from < n && e.to < n && e.from != e.to)
+        .collect();
+    let up = uplinks(n, &edges);
+
+    // 兄弟は（並べる順の鍵・添字）の順。
+    let by_order = |list: &mut Vec<usize>| {
+        list.sort_by(|&a, &b| (&nodes[a].order, a).cmp(&(&nodes[b].order, b)))
+    };
+    let mut kids = vec![Vec::new(); n];
+    let mut next = vec![Vec::new(); n];
+    let mut roots = Vec::new();
+    for (i, u) in up.iter().enumerate() {
+        match u {
+            Some((p, Kind::Launched)) => kids[*p].push(i),
+            Some((p, Kind::Continued)) => next[*p].push(i),
+            None => roots.push(i),
+        }
+    }
+    for list in kids.iter_mut().chain(next.iter_mut()) {
+        by_order(list);
+    }
+    by_order(&mut roots);
+    // 並べる上の子: 起こした子を順に、それぞれのすぐ右に、継いだ後（その後も）を足す。
+    let children: Vec<Vec<usize>> = kids.iter().map(|k| with_successors(k, &next)).collect();
+    let top = with_successors(&roots, &next);
+
+    // 段（深さ）と、上から順の並び。
+    let mut depth = vec![0_u32; n];
+    let mut preorder = Vec::with_capacity(n);
+    let mut stack: Vec<usize> = top.iter().rev().copied().collect();
+    while let Some(i) = stack.pop() {
+        preorder.push(i);
+        for &c in children[i].iter().rev() {
+            depth[c] = depth[i] + 1;
+            stack.push(c);
+        }
+    }
+
+    // 部分木の幅: 自分の箱と、子の部分木を並べた幅の、広い方。
+    let row = |list: &[usize], span: &[u32]| -> u32 {
+        let gaps = u32::try_from(list.len().saturating_sub(1)).unwrap_or(u32::MAX);
+        list.iter().map(|&c| span[c]).sum::<u32>() + H_GAP * gaps
+    };
+    let mut span = vec![0_u32; n];
+    for &i in preorder.iter().rev() {
+        span[i] = nodes[i].width.max(row(&children[i], &span));
+    }
+
+    // 部分木ごとに左の端を決め、箱は部分木の真ん中、子の並びも部分木の真ん中に置く。
+    let mut left = vec![0_u32; n];
+    let mut cursor = MARGIN;
+    for &t in &top {
+        left[t] = cursor;
+        cursor += span[t] + H_GAP;
+    }
+    let mut boxes = vec![Rect::default(); n];
+    for &i in &preorder {
+        boxes[i] = Rect {
+            x: left[i] + (span[i] - nodes[i].width) / 2,
+            y: MARGIN + depth[i] * (BOX_H + V_GAP),
+            w: nodes[i].width,
+            h: BOX_H,
+        };
+        let mut x = left[i] + (span[i] - row(&children[i], &span)) / 2;
+        for &c in &children[i] {
+            left[c] = x;
+            x += span[c] + H_GAP;
+        }
+    }
+    let deepest = depth.iter().copied().max().unwrap_or(0);
+    let lines = edges
+        .iter()
+        .map(|e| Line {
+            from: e.from,
+            to: e.to,
+            kind: e.kind,
+            d: path(e, &boxes),
+        })
+        .collect();
+    Layout {
+        width: cursor - H_GAP + MARGIN,
+        height: MARGIN * 2 + (deepest + 1) * BOX_H + deepest * V_GAP,
+        boxes,
+        lines,
+    }
+}
+
+/// 点ごとの、並べる時の上（起こした者。無ければ継がせた者）。どちらも初めの線を使う。輪になれば切る。
+fn uplinks(n: usize, edges: &[&Edge]) -> Vec<Option<(usize, Kind)>> {
+    let mut up: Vec<Option<(usize, Kind)>> = vec![None; n];
+    for kind in [Kind::Launched, Kind::Continued] {
+        for e in edges.iter().filter(|e| e.kind == kind) {
+            if up[e.to].is_none() {
+                up[e.to] = Some((e.from, kind));
+            }
+        }
+    }
+    // 上を辿り、辿っている道に戻れば、そこで切る（0: まだ・1: 辿っている・2: 済み）。
+    let mut state = vec![0_u8; n];
+    for start in 0..n {
+        let mut path = Vec::new();
+        let mut i = start;
+        while state[i] == 0 {
+            state[i] = 1;
+            path.push(i);
+            match up[i] {
+                Some((p, _)) if state[p] == 1 => {
+                    up[i] = None;
+                    break;
+                }
+                Some((p, _)) => i = p,
+                None => break,
+            }
+        }
+        for i in path {
+            state[i] = 2;
+        }
+    }
+    up
+}
+
+/// 並びの点のそれぞれのすぐ後に、その点を継いだ後（さらにその後も）を差し込む。
+fn with_successors(list: &[usize], next: &[Vec<usize>]) -> Vec<usize> {
+    let mut out = Vec::new();
+    let mut stack: Vec<usize> = list.iter().rev().copied().collect();
+    while let Some(i) = stack.pop() {
+        out.push(i);
+        stack.extend(next[i].iter().rev());
+    }
+    out
+}
+
+/// 線の道（SVG の path の `d`）。
+/// - 下の段へ: 元の箱の下の真ん中から、段の間で折れて、先の箱の上の真ん中へ。
+/// - 同じ段で、間にほかの箱が無い: 元の箱の右（左）の真ん中から、先の箱の左（右）の真ん中へ。
+/// - 同じ段で、間に箱がある: 段の下をくぐる弧。
+/// - 上の段へ（輪を切った線など）: 箱の真ん中どうしを結ぶ。
+fn path(e: &Edge, boxes: &[Rect]) -> String {
+    let (a, b) = (&boxes[e.from], &boxes[e.to]);
+    let (ax, bx) = (a.x + a.w / 2, b.x + b.w / 2);
+    if b.y > a.y {
+        let bend = b.y - V_GAP / 2;
+        return format!("M{ax},{} V{bend} H{bx} V{}", a.y + a.h, b.y);
+    }
+    if b.y == a.y {
+        let (lo, hi) = if a.x < b.x { (a, b) } else { (b, a) };
+        let between = boxes
+            .iter()
+            .any(|o| o.y == a.y && o.x >= lo.x + lo.w && o.x + o.w <= hi.x);
+        let mid = a.y + a.h / 2;
+        if !between {
+            let (from, to) = if a.x < b.x {
+                (a.x + a.w, b.x)
+            } else {
+                (a.x, b.x + b.w)
+            };
+            return format!("M{from},{mid} H{to}");
+        }
+        let (bottom, dip) = (a.y + a.h, a.y + a.h + V_GAP * 2 / 5);
+        return format!("M{ax},{bottom} C{ax},{dip} {bx},{dip} {bx},{bottom}");
+    }
+    format!("M{ax},{} L{bx},{}", a.y + a.h / 2, b.y + b.h / 2)
 }
 
 #[cfg(test)]
