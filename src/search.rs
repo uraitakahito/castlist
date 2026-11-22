@@ -32,7 +32,7 @@ pub(crate) const MAX_DEPTH: u32 = 20;
 /// 一覧の 1 行（アクター）。初めの登場・最後の退場・居るか・最新の model と effort は、
 /// アクター 1 つごとの「order by seq limit 1」で引く（events(actor_id, type, seq)・settings(actor_id, seq)）。
 /// 時計のずれた行を持つか（skewed）も、アクター 1 つごとに引く（画面の印。API の答えには出さない）。
-const ACTOR_ITEM: &str =
+const ACTOR_ITEM: &str = concat!(
     "select a.seq, a.id, a.name, a.kind, a.issuer, a.sent_at, a.received_at, a.clock_skew,
        (select e.received_at from events e
         where e.actor_id = a.id and e.type in ('entered', 'reentered', 'forked')
@@ -51,6 +51,9 @@ const ACTOR_ITEM: &str =
         where e.actor_id = a.id
           and e.type in ('entered', 'reentered', 'forked', 'cleared', 'exited', 'closed')
         order by e.seq desc limit 1) as presence,
+       ",
+    crate::inferred_sql!("a.id"),
+    " as inferred,
        (a.clock_skew
         or exists(select 1 from events e where e.actor_id = a.id and e.clock_skew = 1)
         or exists(select 1 from settings s where s.actor_id = a.id and s.clock_skew = 1)) as skewed,
@@ -58,7 +61,8 @@ const ACTOR_ITEM: &str =
         where s.actor_id = a.id order by s.seq desc limit 1) as model,
        (select f.name from settings s join efforts f on f.id = s.effort_id
         where s.actor_id = a.id order by s.seq desc limit 1) as effort
-     from actors a where 1";
+     from actors a where 1"
+);
 /// 一覧の頁のアクターのラベル（JSON の配列の id で）。
 const ACTOR_LABELS: &str = "select actor_id, key, value from labels
      where actor_id in (select value from json_each(?1)) order by key";
@@ -172,7 +176,6 @@ pub struct ActorItem {
     pub last_exit_type: Option<String>,
     pub present: bool,
     /// 今の状態を決めた出来事が、推しの幕引き（`closed` で `detail.inferred` が JSON の true）。
-    #[sqlx(default)]
     pub inferred: bool,
     /// 居る・居ないを替える出来事の最新の種類（画面に出す。API の答えには出さない）。
     #[serde(skip)]

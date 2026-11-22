@@ -204,7 +204,7 @@ pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
     let mut marks = Vec::new();
     for (li, lane) in lanes.iter().enumerate() {
         let top = band_top(li);
-        for (s, e) in stays(&lane.presence) {
+        for (s, e, lost) in stays(&lane.presence) {
             let e_raw = e.unwrap_or(end.max(s));
             if s > end || e_raw < start {
                 continue;
@@ -212,7 +212,15 @@ pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
             let (cs, ce) = (s.max(start), e_raw.min(end));
             let open_start = s < start;
             let open_end = e.is_none_or(|e| e > end);
-            let parts = pieces(&lane.changes, cs, ce);
+            let mut parts = pieces(&lane.changes, cs, ce);
+            // 推しの幕引きで終わる帯は、最後の便りの所で切り、そこから後を推しの切れにする。
+            let quiet = lost.then(|| last_sign(lane, s, e_raw));
+            if let Some(t) = quiet.filter(|&t| t > cs && t < ce) {
+                let at = parts.partition_point(|p| p.0 <= t);
+                if parts[at - 1].0 != t {
+                    parts.insert(at, (t, parts[at - 1].1));
+                }
+            }
             for (k, &(ps, change)) in parts.iter().enumerate() {
                 let pe = parts.get(k + 1).map_or(ce, |p| p.0);
                 let x0 = x(ps);
@@ -228,7 +236,7 @@ pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
                     h: BAND_H,
                     open_start: open_start && k == 0,
                     open_end: open_end && k + 1 == parts.len(),
-                    inferred: false,
+                    inferred: quiet.is_some_and(|t| ps >= t),
                     label_x: None,
                 });
             }
@@ -388,24 +396,37 @@ fn span_of(lanes: &[Lane], links: &[Link], w: Window) -> (i64, i64) {
     }
 }
 
-/// 居た間（初め・終わり。居るままなら終わりは None）。居る間の登場と、居ない間の退場は、何もしない。
-fn stays(presence: &[(i64, Presence)]) -> Vec<(i64, Option<i64>)> {
+/// 居た間（初め・終わり・推しの幕引きで終わったか。居るままなら終わりは None）。居る間の登場と、居ない間の退場は、何もしない。
+fn stays(presence: &[(i64, Presence)]) -> Vec<(i64, Option<i64>, bool)> {
     let mut out = Vec::new();
     let mut open: Option<i64> = None;
     for &(t, p) in presence {
         match (p, open) {
             (Presence::In, None) => open = Some(t),
             (Presence::Out | Presence::Lost, Some(s)) => {
-                out.push((s, Some(t.max(s))));
+                out.push((s, Some(t.max(s)), p == Presence::Lost));
                 open = None;
             }
             _ => {}
         }
     }
     if let Some(s) = open {
-        out.push((s, None));
+        out.push((s, None, false));
     }
     out
+}
+
+/// 居た間 [start, end) の、最後の便りの時刻: その行の居る・居ないの出来事と、出来事の印と、model と effort の替わり目の最新
+/// （終わりの出来事そのものは数えない）。無ければ初め。
+fn last_sign(lane: &Lane, start: i64, end: i64) -> i64 {
+    lane.presence
+        .iter()
+        .map(|p| p.0)
+        .chain(lane.marks.iter().copied())
+        .chain(lane.changes.iter().map(|c| c.at))
+        .filter(|&t| start <= t && t < end)
+        .max()
+        .unwrap_or(start)
 }
 
 /// [start, end] の帯を、model と effort の替わり目で切る。切れの初めの時刻と、その間の替わり目（添字）の並び。

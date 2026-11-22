@@ -288,6 +288,8 @@ struct Row {
     name: String,
     kind: &'static str,
     present: bool,
+    /// 今の状態を決めた出来事が、推しの幕引き（「停止（推し）」と書く）。
+    inferred: bool,
     /// 居る・居ないを替える出来事の最新（日本語の名・id）。
     presence: Option<(String, String)>,
     key: Option<String>,
@@ -307,6 +309,7 @@ fn row(item: &ActorItem) -> Row {
         name: item.name.clone(),
         kind: kind_name(&item.kind),
         present: item.present,
+        inferred: item.inferred,
         presence: item
             .presence
             .as_deref()
@@ -936,6 +939,7 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
         };
         match e.kind.as_str() {
             "entered" | "reentered" | "forked" => lanes[i].presence.push((t, Presence::In)),
+            "closed" if e.inferred => lanes[i].presence.push((t, Presence::Lost)),
             "cleared" | "exited" | "closed" => lanes[i].presence.push((t, Presence::Out)),
             kind if MARK_EVENTS.contains(&kind) => {
                 lanes[i].marks.push(t);
@@ -1035,8 +1039,18 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
         };
         let until = if s.open_end {
             "続く".to_owned()
+        } else if s.inferred {
+            format!(
+                "{}（推し: 便りが途絶えた後、tpm が落ちたと推して閉じた）",
+                clock(s.end)
+            )
         } else {
             clock(s.end)
+        };
+        let class = if s.inferred {
+            format!("{class} inferred")
+        } else {
+            class
         };
         let mid = s.y + s.h / 2;
         views[rank[&s.lane]].segs.push(SegView {
