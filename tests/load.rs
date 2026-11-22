@@ -1,5 +1,5 @@
 //! 負荷の試験（ふだんは流さない）: 本物の binary を一時の DB で起こし、50 の客が 10 秒叩く。
-//! 7 割が読む物（resolve・graph を含む）、3 割が書く物。誤りと 5xx が 0 で、p99 が 1 秒未満であること。
+//! 7 割が読む物（resolve・graph・監査の検索を含む。検索は読む物の 2 割）、3 割が書く物。誤りと 5xx が 0 で、p99 が 1 秒未満であること。
 //! 基準は CI の機械の揺れに合わせた（同じ code で p99 が 67〜324 ms に揺れた。2026-11-22）。待たせないことそのものは
 //! tests/concurrency.rs（書く鍵を握った間も読む物が 100 ms の内に答える、など）が見る。ここは、詰まって誤りや
 //! 秒の単位の待ちが出ないかを見る。
@@ -162,15 +162,27 @@ async fn 五十の客が_10_秒叩いても_誤りが無く_p99_が_1_秒未満(
                     let actor = rng.below(ACTORS);
                     let by = format!("claude.session:s-{actor}");
                     let (method, path, body) = match rng.below(100) {
-                        0..20 => (
+                        0..16 => (
                             "POST",
                             "/v1/resolve".to_owned(),
                             Some(json!({ "issuer": "tpm", "refs": [by, format!("claude.session:s-{}", rng.below(ACTORS)), "claude.session:none"] })),
                         ),
-                        20..40 => ("GET", format!("/v1/graph?label=group:g-{}", rng.below(GROUPS)), None),
-                        40..55 => ("GET", format!("/v1/actors/{}", ids[actor]), None),
-                        55..62 => ("GET", format!("/v1/actors?binding=cmux.workspace.ref:workspace:{actor}"), None),
-                        62..70 => ("GET", "/healthz".to_owned(), None),
+                        16..30 => ("GET", format!("/v1/graph?label=group:g-{}", rng.below(GROUPS)), None),
+                        30..42 => ("GET", format!("/v1/actors/{}", ids[actor]), None),
+                        42..48 => ("GET", format!("/v1/actors?binding=cmux.workspace.ref:workspace:{actor}"), None),
+                        48..56 => ("GET", "/healthz".to_owned(), None),
+                        // 監査の検索（読む物の 2 割）。
+                        56..70 => {
+                            let path = match rng.below(6) {
+                                0 => format!("/v1/actors?label=group:g-{}&limit=20", rng.below(GROUPS)),
+                                1 => format!("/v1/actors?label=group:g-{}&active_from={}", rng.below(GROUPS), now()),
+                                2 => format!("/v1/actors/{}/lineage", ids[actor]),
+                                3 => format!("/v1/actors/{}/settings?at={}", ids[actor], now()),
+                                4 => format!("/v1/events?actor={}&type=reported_in&limit=20", ids[actor]),
+                                _ => "/v1/settings?mismatch=true&limit=20".to_owned(),
+                            };
+                            ("GET", path, None)
+                        }
                         70..80 => (
                             "PUT",
                             format!("/v1/events/load-{c}-{n}"),

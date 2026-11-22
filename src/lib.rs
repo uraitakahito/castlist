@@ -6,6 +6,7 @@
 
 pub mod api;
 pub mod db;
+pub mod search;
 
 use axum::extract::Request;
 use axum::http::{HeaderValue, Method, StatusCode, header};
@@ -31,8 +32,12 @@ pub fn router(db: db::Db) -> Router {
         .route("/", get(index))
         .route("/v1/actors", post(api::register).get(api::actors))
         .route("/v1/actors/{id}", get(api::actor))
+        .route("/v1/actors/{id}/lineage", get(search::todo))
+        .route("/v1/actors/{id}/settings", get(search::todo))
+        .route("/v1/events", get(search::todo))
         .route("/v1/events/{id}", put(api::put_event))
         .route("/v1/links/{id}", put(api::put_link))
+        .route("/v1/settings", get(search::todo))
         .route("/v1/settings/{id}", put(api::put_setting))
         .route("/v1/resolve", post(api::resolve))
         .route("/v1/graph", get(api::graph))
