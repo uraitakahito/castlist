@@ -5,9 +5,18 @@
     // Product Manager だけ（「AI向けのprofileサーバーの起動と停止は私だけができるものとします。」
     // 「profileサーバーのdataのvolume削除も私だけとします」）。どの担当も打てない（pm-only）。
     // Product Manager が自分の terminal で直に打つ。担当は、打ってほしい 1 行を確認のページに書いて tpm ask pm で送る。
+    // container の名は castlist.box（0.1.1 から。同じ network の container が DNS の domain box で名で引く）。
+    // 前の名 castlist の match も残す（0.1.0 の docs の名で動かしている間と、前の名で起こし直す試みを止めるため）。
+    // guard は命令の字に match の字が含まれるかで見るので、前の名の字は新しい名の命令にも当たる。新しい名は、何に当たるかを読めるように書く。
     "castlist": {
       "guard": "pm-only",
       "match": [
+        "--name castlist.box",
+        "container start castlist.box",
+        "container stop castlist.box",
+        "container kill castlist.box",
+        "container delete castlist.box",
+        "container rm castlist.box",
         "--name castlist",
         "container start castlist",
         "container stop castlist",

@@ -1,27 +1,37 @@
 # 動かす
 
-Apple Container（`container` CLI）で、release の image を動かす。`127.0.0.1` だけで待ち受け、LAN にもインターネットにも開かない。
+Apple Container（`container` CLI）で、release の image を動かす。host（castlist を動かす機械）の `127.0.0.1` だけに出し、LAN にもインターネットにも開かない。
 
 > [!WARNING]
 > castlist の container を起こす・止める・消すのと、data の volume（`castlist-data`）を消すのは、**Product Manager だけ**がする。この章の命令は、Product Manager が自分の terminal で直に打つ。
 >
-> AI の担当は、この章の命令を打てない（repo の `.claude/roles/config.jsonc` の `infra.castlist` は `pm-only` で、`--name castlist`・`container start castlist`・`container stop castlist` などに当たる命令は、どの担当にも断られる）。担当は、打ってほしい 1 行を確認のページに書いて、`tpm ask pm` で Product Manager に送る。
+> AI の担当は、この章の命令を打てない（repo の `.claude/roles/config.jsonc` の `infra.castlist` は `pm-only` で、`--name castlist.box`・`container start castlist.box`・`container stop castlist.box` などに当たる命令は、どの担当にも断られる）。担当は、打ってほしい 1 行を確認のページに書いて、`tpm ask pm` で Product Manager に送る。
 
 | 物 | 値 |
 |---|---|
 | image | `ghcr.io/uraitakahito/castlist:v<version>`（[release](https://github.com/uraitakahito/castlist/releases) に digest がある。arm64） |
-| container | `castlist`（`127.0.0.1:8802` → 中の 8080。メモリは Apple Container の下限の 200 MiB、CPU は 1） |
-| URL | `http://127.0.0.1:8802/`（[画面](ui.md)。[API](api.md) は `/v1/`） |
-| DB | 名前つきの volume `castlist-data`（中の `/data/castlist.db`）。host（castlist を動かす機械）の folder は mount しない |
+| container | `castlist.box`（`127.0.0.1:8802` → 中の 8080。メモリは Apple Container の下限の 200 MiB、CPU は 1） |
+| URL | host の browser と tpm からは `http://127.0.0.1:8802/`（[画面](ui.md)。[API](api.md) は `/v1/`）。同じ network の container（置き場の pagetray など）からは `http://castlist.box:8080/` |
+| DB | 名前つきの volume `castlist-data`（中の `/data/castlist.db`）。host の folder は mount しない |
 | 設定 | 環境変数 `CASTLIST_DB`（既定 `/data/castlist.db`）・`CASTLIST_LISTEN`（既定 `0.0.0.0:8080`）。image の既定のままでよい |
+
+## container の名と、届く所
+
+- 名は `castlist.box`。Apple Container は、名の `.` の後ろ（`box`）を DNS の domain として、同じ network（`default`）の container に名で答える。置き場（pagetray）は、この名で castlist に聞く（`PAGETRAY_CASTLIST_URL=http://castlist.box:8080`）。番地は起こし直すと替わりうるので、番地では書かない。
+- domain `box` は、host に前からある物を使う（`container system dns list` に出る）。無い機械では、Product Manager が `sudo container system dns create box` で作る。
+- 0.1.0 までの docs は名を `castlist` としていた。その名で動かしている時は、下の「版を上げる」の時に、新しい名で起こし直す（volume はそのまま付く）。
+
+### 断るのは、機械の外からだけ
+
+castlist は、`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求を 403 で断る。これは、browser で開いたほかのページが castlist に書く・読む（DNS rebinding など）のを断る物で、**同じ network の container からの要求は断らない**。container の中で `0.0.0.0:8080` で待つので、network `default` の container は、`Host: 127.0.0.1` を付ければ読み書きできる（置き場はそうして聞く）。host の外（LAN・インターネット）からは、`-p 127.0.0.1:…` で出すので届かない。
 
 ## 初めて起こす
 
 ```sh
-container image pull ghcr.io/uraitakahito/castlist:v0.1.0
-container image inspect ghcr.io/uraitakahito/castlist:v0.1.0 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
+container image pull ghcr.io/uraitakahito/castlist:v0.1.1
+container image inspect ghcr.io/uraitakahito/castlist:v0.1.1 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
 container volume create castlist-data
-container run -d --name castlist -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v0.1.0
+container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v0.1.1
 ```
 
 - digest の見方: `container image list` に出る digest は、Apple Container が付ける別の値。release の digest は、`container image inspect` の `variants` の中の `digest` に出る。
@@ -34,19 +44,19 @@ container run -d --name castlist -p 127.0.0.1:8802:8080 -v castlist-data:/data -
 ## 止める・起こし直す
 
 ```sh
-container stop castlist
-container start castlist
+container stop castlist.box
+container start castlist.box
 ```
 
 - 止めている間、castlist は答えない（担当の登録と出来事は送れない）。DB は volume に残る。
-- host の機械を起こし直すと止まったままになる。`container system start` の後に `container start castlist` を打ち、「確かめる」をする。
+- host の機械を起こし直すと止まったままになる。`container system start` の後に `container start castlist.box` を打ち、「確かめる」をする。
 
 ## 確かめる
 
-1. `container list` で `castlist` が `running`。
+1. `container list` で `castlist.box` が `running`。
 2. `curl -s http://127.0.0.1:8802/healthz` が `{"status":"ok","version":"<version>","now":"…"}` を返す（`version` が起こした版）。
 3. `lsof -nP -iTCP:8802 -sTCP:LISTEN` が `127.0.0.1:8802` だけを出す（`*:` で始まる行があれば LAN に開いている）。
-4. `container logs castlist` の頭に `castlist <version> listen=0.0.0.0:8080 db=/data/castlist.db` が出ている。
+4. `container logs castlist.box` の頭に `castlist <version> listen=0.0.0.0:8080 db=/data/castlist.db` が出ている。
 5. browser で `http://127.0.0.1:8802/` を開き、一覧が出る。
 
 ## DB の写しを取る
@@ -69,12 +79,14 @@ sqlite3 castlist-backup.db 'select count(*) from actors'    # 開けて、件数
 4. 止めて、container を消し、新しい版で起こす。volume はそのまま付くので、data は残る。
 
    ```sh
-   container stop castlist
-   container rm castlist
-   container run -d --name castlist -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v<新しい版>
+   container stop castlist.box
+   container rm castlist.box
+   container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v<新しい版>
    ```
 
-5. 「確かめる」をする。駄目なら、`container stop castlist`・`container rm castlist` の後、前の版で `container run` を打つ（移行が足されていなければ、同じ volume で起きる。足されていたら、3 の写しから戻す）。
+   0.1.0 の docs の名（`castlist`）で動かしていた時は、初めの 2 行の名を `castlist.box` でなく前の名にして打つ（止めて消すのは前の名の container）。3 行目からは新しい名。
+
+5. 「確かめる」をする。駄目なら、`container stop castlist.box`・`container rm castlist.box` の後、前の版で `container run` を打つ（移行が足されていなければ、同じ volume で起きる。足されていたら、3 の写しから戻す）。
 6. 古い image は `container image delete` で消す。
 
 ## 写しから戻す
@@ -82,9 +94,9 @@ sqlite3 castlist-backup.db 'select count(*) from actors'    # 開けて、件数
 volume を失った・DB が壊れた時。戻す間、castlist は答えない。
 
 ```sh
-container stop castlist
+container stop castlist.box
 container run --rm -v castlist-data:/data -v "<写しの folder>:/in:ro" docker.io/library/rust:1.100.0-alpine sh -c 'rm -f /data/castlist.db-wal /data/castlist.db-shm && cp /in/<写しの file> /data/castlist.db'
-container start castlist
+container start castlist.box
 ```
 
 - 動かす image は空で `cp` も無いので、file を volume に入れる時だけ、shell のある image を借りる（上は `Containerfile` の build の段と同じ物。何でもよい）。
