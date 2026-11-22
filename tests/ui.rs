@@ -799,3 +799,253 @@ async fn 系図も利用者の字を_html_で逃がす() {
         "{page}"
     );
 }
+
+// --- 時間の帯（相関図 B） ---
+
+/// 時間の帯の、そのアクターの行（`<g class="lane …">` 〜 `</g>`）。
+fn lane<'a>(svg: &'a str, id: &str) -> &'a str {
+    let at = svg
+        .find(&format!("href=\"/actors/{id}\""))
+        .unwrap_or_else(|| panic!("{id} の行が無い\n{svg}"));
+    let start = svg[..at].rfind("<g class=\"lane").expect("<g class=\"lane");
+    let end = at + svg[at..].find("</g>").expect("</g>");
+    &svg[start..end]
+}
+
+/// 行の帯の切れの class（`seg m-…`）を、出た順に。
+fn segs(lane: &str) -> Vec<&str> {
+    lane.split("<rect class=\"seg ")
+        .skip(1)
+        .filter_map(|rest| rest.split_once('"').map(|(class, _)| class))
+        .collect()
+}
+
+#[tokio::test]
+async fn 一覧と系図から時間の帯へ行け_時間の帯から系図と一覧へ戻れる() {
+    let s = sample().await;
+    for uri in ["/", "/graph/tree"] {
+        let body = html(&s.app, uri).await;
+        assert!(body.contains("href=\"/graph/timeline\""), "{uri}\n{body}");
+    }
+    let body = html(&s.app, "/graph/timeline").await;
+    assert!(body.contains("href=\"/graph/tree\""), "{body}");
+    assert!(body.contains("href=\"/\""), "{body}");
+}
+
+#[tokio::test]
+async fn 時間の帯は_アクターごとに_1_行で_人を上に初めの登場の順に並べ_名はプロフィールへの_link() {
+    let s = sample().await;
+    let body = html(&s.app, "/graph/timeline").await;
+    let svg = svg(&body);
+    assert!(svg.contains("class=\"timeline\""), "{svg}");
+    assert_eq!(
+        listed(svg),
+        s.ids_of(&["pm.1", "tpm.1", "se.1", "se.2", "other.1"]),
+        "{svg}"
+    );
+    assert_eq!(svg.matches("<g class=\"lane").count(), 5, "{svg}");
+    let pm = lane(svg, s.id("pm.1"));
+    assert!(pm.contains(">pm.1<") && pm.contains(">人<"), "{pm}");
+    assert!(pm.contains("class=\"lane human\""), "{pm}");
+    let se1 = lane(svg, s.id("se.1"));
+    assert!(se1.contains(">se.1<") && se1.contains(">AI<"), "{se1}");
+    // 目盛り（時刻の字）がある。
+    assert!(svg.contains("class=\"tick\""), "{svg}");
+}
+
+#[tokio::test]
+async fn 時間の帯は_model_と_effort_の替わり目で区切り_model_ごとの色の_class_を付ける() {
+    let s = sample().await;
+    let body = html(&s.app, "/graph/timeline").await;
+    let svg = svg(&body);
+    // se.1 は 頼んだ opus → 見た sonnet（頼んだ物と違う）→ 見た opus で、3 つに切れる。ほかは 1 つずつ。
+    assert_eq!(
+        segs(lane(svg, s.id("se.1"))),
+        vec!["m-opus", "m-sonnet", "m-opus"],
+        "{svg}"
+    );
+    assert_eq!(segs(lane(svg, s.id("tpm.1"))), vec!["m-opus"]);
+    assert_eq!(segs(lane(svg, s.id("se.2"))), vec!["m-opus"]);
+    assert_eq!(segs(lane(svg, s.id("other.1"))), vec!["m-haiku"]);
+    // 人の pm.1 には model と effort が無い。
+    assert_eq!(segs(lane(svg, s.id("pm.1"))), vec!["m-none"]);
+    assert_eq!(svg.matches("<rect class=\"seg ").count(), 7, "{svg}");
+    // 切れの title に、短い model と effort。
+    let se1 = lane(svg, s.id("se.1"));
+    for want in ["opus-5-5 · high", "sonnet-5 · high"] {
+        assert!(se1.contains(want), "se.1 に {want} が無い\n{se1}");
+    }
+    assert!(!svg.contains("claude-"), "claude- を落とす\n{svg}");
+}
+
+#[tokio::test]
+async fn 時間の帯の区切りは_送り手の時刻でなく_受けた順() {
+    let s = sample().await;
+    let x = s
+        .app
+        .register(&seat("x", "s-x", "t-x", "software-engineer", "workspace:2"))
+        .await;
+    let x_ref = "claude.session:s-x";
+    put(
+        &s.app,
+        "/v1/events/e-x-in",
+        &ev(x_ref, "entered", json!({}), &at(0)),
+    )
+    .await;
+    tick().await;
+    // 送り手の時刻は、後に送った物ほど前（時計が戻った）。
+    for (id, model, secs) in [
+        ("t-x-1", SONNET, 3600),
+        ("t-x-2", "claude-haiku-5", 0),
+        ("t-x-3", OPUS, -3600),
+    ] {
+        let mut body = observed(x_ref, model, "high");
+        body["at"] = json!(at(secs));
+        put(&s.app, &format!("/v1/settings/{id}"), &body).await;
+        tick().await;
+    }
+    let body = html(&s.app, "/graph/timeline?label=tpm.key:t-x").await;
+    let svg = svg(&body);
+    let id = x["id"].as_str().unwrap();
+    assert_eq!(
+        segs(lane(svg, id)),
+        vec!["m-opus", "m-sonnet", "m-haiku", "m-opus"],
+        "{svg}"
+    );
+}
+
+#[tokio::test]
+async fn 時間の帯の凡例は_model_と線と出来事の印を出す() {
+    let s = sample().await;
+    let body = html(&s.app, "/graph/timeline").await;
+    let legend = section(&body, "legend");
+    for want in [
+        "class=\"swatch m-opus\"",
+        "opus-5-5",
+        "class=\"swatch m-sonnet\"",
+        "sonnet-5",
+        "class=\"swatch m-haiku\"",
+        "haiku-5",
+        "実線",
+        "点線",
+        "要約",
+        "名乗り",
+        "model 不明",
+    ] {
+        assert!(legend.contains(want), "凡例に {want} が無い\n{legend}");
+    }
+    assert!(!legend.contains("claude-"), "{legend}");
+}
+
+#[tokio::test]
+async fn 時間の帯は_起こした線と継いだ線の矢印と_出来事の印と_居る者の開いた端を描く() {
+    let s = sample().await;
+    let body = html(&s.app, "/graph/timeline").await;
+    let svg = svg(&body);
+    assert_eq!(svg.matches("class=\"link launched\"").count(), 2, "{svg}");
+    assert_eq!(svg.matches("class=\"link continued\"").count(), 1, "{svg}");
+    let se1 = lane(svg, s.id("se.1"));
+    assert!(se1.contains("class=\"mark compacted\""), "{se1}");
+    assert!(se1.contains("class=\"mark model_unreadable\""), "{se1}");
+    assert!(se1.contains("<title>要約"), "{se1}");
+    assert!(se1.contains("<title>model 不明"), "{se1}");
+    let se2 = lane(svg, s.id("se.2"));
+    assert!(se2.contains("class=\"mark reported_in\""), "{se2}");
+    assert!(se2.contains("<title>名乗り"), "{se2}");
+    // 居る者（pm.1・tpm.1・se.2）だけ、帯の端を開く。
+    for (name, open) in [
+        ("pm.1", true),
+        ("tpm.1", true),
+        ("se.1", false),
+        ("se.2", true),
+        ("other.1", false),
+    ] {
+        let lane = lane(svg, s.id(name));
+        assert_eq!(lane.contains("class=\"open-end\""), open, "{name}\n{lane}");
+    }
+}
+
+#[tokio::test]
+async fn 時間の帯の絞りは_相関図の_api_と同じ引数で狭める() {
+    let s = sample().await;
+    let cases: Vec<(String, Vec<&str>)> = vec![
+        (
+            format!("/graph/timeline?label=tpm.key:{KEY}"),
+            vec!["pm.1", "tpm.1", "se.1", "se.2"],
+        ),
+        (
+            "/graph/timeline?label=tpm.key:t-99".to_owned(),
+            vec!["other.1"],
+        ),
+        (
+            format!("/graph/timeline?to={}", s.se1_entered),
+            vec!["pm.1", "tpm.1", "se.1", "se.2"],
+        ),
+        (
+            format!("/graph/timeline?label=tpm.key:{KEY}&from=&to="),
+            vec!["pm.1", "tpm.1", "se.1", "se.2"],
+        ),
+    ];
+    for (uri, want) in cases {
+        let body = html(&s.app, &uri).await;
+        let svg = svg(&body);
+        assert_eq!(listed(svg), s.ids_of(&want), "{uri}");
+    }
+}
+
+#[tokio::test]
+async fn 時間の帯に当たる者が無ければ_そう書き_svg_を出さない() {
+    let s = sample().await;
+    let body = html(&s.app, &format!("/graph/timeline?from={}", s.end)).await;
+    assert!(!body.contains("<svg"), "{body}");
+    assert!(body.contains("当たるアクターはいない"), "{body}");
+}
+
+#[tokio::test]
+async fn 時間の帯の引数の誤りは_引数の名を書いた_400_の画面() {
+    let s = sample().await;
+    for (uri, name) in [
+        ("/graph/timeline?colour=red", "colour"),
+        ("/graph/timeline?from=きのう", "from"),
+        ("/graph/timeline?to=きのう", "to"),
+        ("/graph/timeline?label=nocolon", "label"),
+        ("/graph/timeline?label=a:b&label=c:d", "label"),
+    ] {
+        let (status, headers, body) = page(&s.app, uri).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{uri}: {body}");
+        assert_html(uri, &headers, &body);
+        assert!(body.contains(name), "{uri}: {name} を書かない\n{body}");
+    }
+}
+
+#[tokio::test]
+async fn 時間の帯も利用者の字を_html_で逃がす() {
+    let s = sample().await;
+    let x = s
+        .app
+        .register(&seat(
+            "x",
+            "s-x",
+            "<script>alert(1)</script>",
+            "a\"b",
+            "workspace:1",
+        ))
+        .await;
+    put(
+        &s.app,
+        "/v1/events/e-x-in",
+        &ev("claude.session:s-x", "entered", json!({}), &at(0)),
+    )
+    .await;
+    let id = x["id"].as_str().unwrap();
+    let page = html(
+        &s.app,
+        "/graph/timeline?label=tpm.key:%3Cscript%3Ealert(1)%3C/script%3E",
+    )
+    .await;
+    assert_eq!(listed(svg(&page)), vec![id.to_owned()], "{page}");
+    assert!(
+        unescape(&page).contains("<script>alert(1)</script>"),
+        "{page}"
+    );
+}
