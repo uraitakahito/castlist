@@ -28,10 +28,10 @@ castlist は、`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin
 ## 初めて起こす
 
 ```sh
-container image pull ghcr.io/uraitakahito/castlist:v0.1.3
-container image inspect ghcr.io/uraitakahito/castlist:v0.1.3 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
+container image pull ghcr.io/uraitakahito/castlist:v0.2.0
+container image inspect ghcr.io/uraitakahito/castlist:v0.2.0 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
 container volume create castlist-data
-container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v0.1.3
+container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v0.2.0
 ```
 
 - digest の見方: `container image list` に出る digest は、Apple Container が付ける別の値。release の digest は、`container image inspect` の `variants` の中の `digest` に出る。
@@ -73,7 +73,7 @@ sqlite3 castlist-backup.db 'select count(*) from actors'    # 開けて、件数
 
 ## 版を上げる
 
-1. [CHANGELOG.md](https://github.com/uraitakahito/castlist/blob/main/CHANGELOG.md) で、API と移行の SQL が変わるかを見る（移行が足された版は、当てた後に前の版へ戻せない）。
+1. [CHANGELOG.md](https://github.com/uraitakahito/castlist/blob/main/CHANGELOG.md) で、API と移行の SQL が変わるかを見る（移行が足された版は、当てた後に前の版へ戻せない。0.1.x から 0.2.0 へは、移行 `0003` が足される）。
 2. 新しい版の image を pull し、digest を release の値と見比べる（「初めて起こす」の初めの 2 行の版を替えて打つ）。
 3. 「DB の写しを取る」をする。
 4. 止めて、container を消し、新しい版で起こす。volume はそのまま付くので、data は残る。

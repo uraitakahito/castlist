@@ -20,12 +20,12 @@ function seat(prefix: string, session: string, key: string, model: string, effor
     labels: { project: 'castlist', 'tpm.key': key },
     bindings: [{ type: 'claude.session', value: session }],
     settings: { model, effort },
-    at: now(),
+    sent_at: now(),
   };
 }
 
-const event = (by: string, type: string) => ({ issuer: 'tpm', by, type, at: now() });
-const line = (type: string, from: string, to: string) => ({ issuer: 'tpm', type, from, to, at: now() });
+const event = (by: string, type: string) => ({ issuer: 'tpm', by, type, sent_at: now() });
+const line = (type: string, from: string, to: string) => ({ issuer: 'tpm', type, from, to, sent_at: now() });
 
 setup('見本の記録を置く', async ({ request }) => {
   const PM = 'tpm.person:pm';
@@ -39,7 +39,7 @@ setup('見本の記録を置く', async ({ request }) => {
     name_prefix: 'pm',
     labels: { project: 'castlist' },
     bindings: [{ type: 'tpm.person', value: 'pm' }],
-    at: now(),
+    sent_at: now(),
   });
   await send(request, 'put', '/v1/events/e-pm-in', event(PM, 'entered'));
   await send(request, 'post', '/v1/actors', seat('tpm', 's-tpm', 't-23zs', 'claude-opus-5-5', 'high'));
@@ -54,7 +54,7 @@ setup('見本の記録を置く', async ({ request }) => {
     model: 'claude-sonnet-5',
     effort: 'high',
     source: 'observed',
-    at: now(),
+    sent_at: now(),
   });
   await send(request, 'put', '/v1/events/e-se1-clear', event(SE1, 'cleared'));
   await send(request, 'post', '/v1/actors', seat('se', 's-se2', 't-23zs', 'claude-opus-5-5', 'high'));

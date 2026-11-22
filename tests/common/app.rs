@@ -149,7 +149,7 @@ pub fn ai(prefix: &str, session: &str) -> Value {
         "name_prefix": prefix,
         "labels": { "project": "castlist" },
         "bindings": [{ "type": "claude.session", "value": session }],
-        "at": at(0),
+        "sent_at": at(0),
     })
 }
 
@@ -161,13 +161,13 @@ pub fn human(person: &str) -> Value {
         "name_prefix": "pm",
         "labels": { "role": "pm" },
         "bindings": [{ "type": "tpm.person", "value": person }],
-        "at": at(0),
+        "sent_at": at(0),
     })
 }
 
 /// 出来事の本文。
 pub fn event(by: &str, kind: &str, at: &str) -> Value {
-    json!({ "issuer": "tpm", "by": by, "type": kind, "at": at })
+    json!({ "issuer": "tpm", "by": by, "type": kind, "sent_at": at })
 }
 
 /// model と effort の本文。
@@ -178,11 +178,11 @@ pub fn setting(by: &str, model: &str, effort: &str, at: &str) -> Value {
         "model": model,
         "effort": effort,
         "source": "observed",
-        "at": at,
+        "sent_at": at,
     })
 }
 
 /// 線の本文。
 pub fn link(kind: &str, from: &str, to: &str) -> Value {
-    json!({ "issuer": "tpm", "type": kind, "from": from, "to": to, "at": at(0) })
+    json!({ "issuer": "tpm", "type": kind, "from": from, "to": to, "sent_at": at(0) })
 }

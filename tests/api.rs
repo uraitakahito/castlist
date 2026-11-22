@@ -83,7 +83,7 @@ async fn 鍵の付随する_id_は_2_つのアクターに付かない() {
     let app = App::start().await;
     let (se1, se2, _) = three(&app).await;
     let refused = sqlx::query(
-        "insert into bindings(actor_id, issuer, type, value, is_key, at, received_at)
+        "insert into bindings(actor_id, issuer, type, value, is_key, sent_at, received_at)
          values(?1, 'tpm', 'claude.session', 's-1', 1, ?2, ?2)",
     )
     .bind(se2["id"].as_str())
@@ -143,7 +143,7 @@ async fn 登録の形が違えば_422() {
             "bindings",
             json!([{ "type": "claude.session", "value": "" }]),
         ),
-        ("at", json!("きのう")),
+        ("sent_at", json!("きのう")),
     ];
     for (field, value) in cases {
         let mut body = ai("se", "s-1");
@@ -318,7 +318,7 @@ async fn 出来事の種類は_10_だけ() {
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
     // DB の CHECK も断る。
     let refused = sqlx::query(
-        "insert into events(id, actor_id, type, at, received_at, clock_skew, body_hash)
+        "insert into events(id, actor_id, type, sent_at, received_at, clock_skew, body_hash)
          values('k-y', ?1, 'danced', ?2, ?2, 0, 'x')",
     )
     .bind(se1["id"].as_str())
@@ -510,7 +510,9 @@ async fn 時計が_5_分より離れていても受け_clock_skew_を立てる()
     let mut body = event(SE1, "reported_in", "2026-01-02T03:04:05+09:00");
     body["detail"] = json!({});
     app.put("/v1/events/c-6", &body).await;
-    let kept: String = app.scalar("select at from events where id = 'c-6'").await;
+    let kept: String = app
+        .scalar("select sent_at from events where id = 'c-6'")
+        .await;
     assert_eq!(kept, "2026-01-02T03:04:05+09:00");
 }
 
@@ -520,7 +522,7 @@ async fn received_at_は戻らない() {
     let se1 = app.register(&ai("se", "s-1")).await;
     // 先の時刻の行が既にあっても、次の行はそれより前にならない。
     sqlx::query(
-        "insert into events(id, actor_id, type, at, received_at, clock_skew, body_hash)
+        "insert into events(id, actor_id, type, sent_at, received_at, clock_skew, body_hash)
          values('future', ?1, 'reported_in', ?2, '2099-01-01T00:00:00.000Z', 1, 'x')",
     )
     .bind(se1["id"].as_str())
@@ -799,4 +801,217 @@ async fn backup_は_外のキーの検査に通る_sqlite_の_file_を返す() {
     assert_eq!(actors, 3);
     conn.close().await.unwrap();
     remove_db(&path);
+}
+
+// --- 送り手の時刻の名（sent_at） ---
+
+/// 答えのどこにも `at` の鍵が無いか（送り手の時刻は `sent_at`）。
+fn assert_no_at(path: &str, v: &Value) {
+    match v {
+        Value::Object(map) => {
+            assert!(!map.contains_key("at"), "{path}: 答えに at の鍵がある: {v}");
+            for (k, child) in map {
+                assert_no_at(&format!("{path}.{k}"), child);
+            }
+        }
+        Value::Array(items) => items.iter().for_each(|c| assert_no_at(path, c)),
+        _ => {}
+    }
+}
+
+#[tokio::test]
+async fn 送り手の時刻は_sent_at_で受け_答えも_sent_at_で返す() {
+    let app = App::start().await;
+    let (se1, _, pm) = three(&app).await;
+    let id = se1["id"].as_str().unwrap();
+    let sent = "2026-11-22T13:00:00.123+09:00";
+    let mut answers = Vec::new();
+    for (path, mut body) in [
+        ("/v1/links/s-1", link("launched", PM, SE1)),
+        ("/v1/links/s-2", link("continued", SE1, SE2)),
+        ("/v1/events/s-3", event(SE1, "entered", sent)),
+        (
+            "/v1/settings/s-4",
+            setting(SE1, "claude-opus-5-5", "high", sent),
+        ),
+    ] {
+        body["sent_at"] = json!(sent);
+        let (status, answer) = app.put(path, &body).await;
+        assert_eq!(status, StatusCode::CREATED, "{path}: {answer}");
+        assert_eq!(
+            answer["sent_at"], sent,
+            "{path}: 送った字のまま返す: {answer}"
+        );
+        answers.push((path.to_owned(), answer));
+    }
+    for path in [
+        format!("/v1/actors/{id}"),
+        format!("/v1/actors/{id}/lineage"),
+        format!("/v1/actors/{id}/settings"),
+        "/v1/actors?label=project:castlist".to_owned(),
+        "/v1/events?type=entered".to_owned(),
+        "/v1/settings?source=observed".to_owned(),
+        "/v1/graph".to_owned(),
+    ] {
+        let (status, answer) = app.get(&path).await;
+        assert_eq!(status, StatusCode::OK, "{path}: {answer}");
+        answers.push((path, answer));
+    }
+    for (path, answer) in &answers {
+        assert_no_at(path, answer);
+    }
+    let (_, actor) = app.get(&format!("/v1/actors/{id}")).await;
+    assert!(actor["sent_at"].is_string(), "{actor}");
+    assert!(actor["bindings"][0]["sent_at"].is_string(), "{actor}");
+    assert!(
+        actor["current_bindings"][0]["sent_at"].is_string(),
+        "{actor}"
+    );
+    assert_eq!(actor["events"][0]["sent_at"], sent);
+    assert_eq!(actor["current_settings"]["sent_at"], sent);
+    assert_eq!(actor["links_in"][0]["from"], pm["id"]);
+    assert!(actor["links_in"][0]["sent_at"].is_string(), "{actor}");
+}
+
+#[tokio::test]
+async fn 移る間は_古い名_at_も受け_同じ_id_の送り直しは_どちらの名でも_200() {
+    let app = App::start().await;
+    let mut old = ai("se", "s-1");
+    let sent = old.as_object_mut().unwrap().remove("sent_at").unwrap();
+    old["at"] = sent;
+    let (status, answer) = app.post("/v1/actors", &old).await;
+    assert_eq!(status, StatusCode::CREATED, "{answer}");
+    app.register(&human("pm")).await;
+    let t = at(0);
+    for (path, body) in [
+        ("/v1/events/o-1", event(SE1, "entered", &t)),
+        ("/v1/links/o-2", link("launched", PM, SE1)),
+        (
+            "/v1/settings/o-3",
+            setting(SE1, "claude-opus-5-5", "high", &t),
+        ),
+    ] {
+        // 前の版の送り手は at で送る。
+        let mut old = body.clone();
+        let sent = old.as_object_mut().unwrap().remove("sent_at").unwrap();
+        old["at"] = sent;
+        let (status, answer) = app.put(path, &old).await;
+        assert_eq!(status, StatusCode::CREATED, "{path}: {answer}");
+        assert_eq!(answer["sent_at"], old["at"], "{path}: {answer}");
+        // 新しい名で同じ物を送り直しても、同じ物（409 にしない）。
+        let (status, answer) = app.put(path, &body).await;
+        assert_eq!(status, StatusCode::OK, "{path}: {answer}");
+    }
+}
+
+#[tokio::test]
+async fn 書く_4_つの道は_sent_at_と_at_を両方付けると_422_で_at_が読めなくても_422() {
+    let app = App::start().await;
+    three(&app).await;
+    for (path, body) in [
+        ("/v1/actors", ai("se", "s-9")),
+        ("/v1/events/b-1", event(SE1, "entered", &at(0))),
+        ("/v1/links/b-2", link("launched", PM, SE1)),
+        (
+            "/v1/settings/b-3",
+            setting(SE1, "claude-opus-5-5", "high", &at(0)),
+        ),
+    ] {
+        let method = if path == "/v1/actors" { "POST" } else { "PUT" };
+        let mut both = body.clone();
+        both["at"] = both["sent_at"].clone();
+        let (status, answer) = app.call(method, path, Some(&both)).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{path}: {answer}");
+        // 移る間の送り手は at で送る。読めない時の字は、送った名 at も指す。
+        let mut old = body.clone();
+        old.as_object_mut().unwrap().remove("sent_at");
+        old["at"] = json!("きのう");
+        let (status, answer) = app.call(method, path, Some(&old)).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{path}: {answer}");
+        let text = answer.to_string();
+        assert!(
+            text.contains("sent_at（0.1.x の名 at） は RFC 3339 の時刻"),
+            "{path}: {answer}"
+        );
+    }
+}
+
+/// 0.1.3 の castlist が、下の本文（送り手の時刻の名は at）で DB に入れた本文の写し（body_hash）。
+/// v0.1.3 の tag の試験で、同じ本文を PUT して DB から読んだ値（0.2.0 で手で作らない）。
+const V013_HASHES: [(&str, &str); 3] = [
+    (
+        "events",
+        "01a219acb1f8304fa333ad65982caaa6276a1ac2903c98d6667ecf19be2acaaf",
+    ),
+    (
+        "links",
+        "0f75eada811ff0d8f2ec1af823eb5ba1918929a0745fc2125df7fa0115f6d5d9",
+    ),
+    (
+        "settings",
+        "561b9c80aab0c3618398f7c684ea2047c50eb3308d2f9c620ef157402b54739b",
+    ),
+];
+
+#[tokio::test]
+async fn 本文の写しは_0_1_x_が作った値と同じで_前の版で受けた物を_sent_at_で送り直しても_409_にならない()
+ {
+    let t = "2026-11-22T13:00:00.000+09:00";
+    let bodies = [
+        (
+            "/v1/events/h-1",
+            json!({ "issuer": "tpm", "by": SE1, "type": "entered", "detail": {"k": "v"}, "sent_at": t }),
+        ),
+        (
+            "/v1/links/h-2",
+            json!({ "issuer": "tpm", "type": "launched", "from": PM, "to": SE1, "sent_at": t }),
+        ),
+        (
+            "/v1/settings/h-3",
+            json!({ "issuer": "tpm", "by": SE1, "model": "claude-opus-5-5", "effort": "high", "source": "observed", "sent_at": t }),
+        ),
+    ];
+    // 新しい名でも古い名でも、写しは 0.1.3 が作った値と同じ。
+    for name in ["sent_at", "at"] {
+        let app = App::start().await;
+        three(&app).await;
+        for ((path, body), (table, want)) in bodies.iter().zip(V013_HASHES) {
+            let mut body = body.clone();
+            if name == "at" {
+                let sent = body.as_object_mut().unwrap().remove("sent_at").unwrap();
+                body["at"] = sent;
+            }
+            let (status, answer) = app.put(path, &body).await;
+            assert_eq!(status, StatusCode::CREATED, "{name} {path}: {answer}");
+            let id = path.rsplit('/').next().unwrap();
+            let got: String = app
+                .scalar(&format!("select body_hash from {table} where id = '{id}'"))
+                .await;
+            assert_eq!(got, want, "{name} {path}: 0.1.3 の写しと違う");
+        }
+    }
+}
+
+#[tokio::test]
+async fn 時点の問い_at_の答えは_頭の_at_に問いの時点を返し_行には_at_の鍵が無い() {
+    let app = App::start().await;
+    let (se1, _, _) = three(&app).await;
+    let id = se1["id"].as_str().unwrap();
+    let (status, answer) = app
+        .put(
+            "/v1/settings/p-1",
+            &setting(SE1, "claude-opus-5-5", "high", &at(0)),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{answer}");
+    let when = at(60).replace('+', "%2B");
+    let (status, answer) = app
+        .get(&format!("/v1/actors/{id}/settings?at={when}"))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{answer}");
+    assert!(answer["at"].is_string(), "{answer}");
+    assert!(answer["setting"]["sent_at"].is_string(), "{answer}");
+    let mut rest = answer.clone();
+    rest.as_object_mut().unwrap().remove("at");
+    assert_no_at("settings?at=", &rest);
 }

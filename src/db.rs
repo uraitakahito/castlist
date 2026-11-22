@@ -30,25 +30,26 @@ const RESOLVE: &str =
     "select a.id, a.name, a.kind from bindings b join actors a on a.id = b.actor_id
      where b.issuer = ?1 and b.type = ?2 and b.value = ?3 and b.is_key = 1";
 const ACTOR: &str =
-    "select id, name, kind, issuer, at, received_at, clock_skew from actors where id = ?1";
+    "select id, name, kind, issuer, sent_at, received_at, clock_skew from actors where id = ?1";
 const LABELS: &str = "select key, value from labels where actor_id = ?1 order by key";
-const BINDINGS: &str = "select issuer, type, value, is_key, at, received_at from bindings
+const BINDINGS: &str = "select issuer, type, value, is_key, sent_at, received_at from bindings
      where actor_id = ?1 order by seq";
-const EVENTS: &str = "select id, actor_id, type, detail, at, received_at, clock_skew from events
+const EVENTS: &str =
+    "select id, actor_id, type, detail, sent_at, received_at, clock_skew from events
      where actor_id = ?1 order by seq";
-const SETTINGS: &str = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.at, s.received_at, s.clock_skew
+const SETTINGS: &str = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.sent_at, s.received_at, s.clock_skew
      from settings s join models m on m.id = s.model_id join efforts f on f.id = s.effort_id
      where s.actor_id = ?1 order by s.seq";
 const LINKS_IN: &str =
-    "select seq, id, type, from_actor, to_actor, at, received_at, clock_skew from links
+    "select seq, id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links
      where to_actor = ?1 order by seq";
 const LINKS_OUT: &str =
-    "select seq, id, type, from_actor, to_actor, at, received_at, clock_skew from links
+    "select seq, id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links
      where from_actor = ?1 order by seq";
 const STATE: &str = "select actor_id, presence, present, entered_at, exited_at from actor_state where actor_id = ?1";
-const CURRENT_SETTINGS: &str = "select actor_id, model, effort, source, at, received_at
+const CURRENT_SETTINGS: &str = "select actor_id, model, effort, source, sent_at, received_at
      from actor_current_settings where actor_id = ?1";
-const CURRENT_BINDINGS: &str = "select issuer, type, value, is_key, at, received_at
+const CURRENT_BINDINGS: &str = "select issuer, type, value, is_key, sent_at, received_at
      from actor_current_bindings where actor_id = ?1 order by type";
 /// 図の点と線: ラベルと時刻の窓で絞ったアクター。
 const GRAPH_LABEL: &str = "select a.id from labels l join actors a on a.id = l.actor_id
@@ -57,23 +58,24 @@ const GRAPH_WINDOW: &str =
     "select id from actors where received_at >= ?1 and received_at <= ?2 order by seq";
 /// 図の点と線: アクターの組（JSON の配列）に触れる線と、その組の中身。
 const GRAPH_LINKS: &str =
-    "select seq, id, type, from_actor, to_actor, at, received_at, clock_skew from links
+    "select seq, id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links
      where from_actor in (select value from json_each(?1))
      union
-     select seq, id, type, from_actor, to_actor, at, received_at, clock_skew from links
+     select seq, id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links
      where to_actor in (select value from json_each(?1))
      order by seq";
-const GRAPH_ACTORS: &str = "select id, name, kind, issuer, at, received_at, clock_skew from actors
+const GRAPH_ACTORS: &str =
+    "select id, name, kind, issuer, sent_at, received_at, clock_skew from actors
      where id in (select value from json_each(?1)) order by seq";
 const GRAPH_STATE: &str =
     "select actor_id, presence, present, entered_at, exited_at from actor_state
      where actor_id in (select value from json_each(?1))";
-const GRAPH_SETTINGS: &str = "select actor_id, model, effort, source, at, received_at
+const GRAPH_SETTINGS: &str = "select actor_id, model, effort, source, sent_at, received_at
      from actor_current_settings where actor_id in (select value from json_each(?1))";
 /// タイムライン: アクターの組の、出来事と model と effort の全部（seq の順）。
 const TIMELINE_EVENTS: &str = "select actor_id, type, received_at from events
      where actor_id in (select value from json_each(?1)) order by seq";
-const TIMELINE_SETTINGS: &str = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.at, s.received_at, s.clock_skew
+const TIMELINE_SETTINGS: &str = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.sent_at, s.received_at, s.clock_skew
      from settings s join models m on m.id = s.model_id join efforts f on f.id = s.effort_id
      where s.actor_id in (select value from json_each(?1)) order by s.seq";
 
@@ -133,7 +135,7 @@ pub struct Actor {
     pub name: String,
     pub kind: String,
     pub issuer: String,
-    pub at: String,
+    pub sent_at: String,
     pub received_at: String,
     pub clock_skew: bool,
 }
@@ -146,7 +148,7 @@ pub struct Binding {
     pub kind: String,
     pub value: String,
     pub is_key: bool,
-    pub at: String,
+    pub sent_at: String,
     pub received_at: String,
 }
 
@@ -157,7 +159,7 @@ pub struct Event {
     #[serde(rename = "type")]
     pub kind: String,
     pub detail: Value,
-    pub at: String,
+    pub sent_at: String,
     pub received_at: String,
     pub clock_skew: bool,
 }
@@ -170,7 +172,7 @@ impl FromRow<'_, SqliteRow> for Event {
             actor_id: row.try_get("actor_id")?,
             kind: row.try_get("type")?,
             detail: serde_json::from_str(&detail).map_err(|e| sqlx::Error::Decode(e.into()))?,
-            at: row.try_get("at")?,
+            sent_at: row.try_get("sent_at")?,
             received_at: row.try_get("received_at")?,
             clock_skew: row.try_get("clock_skew")?,
         })
@@ -184,7 +186,7 @@ pub struct Setting {
     pub model: String,
     pub effort: String,
     pub source: String,
-    pub at: String,
+    pub sent_at: String,
     pub received_at: String,
     pub clock_skew: bool,
 }
@@ -196,7 +198,7 @@ pub struct CurrentSettings {
     pub model: String,
     pub effort: String,
     pub source: String,
-    pub at: String,
+    pub sent_at: String,
     pub received_at: String,
 }
 
@@ -212,7 +214,7 @@ pub struct Link {
     pub from_actor: String,
     #[serde(rename = "to")]
     pub to_actor: String,
-    pub at: String,
+    pub sent_at: String,
     pub received_at: String,
     pub clock_skew: bool,
 }
@@ -293,8 +295,8 @@ pub struct NewActor<'a> {
     pub labels: &'a [(String, String)],
     /// 初めの物が鍵。
     pub bindings: &'a [Ref],
-    pub at: &'a str,
-    pub at_time: OffsetDateTime,
+    pub sent_at: &'a str,
+    pub sent_time: OffsetDateTime,
     /// 頼んだ model と effort。
     pub settings: Option<(&'a str, &'a str)>,
 }
@@ -304,8 +306,8 @@ pub struct NewEvent<'a> {
     pub by: &'a Ref,
     pub kind: &'a str,
     pub detail: &'a str,
-    pub at: &'a str,
-    pub at_time: OffsetDateTime,
+    pub sent_at: &'a str,
+    pub sent_time: OffsetDateTime,
     pub body_hash: &'a str,
 }
 
@@ -314,8 +316,8 @@ pub struct NewLink<'a> {
     pub kind: &'a str,
     pub from: &'a Ref,
     pub to: &'a Ref,
-    pub at: &'a str,
-    pub at_time: OffsetDateTime,
+    pub sent_at: &'a str,
+    pub sent_time: OffsetDateTime,
     pub body_hash: &'a str,
 }
 
@@ -325,8 +327,8 @@ pub struct NewSetting<'a> {
     pub model: &'a str,
     pub effort: &'a str,
     pub source: &'a str,
-    pub at: &'a str,
-    pub at_time: OffsetDateTime,
+    pub sent_at: &'a str,
+    pub sent_time: OffsetDateTime,
     pub body_hash: &'a str,
 }
 
@@ -578,7 +580,7 @@ impl Db {
     pub async fn register(&self, new: &NewActor<'_>) -> Result<(ActorRef, bool), WriteError> {
         let mut tx = self.write.begin().await?;
         let received = received_at(&mut tx).await?;
-        let skew = i64::from(skewed(new.at_time, &received));
+        let skew = i64::from(skewed(new.sent_time, &received));
         let (key, rest) = new
             .bindings
             .split_first()
@@ -600,7 +602,7 @@ impl Db {
                     kind: new.kind.to_owned(),
                 };
                 sqlx::query(
-                    "insert into actors(id, issuer, kind, prefix, n, name, at, received_at, clock_skew)
+                    "insert into actors(id, issuer, kind, prefix, n, name, sent_at, received_at, clock_skew)
                      values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
                 )
                 .bind(&actor.id)
@@ -609,7 +611,7 @@ impl Db {
                 .bind(new.prefix)
                 .bind(n)
                 .bind(&actor.name)
-                .bind(new.at)
+                .bind(new.sent_at)
                 .bind(&received)
                 .bind(skew)
                 .execute(&mut *tx)
@@ -625,8 +627,16 @@ impl Db {
                     .execute(&mut *tx)
                     .await?;
                 }
-                insert_binding(&mut tx, &actor.id, new.issuer, key, true, new.at, &received)
-                    .await?;
+                insert_binding(
+                    &mut tx,
+                    &actor.id,
+                    new.issuer,
+                    key,
+                    true,
+                    new.sent_at,
+                    &received,
+                )
+                .await?;
                 (actor, true)
             }
         };
@@ -640,7 +650,13 @@ impl Db {
             .await?;
             if latest.as_deref() != Some(binding.value.as_str()) {
                 insert_binding(
-                    &mut tx, &actor.id, new.issuer, binding, false, new.at, &received,
+                    &mut tx,
+                    &actor.id,
+                    new.issuer,
+                    binding,
+                    false,
+                    new.sent_at,
+                    &received,
                 )
                 .await?;
             }
@@ -650,13 +666,13 @@ impl Db {
             let effort_id = master(&mut tx, Master::Efforts, effort, &received).await?;
             if latest_setting(&mut tx, &actor.id).await? != Some((model_id, effort_id)) {
                 sqlx::query(
-                    "insert into settings(actor_id, model_id, effort_id, source, at, received_at, clock_skew)
+                    "insert into settings(actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew)
                      values(?1, ?2, ?3, 'requested', ?4, ?5, ?6)",
                 )
                 .bind(&actor.id)
                 .bind(model_id)
                 .bind(effort_id)
-                .bind(new.at)
+                .bind(new.sent_at)
                 .bind(&received)
                 .bind(skew)
                 .execute(&mut *tx)
@@ -670,7 +686,7 @@ impl Db {
     /// 出来事を足す。同じ id で同じ中身なら Same、違えば Conflict。
     pub async fn put_event(&self, id: &str, new: &NewEvent<'_>) -> Result<Put<Event>, WriteError> {
         let mut tx = self.write.begin().await?;
-        let select = "select id, actor_id, type, detail, at, received_at, clock_skew from events where id = ?1";
+        let select = "select id, actor_id, type, detail, sent_at, received_at, clock_skew from events where id = ?1";
         if let Some(hash) =
             body_hash(&mut tx, "select body_hash from events where id = ?1", id).await?
         {
@@ -679,16 +695,16 @@ impl Db {
         let actor = must_resolve(&mut tx, new.issuer, new.by, "by").await?;
         let received = received_at(&mut tx).await?;
         sqlx::query(
-            "insert into events(id, actor_id, type, detail, at, received_at, clock_skew, body_hash)
+            "insert into events(id, actor_id, type, detail, sent_at, received_at, clock_skew, body_hash)
              values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         )
         .bind(id)
         .bind(&actor.id)
         .bind(new.kind)
         .bind(new.detail)
-        .bind(new.at)
+        .bind(new.sent_at)
         .bind(&received)
-        .bind(skewed(new.at_time, &received))
+        .bind(skewed(new.sent_time, &received))
         .bind(new.body_hash)
         .execute(&mut *tx)
         .await?;
@@ -700,7 +716,7 @@ impl Db {
     /// 線を足す。起こされる（launched）のは、1 つのアクターに 1 度だけ。
     pub async fn put_link(&self, id: &str, new: &NewLink<'_>) -> Result<Put<Link>, WriteError> {
         let mut tx = self.write.begin().await?;
-        let select = "select seq, id, type, from_actor, to_actor, at, received_at, clock_skew from links where id = ?1";
+        let select = "select seq, id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links where id = ?1";
         if let Some(hash) =
             body_hash(&mut tx, "select body_hash from links where id = ?1", id).await?
         {
@@ -713,16 +729,16 @@ impl Db {
         }
         let received = received_at(&mut tx).await?;
         let inserted = sqlx::query(
-            "insert into links(id, type, from_actor, to_actor, at, received_at, clock_skew, body_hash)
+            "insert into links(id, type, from_actor, to_actor, sent_at, received_at, clock_skew, body_hash)
              values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         )
         .bind(id)
         .bind(new.kind)
         .bind(&from.id)
         .bind(&to.id)
-        .bind(new.at)
+        .bind(new.sent_at)
         .bind(&received)
-        .bind(skewed(new.at_time, &received))
+        .bind(skewed(new.sent_time, &received))
         .bind(new.body_hash)
         .execute(&mut *tx)
         .await;
@@ -748,7 +764,7 @@ impl Db {
         new: &NewSetting<'_>,
     ) -> Result<Put<Setting>, WriteError> {
         let mut tx = self.write.begin().await?;
-        let select = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.at, s.received_at, s.clock_skew
+        let select = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.sent_at, s.received_at, s.clock_skew
              from settings s join models m on m.id = s.model_id join efforts f on f.id = s.effort_id
              where s.id = ?1";
         let stored: Option<Option<String>> =
@@ -773,7 +789,7 @@ impl Db {
         let effort_id = master(&mut tx, Master::Efforts, new.effort, &received).await?;
         if latest_setting(&mut tx, &actor.id).await? == Some((model_id, effort_id)) {
             let latest = sqlx::query_as(
-                "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.at, s.received_at, s.clock_skew
+                "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.sent_at, s.received_at, s.clock_skew
                  from settings s join models m on m.id = s.model_id join efforts f on f.id = s.effort_id
                  where s.actor_id = ?1 order by s.seq desc limit 1",
             )
@@ -784,7 +800,7 @@ impl Db {
             return Ok(Put::Same(latest));
         }
         sqlx::query(
-            "insert into settings(id, actor_id, model_id, effort_id, source, at, received_at, clock_skew, body_hash)
+            "insert into settings(id, actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew, body_hash)
              values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         )
         .bind(id)
@@ -792,9 +808,9 @@ impl Db {
         .bind(model_id)
         .bind(effort_id)
         .bind(new.source)
-        .bind(new.at)
+        .bind(new.sent_at)
         .bind(&received)
-        .bind(skewed(new.at_time, &received))
+        .bind(skewed(new.sent_time, &received))
         .bind(new.body_hash)
         .execute(&mut *tx)
         .await?;
@@ -814,7 +830,7 @@ async fn insert_binding(
     received: &str,
 ) -> Result<(), sqlx::Error> {
     sqlx::query(
-        "insert into bindings(actor_id, issuer, type, value, is_key, at, received_at)
+        "insert into bindings(actor_id, issuer, type, value, is_key, sent_at, received_at)
          values(?1, ?2, ?3, ?4, ?5, ?6, ?7)",
     )
     .bind(actor_id)

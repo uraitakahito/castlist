@@ -33,20 +33,20 @@ fn seat(prefix: &str, session: &str, key: &str, role: &str, workspace: &str) -> 
             { "type": "cmux.workspace.ref", "value": workspace },
         ],
         "settings": { "model": OPUS, "effort": "high" },
-        "at": at(0),
+        "sent_at": at(0),
     })
 }
 
 fn ev(by: &str, kind: &str, detail: Value, at: &str) -> Value {
-    json!({ "issuer": "tpm", "by": by, "type": kind, "detail": detail, "at": at })
+    json!({ "issuer": "tpm", "by": by, "type": kind, "detail": detail, "sent_at": at })
 }
 
 fn line(kind: &str, from: &str, to: &str) -> Value {
-    json!({ "issuer": "tpm", "type": kind, "from": from, "to": to, "at": at(0) })
+    json!({ "issuer": "tpm", "type": kind, "from": from, "to": to, "sent_at": at(0) })
 }
 
 fn observed(by: &str, model: &str, effort: &str) -> Value {
-    json!({ "issuer": "tpm", "by": by, "model": model, "effort": effort, "source": "observed", "at": at(0) })
+    json!({ "issuer": "tpm", "by": by, "model": model, "effort": effort, "source": "observed", "sent_at": at(0) })
 }
 
 async fn put(app: &App, uri: &str, body: &Value) -> Value {
@@ -94,7 +94,7 @@ async fn sample() -> Sample {
             "name_prefix": "pm",
             "labels": { "project": "castlist", "tpm.role": "product-manager" },
             "bindings": [{ "type": "tpm.person", "value": "pm" }],
-            "at": at(0),
+            "sent_at": at(0),
         }),
     )
     .await;
@@ -898,7 +898,7 @@ async fn タイムラインの区切りは_送り手の時刻でなく_受けた
         ("t-x-3", OPUS, -3600),
     ] {
         let mut body = observed(x_ref, model, "high");
-        body["at"] = json!(at(secs));
+        body["sent_at"] = json!(at(secs));
         put(&s.app, &format!("/v1/settings/{id}"), &body).await;
         tick().await;
     }

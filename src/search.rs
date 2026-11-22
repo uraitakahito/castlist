@@ -33,7 +33,7 @@ pub(crate) const MAX_DEPTH: u32 = 20;
 /// アクター 1 つごとの「order by seq limit 1」で引く（events(actor_id, type, seq)・settings(actor_id, seq)）。
 /// 時計のずれた行を持つか（skewed）も、アクター 1 つごとに引く（画面の印。API の答えには出さない）。
 const ACTOR_ITEM: &str =
-    "select a.seq, a.id, a.name, a.kind, a.issuer, a.at, a.received_at, a.clock_skew,
+    "select a.seq, a.id, a.name, a.kind, a.issuer, a.sent_at, a.received_at, a.clock_skew,
        (select e.received_at from events e
         where e.actor_id = a.id and e.type in ('entered', 'reentered', 'forked')
         order by e.seq limit 1) as first_entered_at,
@@ -66,16 +66,16 @@ const ACTOR_LABELS: &str = "select actor_id, key, value from labels
 const ACTOR_KIND: &str = "select kind from actors where id = ?1";
 /// 上る線（そのアクターを起こした・継がせた線）と、下る線。
 const LINEAGE_UP: &str =
-    "select seq, id, type, from_actor, to_actor, at, received_at, clock_skew from links
+    "select seq, id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links
      where to_actor = ?1 and (?2 is null or type = ?2) order by seq";
 const LINEAGE_DOWN: &str =
-    "select seq, id, type, from_actor, to_actor, at, received_at, clock_skew from links
+    "select seq, id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links
      where from_actor = ?1 and (?2 is null or type = ?2) order by seq";
 
 macro_rules! setting_row {
     () => {
         "select s.seq, s.id, s.actor_id, a.name as actor_name, m.name as model, s.model_id,
-                f.name as effort, s.effort_id, s.source, s.at, s.received_at, s.clock_skew
+                f.name as effort, s.effort_id, s.source, s.sent_at, s.received_at, s.clock_skew
          from settings s join actors a on a.id = s.actor_id
          join models m on m.id = s.model_id join efforts f on f.id = s.effort_id"
     };
@@ -91,7 +91,7 @@ const MISMATCH: &str = " and s.source = 'observed'
      and coalesce((select r.model_id != s.model_id or r.effort_id != s.effort_id from settings r
                    where r.actor_id = s.actor_id and r.source = 'requested' and r.seq < s.seq
                    order by r.seq desc limit 1), 0)";
-const EVENT_ROW: &str = "select e.seq, e.id, e.actor_id, a.name as actor_name, e.type, e.detail, e.at, e.received_at, e.clock_skew
+const EVENT_ROW: &str = "select e.seq, e.id, e.actor_id, a.name as actor_name, e.type, e.detail, e.sent_at, e.received_at, e.clock_skew
      from events e join actors a on a.id = e.actor_id";
 
 // --- 型 ---
@@ -162,7 +162,7 @@ pub struct ActorItem {
     pub name: String,
     pub kind: String,
     pub issuer: String,
-    pub at: String,
+    pub sent_at: String,
     pub received_at: String,
     pub clock_skew: bool,
     #[sqlx(skip)]
@@ -199,7 +199,7 @@ pub struct SettingRow {
     pub effort: String,
     pub effort_id: i64,
     pub source: String,
-    pub at: String,
+    pub sent_at: String,
     pub received_at: String,
     pub clock_skew: bool,
 }
@@ -215,7 +215,7 @@ pub struct EventRow {
     #[serde(rename = "type")]
     pub kind: String,
     pub detail: Value,
-    pub at: String,
+    pub sent_at: String,
     pub received_at: String,
     pub clock_skew: bool,
 }
@@ -230,7 +230,7 @@ impl FromRow<'_, SqliteRow> for EventRow {
             actor_name: row.try_get("actor_name")?,
             kind: row.try_get("type")?,
             detail: serde_json::from_str(&detail).map_err(|e| sqlx::Error::Decode(e.into()))?,
-            at: row.try_get("at")?,
+            sent_at: row.try_get("sent_at")?,
             received_at: row.try_get("received_at")?,
             clock_skew: row.try_get("clock_skew")?,
         })

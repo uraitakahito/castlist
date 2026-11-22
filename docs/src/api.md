@@ -3,7 +3,7 @@
 どれも JSON。host（castlist を動かす機械）の外からは届かない。`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403（browser で開いたほかのページからの読み書きを断る物。同じ network の container は `Host: 127.0.0.1` で読み書きできる。[動かす](run.md) の「断るのは、機械の外からだけ」）。
 
 - アクターは、鍵の付随する id（`種類:値`。例 `claude.session:5f0c…`・`tpm.person:pm`）で指す。本当の id への引き当ては castlist がする。値には `:` があってよい（初めの `:` で分ける）。
-- 時刻は RFC 3339。送り手の時刻（`at`）は、そのまま残す。castlist が受けた時刻（`received_at`）は UTC・ミリ秒まで。
+- 時刻は RFC 3339。送り手の時刻（`sent_at`。送り手が送る時に付けた、送り手の時計の時刻）は、そのまま残す。0.1.x の名 `at` も、移る間は受ける（両方を付ければ 422。答えはいつも `sent_at`）。castlist が受けた時刻（`received_at`）は UTC・ミリ秒まで。
 - 誤りは `{"error":"…"}`（日本語）。探す答えには、castlist の今の時刻 `as_of` が付く。
 - 1 つの問い合わせは 5 秒まで。過ぎれば 503。書く接続を 2 秒待っても空かなければ 503「混んでいる」。どちらも、少し待ってから送り直す。
 - 本文に知らない欄があれば 422（外で決めた id を紛れ込ませない）。
@@ -34,7 +34,7 @@
     { "type": "claude.session", "value": "5f0c2a8e-…" },
     { "type": "cmux.workspace.ref", "value": "workspace:3" }
   ],
-  "at": "2026-11-22T13:00:00+09:00",
+  "sent_at": "2026-11-22T13:00:00+09:00",
   "settings": { "model": "claude-opus-5-5", "effort": "high" }
 }
 ```
@@ -45,16 +45,16 @@
 
 - 201: 新しいアクター（`created: true`）。
 - 200: 鍵が既にある（`created: false`。同じ id と名）。この時は、鍵でない付随する id のうち、そのアクターの同じ種類の最新と違う物だけを足し、`settings` が最新と違えば `requested` の model と effort を足す。ラベルは登録の初めの時だけ書く。
-- 422: `kind` が `ai`・`human` でない、名の形が違う、`bindings` が空、`at` が読めない、知らない欄がある。
+- 422: `kind` が `ai`・`human` でない、名の形が違う、`bindings` が空、`sent_at` が読めない、知らない欄がある。
 
 ## `PUT /v1/events/{id}` 出来事
 
 ```json
-{ "issuer": "tpm", "by": "claude.session:5f0c2a8e-…", "type": "entered", "detail": {}, "at": "2026-11-22T13:00:01+09:00" }
+{ "issuer": "tpm", "by": "claude.session:5f0c2a8e-…", "type": "entered", "detail": {}, "sent_at": "2026-11-22T13:00:01+09:00" }
 ```
 
 ```json
-{ "id": "e-1", "actor_id": "019a…", "type": "entered", "detail": {}, "at": "2026-11-22T13:00:01+09:00", "received_at": "2026-11-22T04:00:01.123Z", "clock_skew": false }
+{ "id": "e-1", "actor_id": "019a…", "type": "entered", "detail": {}, "sent_at": "2026-11-22T13:00:01+09:00", "received_at": "2026-11-22T04:00:01.123Z", "clock_skew": false }
 ```
 
 `type` は次の 10 のどれか: `entered`・`reentered`・`forked`・`compacted`・`cleared`・`exited`・`closed`・`reported_in`・`model_unreadable`・`retracted`。`detail` は JSON の物（`{…}`。無ければ `{}`）。
@@ -66,11 +66,11 @@
 誰が誰を起動したか（`launched`）・誰から引き継いだか（`continued`）。
 
 ```json
-{ "issuer": "tpm", "type": "launched", "from": "tpm.person:pm", "to": "claude.session:5f0c2a8e-…", "at": "2026-11-22T13:00:00+09:00" }
+{ "issuer": "tpm", "type": "launched", "from": "tpm.person:pm", "to": "claude.session:5f0c2a8e-…", "sent_at": "2026-11-22T13:00:00+09:00" }
 ```
 
 ```json
-{ "id": "l-1", "type": "launched", "from": "019a…（PM）", "to": "019a…（se.1）", "at": "…", "received_at": "…", "clock_skew": false }
+{ "id": "l-1", "type": "launched", "from": "019a…（PM）", "to": "019a…（se.1）", "sent_at": "…", "received_at": "…", "clock_skew": false }
 ```
 
 - 201・200・409・422 は出来事と同じ。ほかに、1 つのアクターが `launched` で起動されるのは 1 度だけで、2 度目は 409。`from` と `to` が同じアクターなら 422。
@@ -78,11 +78,11 @@
 ## `PUT /v1/settings/{id}` model と effort
 
 ```json
-{ "issuer": "tpm", "by": "claude.session:5f0c2a8e-…", "model": "claude-opus-5-5", "effort": "high", "source": "observed", "at": "…" }
+{ "issuer": "tpm", "by": "claude.session:5f0c2a8e-…", "model": "claude-opus-5-5", "effort": "high", "source": "observed", "sent_at": "…" }
 ```
 
 ```json
-{ "id": "t-1", "actor_id": "019a…", "model": "claude-opus-5-5", "effort": "high", "source": "observed", "at": "…", "received_at": "…", "clock_skew": false }
+{ "id": "t-1", "actor_id": "019a…", "model": "claude-opus-5-5", "effort": "high", "source": "observed", "sent_at": "…", "received_at": "…", "clock_skew": false }
 ```
 
 - `source` は `requested`（指定）か `observed`（実際）。
@@ -109,14 +109,14 @@
 
 ## `GET /v1/actors/{id}` 1 つのアクター
 
-アクターの欄（`id`・`name`・`kind`・`issuer`・`at`・`received_at`・`clock_skew`）と、`labels`（ラベル）・`bindings`（付随する id の全部）・`current_bindings`（種類ごとの最新）・`events`・`settings`（名で）・`current_settings`・`links_in`・`links_out`・`state`・`as_of`。どの一覧も受けた順（seq の順）。
+アクターの欄（`id`・`name`・`kind`・`issuer`・`sent_at`・`received_at`・`clock_skew`）と、`labels`（ラベル）・`bindings`（付随する id の全部）・`current_bindings`（種類ごとの最新）・`events`・`settings`（名で）・`current_settings`・`links_in`・`links_out`・`state`・`as_of`。どの一覧も受けた順（seq の順）。
 
 ```json
 {
   "id": "019a…", "name": "se.1", "kind": "ai", "issuer": "tpm",
   "labels": { "project": "castlist" },
   "state": { "presence": "entered", "present": true, "entered_at": "…", "exited_at": null },
-  "current_settings": { "model": "claude-opus-5-5", "effort": "high", "source": "observed", "at": "…", "received_at": "…" },
+  "current_settings": { "model": "claude-opus-5-5", "effort": "high", "source": "observed", "sent_at": "…", "received_at": "…" },
   "as_of": "…"
 }
 ```
@@ -129,10 +129,10 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 
 ### 時刻の決まり
 
-- 時刻の条件（`at`・`active_from`・`active_to`・`from`・`to`）は、どれも castlist が受けた時刻（`received_at`）と比べる。送り手の時刻（`at`）とは比べない。送り手の時計がずれていても、答えが揺れないように。
+- 時刻の条件（`at`・`active_from`・`active_to`・`from`・`to`）は、どれも castlist が受けた時刻（`received_at`）と比べる。送り手の時刻（`sent_at`）とは比べない。送り手の時計がずれていても、答えが揺れないように。
 - 「最新」は `seq` の大きい方。
 - 窓の両端は含む（`from ≤ received_at ≤ to`）。前の答えの `as_of` を `from` に渡せば、その後に来た物を取りこぼさない（同じミリ秒の物は、前の答えと重なりうる）。
-- 答えの行には、`at`・`received_at`・`clock_skew` を、どれも付ける。
+- 答えの行には、`sent_at`・`received_at`・`clock_skew` を、どれも付ける。
 
 ### ページ
 
@@ -152,7 +152,7 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 ```json
 {
   "id": "019a…", "name": "se.3", "kind": "ai", "issuer": "tpm",
-  "at": "…", "received_at": "…", "clock_skew": false,
+  "sent_at": "…", "received_at": "…", "clock_skew": false,
   "labels": { "project": "castlist", "tpm.key": "t-23zs", "tpm.role": "software-engineer" },
   "first_entered_at": "2026-11-22T02:10:00.000Z",
   "last_exited_at": "2026-11-22T03:00:00.000Z", "last_exit_type": "exited",
@@ -176,7 +176,7 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 |---|---|
 | `label=鍵:値` | そのラベルを持つ。何度でも付けられ、どれも持つ者だけ |
 | `binding=種類:値` | その付随する id を、`at` の時（無ければ今）に最後に受けたアクター（1 つまで）。workspace のように使い回される物を、時刻で引き分ける |
-| `at` | `binding` の時刻。`binding` 無しでは 400 |
+| `at` | `binding` の時点。castlist の時計（`received_at`）での時刻で、送り手の時刻（`sent_at`）ではない。`binding` 無しでは 400 |
 | `active_from`・`active_to` | 稼働した期間が窓に掛かる。稼働した期間は、最初の登場から最後の退場まで。最新の稼働・停止の出来事が退場でなければ、今まで稼働中。登場の無いアクターは入らない |
 | `kind` | `ai` か `human` |
 | `model`・`effort` | その名の settings の行を、1 つでも持つ（今の物でなくてよい） |
@@ -220,7 +220,7 @@ Auditor の使い方:
 {
   "as_of": "…", "actor_id": "019a…（se.3）",
   "nodes": [{ "id": "019a…", "name": "pm.1", "…": "…" }],
-  "edges": [{ "id": "l-1", "type": "launched", "from": "019a…", "to": "019a…", "at": "…", "received_at": "…", "clock_skew": false }]
+  "edges": [{ "id": "l-1", "type": "launched", "from": "019a…", "to": "019a…", "sent_at": "…", "received_at": "…", "clock_skew": false }]
 }
 ```
 
@@ -230,7 +230,7 @@ Auditor の使い方:
 
 ### `GET /v1/actors/{id}/settings` X の時刻 T の model と effort
 
-- `?at=時刻`: その時に効いていた 1 行（受けた時刻が `at` 以前で、seq の最大）。まだ無ければ `"setting": null`。
+- `?at=時刻`: その時点（castlist の時計 `received_at` での時刻。送り手の時刻 `sent_at` ではない）に効いていた 1 行（受けた時刻が `at` 以前で、seq の最大）。答えの `at` は、問いの時点をそのまま返す。まだ無ければ `"setting": null`。
 - `at` が無ければ、全部を受けた順で（`"settings": […]`）。
 
 ```json
@@ -239,7 +239,7 @@ Auditor の使い方:
   "setting": {
     "id": "t-1", "actor_id": "019a…", "actor_name": "se.2",
     "model": "claude-sonnet-5", "model_id": 2, "effort": "high", "effort_id": 3,
-    "source": "observed", "at": "…", "received_at": "…", "clock_skew": false
+    "source": "observed", "sent_at": "…", "received_at": "…", "clock_skew": false
   }
 }
 ```
@@ -277,7 +277,7 @@ Auditor の使い方:
 | `limit`・`after` | ページ（受けた順） |
 
 ```json
-{ "as_of": "…", "events": [{ "id": "e-1", "actor_id": "019a…", "actor_name": "devops.1", "type": "model_unreadable", "detail": { "reason": "timeout" }, "at": "…", "received_at": "…", "clock_skew": false }], "next": null }
+{ "as_of": "…", "events": [{ "id": "e-1", "actor_id": "019a…", "actor_name": "devops.1", "type": "model_unreadable", "detail": { "reason": "timeout" }, "sent_at": "…", "received_at": "…", "clock_skew": false }], "next": null }
 ```
 
 - model が読めなかった所（席をまたいで）: `?type=model_unreadable`、訳で絞るなら `&reason=timeout`
@@ -295,8 +295,8 @@ Auditor の使い方:
 ```json
 {
   "as_of": "…",
-  "nodes": [{ "id": "019a…", "name": "pm.1", "kind": "human", "issuer": "tpm", "at": "…", "received_at": "…", "clock_skew": false, "state": { … }, "current_settings": null }],
-  "edges": [{ "id": "l-1", "type": "launched", "from": "019a…", "to": "019a…", "at": "…", "received_at": "…", "clock_skew": false }]
+  "nodes": [{ "id": "019a…", "name": "pm.1", "kind": "human", "issuer": "tpm", "sent_at": "…", "received_at": "…", "clock_skew": false, "state": { … }, "current_settings": null }],
+  "edges": [{ "id": "l-1", "type": "launched", "from": "019a…", "to": "019a…", "sent_at": "…", "received_at": "…", "clock_skew": false }]
 }
 ```
 
