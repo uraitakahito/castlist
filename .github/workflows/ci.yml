@@ -35,6 +35,10 @@ jobs:
       - run: "! ci/check-wording.sh ci/testdata/bad-label.md"
       # 前の画面の字（居るか・時間の帯・関係の網・時計のずれた行など）も当てるか。
       - run: "! ci/check-wording.sh ci/testdata/bad-words.md"
+      # 「動かす」の container の命令が、名 castlist.box を指し、pm-only の守り（.claude/roles/config.jsonc）に当たるか。
+      - run: ci/check-run-docs.sh
+      # 見張りが、名の違う命令と守りから漏れた命令を本当に当てるか（当てなければ落とす）。
+      - run: "! ci/check-run-docs.sh ci/testdata/bad-run.md"
       # release の workflow が使う、tag と版の突き合わせ（ci/check-release-version.sh）の試験。
       - run: ci/test-check-release-version.sh
       # 取り込んだ外の JavaScript（static/vendor/）が、npm に出ている物と同じか（static/vendor/SOURCES.md）。
