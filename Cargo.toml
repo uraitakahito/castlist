@@ -1,0 +1,35 @@
+# アクターの台帳のサーバー（castlist-server）。crate は 1 つ（API を共にする CLI が無いので、pagetray の crates/api の分けはしない）。
+[package]
+name = "castlist"
+# 版はここだけに書く（release の workflow が、この file の初めの `version = "…"` の行を tag と突き合わせる）。
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.100"
+license = "MIT"
+publish = false
+
+[[bin]]
+name = "castlist-server"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "query", "tokio"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+time = { version = "0.3", features = ["formatting"] }
+tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "net", "signal"] }
+
+[dev-dependencies]
+
+# 並列の問い合わせを待たせないための決まり（docs/src/development.md の「待たせない書き方」）。
+# 塞ぐ呼び出しは clippy.toml の disallowed-methods で断り、鍵を握ったままの await も断る。
+[lints.clippy]
+await_holding_lock = "deny"
+disallowed_methods = "deny"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
