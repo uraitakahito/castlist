@@ -492,23 +492,23 @@ async fn プロフィールは_名_種類_id_issuer_ラベル_今の状態を出
 async fn プロフィールは_起動した人を人の起点まで_起動したアクター_引き継ぎを出す() {
     let s = sample().await;
     let body = html(&s.app, &format!("/actors/{}", s.id("se.2"))).await;
-    // se.2 は se.1 を継いだ。se.1 は tpm.1 が、tpm.1 は人の pm.1 が起こした。
+    // se.2 は se.1 を引き継いだ。se.1 は tpm.1 が、tpm.1 は人の pm.1 が起動した。
     let chain = listed(section(&body, "launched-by"));
     assert_eq!(chain, s.ids_of(&["pm.1", "tpm.1", "se.1"]), "{body}");
     assert_eq!(
         listed(section(&body, "continued")),
         s.ids_of(&["se.1"]),
-        "前"
+        "引き継ぎ元"
     );
-    assert!(section(&body, "continued").contains("前"));
+    assert!(section(&body, "continued").contains("引き継ぎ元"));
 
     let body = html(&s.app, &format!("/actors/{}", s.id("se.1"))).await;
     assert_eq!(
         listed(section(&body, "continued")),
         s.ids_of(&["se.2"]),
-        "後"
+        "引き継ぎ先"
     );
-    assert!(section(&body, "continued").contains("後"));
+    assert!(section(&body, "continued").contains("引き継ぎ先"));
     assert_eq!(
         listed(section(&body, "launched-by")),
         s.ids_of(&["pm.1", "tpm.1"])
