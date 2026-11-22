@@ -46,7 +46,31 @@ const LINKS_IN: &str =
 const LINKS_OUT: &str =
     "select seq, id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links
      where from_actor = ?1 order by seq";
-const STATE: &str = "select actor_id, presence, present, entered_at, exited_at from actor_state where actor_id = ?1";
+/// 今の帯を終わらせた出来事（最後の居る出来事より後の、初めの退場。タイムラインの帯と同じく、停止中の退場は数えない）が、
+/// 推しの幕引き（`closed` で `detail.inferred` が JSON の true）か。居るままなら 0。
+/// `$actor` はアクターの id の列の式。view の actor_state は替えない（移行を足さず、前の版でも同じ DB を開けるように）。
+#[macro_export]
+#[doc(hidden)]
+macro_rules! inferred_sql {
+    ($actor:literal) => {
+        concat!(
+            "coalesce((select e.type = 'closed' and coalesce(json_type(e.detail, '$.inferred') = 'true', 0) from events e
+             where e.actor_id = ",
+            $actor,
+            " and e.type in ('cleared', 'exited', 'closed')
+               and e.seq > coalesce((select i.seq from events i where i.actor_id = ",
+            $actor,
+            " and i.type in ('entered', 'reentered', 'forked') order by i.seq desc limit 1), 0)
+             order by e.seq limit 1), 0)"
+        )
+    };
+}
+
+const STATE: &str = concat!(
+    "select actor_id, presence, present, ",
+    inferred_sql!("actor_state.actor_id"),
+    " as inferred, entered_at, exited_at from actor_state where actor_id = ?1"
+);
 const CURRENT_SETTINGS: &str = "select actor_id, model, effort, source, sent_at, received_at
      from actor_current_settings where actor_id = ?1";
 const CURRENT_BINDINGS: &str = "select issuer, type, value, is_key, sent_at, received_at
@@ -67,13 +91,18 @@ const GRAPH_LINKS: &str =
 const GRAPH_ACTORS: &str =
     "select id, name, kind, issuer, sent_at, received_at, clock_skew from actors
      where id in (select value from json_each(?1)) order by seq";
-const GRAPH_STATE: &str =
-    "select actor_id, presence, present, entered_at, exited_at from actor_state
-     where actor_id in (select value from json_each(?1))";
+const GRAPH_STATE: &str = concat!(
+    "select actor_id, presence, present, ",
+    inferred_sql!("actor_state.actor_id"),
+    " as inferred, entered_at, exited_at from actor_state
+     where actor_id in (select value from json_each(?1))"
+);
 const GRAPH_SETTINGS: &str = "select actor_id, model, effort, source, sent_at, received_at
      from actor_current_settings where actor_id in (select value from json_each(?1))";
 /// タイムライン: アクターの組の、出来事と model と effort の全部（seq の順）。
-const TIMELINE_EVENTS: &str = "select actor_id, type, received_at from events
+const TIMELINE_EVENTS: &str = "select actor_id, type, received_at,
+       coalesce(type = 'closed' and json_type(detail, '$.inferred') = 'true', 0) as inferred,
+       case when json_type(detail, '$.reason') = 'text' then json_extract(detail, '$.reason') end as reason from events
      where actor_id in (select value from json_each(?1)) order by seq";
 const TIMELINE_SETTINGS: &str = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.sent_at, s.received_at, s.clock_skew
      from settings s join models m on m.id = s.model_id join efforts f on f.id = s.effort_id
@@ -227,6 +256,8 @@ pub struct State {
     /// 居る・居ないを替える出来事の最新の種類（まだ無ければ null）。
     pub presence: Option<String>,
     pub present: bool,
+    /// 今の状態を決めた出来事が、推しの幕引き（`closed` で `detail.inferred` が JSON の true）。
+    pub inferred: bool,
     /// 初めの登場の received_at。
     pub entered_at: Option<String>,
     /// 最後の退場（cleared・exited・closed）の received_at。
@@ -271,6 +302,10 @@ pub struct Moment {
     #[sqlx(rename = "type")]
     pub kind: String,
     pub received_at: String,
+    /// 推しの幕引き（`closed` で `detail.inferred` が JSON の true）。
+    pub inferred: bool,
+    /// `detail.reason`（字の時だけ）。
+    pub reason: Option<String>,
 }
 
 /// タイムライン: 図の点と線と、点の出来事と model と effort の全部（どれも seq の順）。

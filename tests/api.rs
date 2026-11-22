@@ -698,6 +698,106 @@ async fn 付随する_id_と時刻で_その時のアクターを引く() {
 }
 
 #[tokio::test]
+async fn 推しの幕引きの後は_停止で推しの印が立ち_再登場で消える() {
+    let app = App::start().await;
+    let se1 = app.register(&ai("se", "s-1")).await;
+    let id = se1["id"].as_str().unwrap().to_owned();
+    let inferred = async || {
+        let (_, actor) = app.get(&format!("/v1/actors/{id}")).await;
+        let (_, list) = app.get("/v1/actors?label=project:castlist").await;
+        let item = list["actors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|a| a["id"] == id.as_str())
+            .unwrap()
+            .clone();
+        let (_, graph) = app.get("/v1/graph?label=project:castlist").await;
+        let node = graph["nodes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|a| a["id"] == id.as_str())
+            .unwrap()
+            .clone();
+        assert_eq!(item["inferred"], actor["state"]["inferred"], "{item}");
+        assert_eq!(
+            node["state"]["inferred"], actor["state"]["inferred"],
+            "{node}"
+        );
+        actor
+    };
+    assert_eq!(inferred().await["state"]["inferred"], false);
+    app.put("/v1/events/i-1", &event(SE1, "entered", &at(0)))
+        .await;
+    assert_eq!(inferred().await["state"]["inferred"], false);
+    let lost = json!({ "issuer": "tpm", "by": SE1, "type": "closed",
+        "detail": { "inferred": true, "reason": "workspace_gone" }, "sent_at": at(0) });
+    let (status, _) = app.put("/v1/events/i-2", &lost).await;
+    assert_eq!(status, StatusCode::CREATED);
+    let actor = inferred().await;
+    assert_eq!(actor["state"]["present"], false);
+    assert_eq!(actor["state"]["presence"], "closed");
+    assert_eq!(actor["state"]["inferred"], true, "{actor}");
+    // 再登場で、推しの印は消える。
+    app.put("/v1/events/i-3", &event(SE1, "reentered", &at(0)))
+        .await;
+    let actor = inferred().await;
+    assert_eq!(actor["state"]["present"], true);
+    assert_eq!(actor["state"]["inferred"], false, "{actor}");
+    // ふつうの幕引き・字の "true"・ほかの種類の inferred は、推しにしない。
+    for (n, body) in [
+        json!({ "issuer": "tpm", "by": SE1, "type": "closed", "sent_at": at(0) }),
+        json!({ "issuer": "tpm", "by": SE1, "type": "closed", "detail": { "inferred": "true" }, "sent_at": at(0) }),
+        json!({ "issuer": "tpm", "by": SE1, "type": "exited", "detail": { "inferred": true }, "sent_at": at(0) }),
+    ]
+    .iter()
+    .enumerate()
+    {
+        app.put(&format!("/v1/events/j-{n}-in"), &event(SE1, "reentered", &at(0)))
+            .await;
+        let (status, _) = app.put(&format!("/v1/events/j-{n}"), body).await;
+        assert_eq!(status, StatusCode::CREATED);
+        let actor = inferred().await;
+        assert_eq!(actor["state"]["present"], false);
+        assert_eq!(actor["state"]["inferred"], false, "{body} {actor}");
+    }
+}
+
+#[tokio::test]
+async fn 推しの印は_今の帯を終わらせた出来事で決め_停止中の退場では替わらない() {
+    let app = App::start().await;
+    let lost = |id: &str| {
+        json!({ "issuer": "tpm", "by": id, "type": "closed",
+        "detail": { "inferred": true, "reason": "workspace_gone" }, "sent_at": at(0) })
+    };
+    // 推しの幕引きの後に、遅れた退場（推しが誤りで、その session が後で SessionEnd を送った）: 推しのまま。
+    let se1 = app.register(&ai("se", "s-1")).await;
+    app.put("/v1/events/k-1", &event(SE1, "entered", &at(0)))
+        .await;
+    app.put("/v1/events/k-2", &lost(SE1)).await;
+    app.put("/v1/events/k-3", &event(SE1, "exited", &at(0)))
+        .await;
+    let (_, actor) = app
+        .get(&format!("/v1/actors/{}", se1["id"].as_str().unwrap()))
+        .await;
+    assert_eq!(actor["state"]["present"], false);
+    assert_eq!(actor["state"]["inferred"], true, "{actor}");
+    // 退場の後に、推しの幕引き（控えを読んだ後に SessionEnd が割り込んだ）: ふつうの停止。
+    let se2 = app.register(&ai("se", "s-2")).await;
+    app.put("/v1/events/k-4", &event(SE2, "entered", &at(0)))
+        .await;
+    app.put("/v1/events/k-5", &event(SE2, "exited", &at(0)))
+        .await;
+    app.put("/v1/events/k-6", &lost(SE2)).await;
+    let (_, actor) = app
+        .get(&format!("/v1/actors/{}", se2["id"].as_str().unwrap()))
+        .await;
+    assert_eq!(actor["state"]["present"], false);
+    assert_eq!(actor["state"]["inferred"], false, "{actor}");
+}
+
+#[tokio::test]
 async fn 図の点と線は_絞った外の一歩先も含める() {
     let app = App::start().await;
     let (se1, se2, pm) = three(&app).await;

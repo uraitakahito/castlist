@@ -59,6 +59,8 @@
 
 `type` は次の 10 のどれか: `entered`・`reentered`・`forked`・`compacted`・`cleared`・`exited`・`closed`・`reported_in`・`model_unreadable`・`retracted`。`detail` は JSON の物（`{…}`。無ければ `{}`）。
 
+推しの幕引き: 送り手が、終わりの出来事を送れずに落ちたと推して後から送る `closed` は、`detail` に `"inferred": true`（JSON の真偽の true）と訳（`reason`）を付ける。castlist は、これを状態の `inferred`（下の「1 つのアクター」と「アクターの行」）と、画面の推しの帯と「停止（推し）」に使う。tpm が送る訳は `workspace_gone`（居場所が消えた）と `superseded`（居場所に後から別の session が入った）。`GET /v1/events?type=closed&reason=workspace_gone` で探せる。
+
 - 201: 新しく足した。200: 同じ id で同じ本文が既にある。409: 同じ id で本文が違う。422: `by` のアクターを知らない・`type` が決まりの外・`detail` が物でない。
 
 ## `PUT /v1/links/{id}` 線
@@ -115,13 +117,13 @@
 {
   "id": "019a…", "name": "se.1", "kind": "ai", "issuer": "tpm",
   "labels": { "project": "castlist" },
-  "state": { "presence": "entered", "present": true, "entered_at": "…", "exited_at": null },
+  "state": { "presence": "entered", "present": true, "inferred": false, "entered_at": "…", "exited_at": null },
   "current_settings": { "model": "claude-opus-5-5", "effort": "high", "source": "observed", "sent_at": "…", "received_at": "…" },
   "as_of": "…"
 }
 ```
 
-`state.present` は、状態（稼働中・停止）を替える出来事の最新（seq で）が `entered`・`reentered`・`forked` なら `true`、`cleared`・`exited`・`closed` なら `false`（まだ無ければ `false`・`presence` は `null`）。無いアクターは 404。
+`state.present` は、状態（稼働中・停止）を替える出来事の最新（seq で）が `entered`・`reentered`・`forked` なら `true`、`cleared`・`exited`・`closed` なら `false`（まだ無ければ `false`・`presence` は `null`）。`state.inferred` は、今の帯を終わらせた出来事（最後の稼働にする出来事より後の、初めの停止にする出来事。タイムラインの帯と同じく、停止中の退場は数えない）が推しの幕引き（`closed` で `detail.inferred` が JSON の true）なら `true`。稼働中なら `false`。字の `"true"` は数えない。なので、推しの幕引きの後に遅れて来た退場では `true` のままで、退場の後に来た推しの幕引きでは `false` のまま。無いアクターは 404。
 
 ## 監査の検索
 
@@ -156,7 +158,7 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
   "labels": { "project": "castlist", "tpm.key": "t-23zs", "tpm.role": "software-engineer" },
   "first_entered_at": "2026-11-22T02:10:00.000Z",
   "last_exited_at": "2026-11-22T03:00:00.000Z", "last_exit_type": "exited",
-  "present": false,
+  "present": false, "inferred": false,
   "model": "claude-opus-5-5", "effort": "high",
   "url": "/actors/019a…"
 }
@@ -165,6 +167,7 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 - `first_entered_at`: 最初の登場（`entered`・`reentered`・`forked` のどれか）の受けた時刻。`state.entered_at`（`entered` だけ）とは違う。
 - `last_exited_at`・`last_exit_type`: 最後の退場（`cleared`・`exited`・`closed`）の受けた時刻と種類。
 - `present`: 今稼働中か（`GET /v1/actors/{id}` の `state.present` と同じ決め方）。
+- `inferred`: 推しの幕引きで停止したか（`GET /v1/actors/{id}` の `state.inferred` と同じ決め方）。
 - `model`・`effort`: 最新（seq で）の名。
 - `url`: アクターのプロフィールの画面の path（[画面](ui.md)）。
 

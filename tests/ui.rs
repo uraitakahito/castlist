@@ -845,6 +845,141 @@ async fn タイムラインは_起こした線と継いだ線の矢印と_出来
 }
 
 #[tokio::test]
+async fn 推しの幕引きで終わった者は_便りの後を推しの帯で描き_一覧とプロフィールに停止_推しと書く() {
+    let app = App::start().await;
+    let lost = "claude.session:s-lost";
+    let actor = app
+        .register(&seat(
+            "lost",
+            "s-lost",
+            KEY,
+            "software-engineer",
+            "workspace:9",
+        ))
+        .await;
+    let id = actor["id"].as_str().unwrap().to_owned();
+    put(
+        &app,
+        "/v1/events/l-1",
+        &ev(lost, "entered", json!({}), &at(0)),
+    )
+    .await;
+    tick().await;
+    put(
+        &app,
+        "/v1/events/l-2",
+        &ev(lost, "reported_in", json!({}), &at(0)),
+    )
+    .await;
+    tick().await;
+    put(
+        &app,
+        "/v1/events/l-3",
+        &ev(
+            lost,
+            "closed",
+            json!({ "inferred": true, "reason": "workspace_gone" }),
+            &at(0),
+        ),
+    )
+    .await;
+    let body = html(&app, "/graph/timeline").await;
+    let strip = lane(svg(&body), &id);
+    let classes = segs(strip);
+    assert_eq!(classes.len(), 2, "{strip}");
+    assert!(!classes[0].contains("inferred"), "{strip}");
+    assert!(classes[1].contains("inferred"), "{strip}");
+    assert!(!strip.contains("class=\"open-end\""), "{strip}");
+    assert!(
+        strip.contains("（推し: 居場所が消えた）</title>"),
+        "{strip}"
+    );
+    // 帯の字は、推しの切れで 2 度書かない。
+    assert!(strip.matches("class=\"seg-label\"").count() <= 1, "{strip}");
+    let legend = section(&body, "legend");
+    assert!(
+        legend.contains("<span class=\"inferred-key\"></span>点線の帯: 便りが途絶えた後、tpm が落ちたと推して閉じた（推しの幕引きまで）"),
+        "{legend}"
+    );
+    let list = html(&app, "/").await;
+    let line = row(&list, &id);
+    assert!(
+        line.contains("<span class=\"state off\">停止（推し）</span>"),
+        "{line}"
+    );
+    let profile = html(&app, &format!("/actors/{id}")).await;
+    assert!(
+        profile.contains("<span class=\"state off\">停止（推し）</span>"),
+        "{profile}"
+    );
+    // ふつうの幕引きは「停止」のまま、帯も推しにしない。
+    put(
+        &app,
+        "/v1/events/l-4",
+        &ev(lost, "reentered", json!({}), &at(0)),
+    )
+    .await;
+    tick().await;
+    put(
+        &app,
+        "/v1/events/l-5",
+        &ev(lost, "closed", json!({}), &at(0)),
+    )
+    .await;
+    let list = html(&app, "/").await;
+    let line = row(&list, &id);
+    assert!(
+        line.contains("<span class=\"state off\">停止</span>"),
+        "{line}"
+    );
+    let body = html(&app, "/graph/timeline").await;
+    let classes = segs(lane(svg(&body), &id))
+        .iter()
+        .map(|c| c.to_string())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        classes.iter().filter(|c| c.contains("inferred")).count(),
+        1,
+        "{classes:?}"
+    );
+    assert!(!classes.last().unwrap().contains("inferred"), "{classes:?}");
+    // 推しの幕引きの後に遅れた退場が来ても、一覧もタイムラインも推しのまま（今の帯を終わらせた出来事で決める）。
+    put(
+        &app,
+        "/v1/events/l-6",
+        &ev(lost, "reentered", json!({}), &at(0)),
+    )
+    .await;
+    tick().await;
+    put(
+        &app,
+        "/v1/events/l-7",
+        &ev(
+            lost,
+            "closed",
+            json!({ "inferred": true, "reason": "superseded" }),
+            &at(0),
+        ),
+    )
+    .await;
+    put(
+        &app,
+        "/v1/events/l-8",
+        &ev(lost, "exited", json!({}), &at(0)),
+    )
+    .await;
+    let line = row(&html(&app, "/").await, &id).to_owned();
+    assert!(line.contains("停止（推し）"), "{line}");
+    let body = html(&app, "/graph/timeline").await;
+    let strip = lane(svg(&body), &id);
+    assert!(segs(strip).last().unwrap().contains("inferred"), "{strip}");
+    assert!(
+        strip.contains("（推し: 居場所に別の session が入った）</title>"),
+        "{strip}"
+    );
+}
+
+#[tokio::test]
 async fn タイムラインの絞りは_図の_api_と同じ引数で狭める() {
     let s = sample().await;
     let cases: Vec<(String, Vec<&str>)> = vec![
