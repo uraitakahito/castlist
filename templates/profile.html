@@ -5,23 +5,23 @@
 <h1>{{ me.name }} <span class="kind">{{ me.kind }}</span></h1>
 <dl class="facts">
 <dt>id</dt><dd><code>{{ id }}</code></dd>
-<dt>出し手</dt><dd><code>{{ issuer }}</code></dd>
-<dt>登録</dt><dd>{% call m::time(registered) %}{% endcall %}</dd>
+<dt>発行元（issuer）</dt><dd><code>{{ issuer }}</code></dd>
+<dt>登録した時刻</dt><dd>{% call m::time(registered) %}{% endcall %}</dd>
 </dl>
 
 <section id="state">
-<h2>今の様子</h2>
+<h2>今の状態</h2>
 <dl class="facts">
-<dt>居るか</dt><dd>{% call m::presence(me) %}{% endcall %}{% if me.skewed %} {% call m::skew() %}{% endcall %}{% endif %}</dd>
+<dt>状態</dt><dd>{% call m::presence(me) %}{% endcall %}{% if me.skewed %} {% call m::skew() %}{% endcall %}{% endif %}</dd>
 <dt>model · effort</dt><dd>{% call m::setting(me) %}{% endcall %}{% if let Some(c) = current %} <span class="muted">（{{ c.source }}・{% call m::time(c.received) %}{% endcall %}）</span>{% endif %}</dd>
-<dt>初めの登場</dt><dd>{% call m::maybe_time(me.first_entered) %}{% endcall %}</dd>
+<dt>最初の登場</dt><dd>{% call m::maybe_time(me.first_entered) %}{% endcall %}</dd>
 <dt>最後の退場</dt><dd>{% call m::maybe_time(me.last_exited) %}{% endcall %}</dd>
 </dl>
 </section>
 
 <section id="labels">
 <h2>ラベル</h2>
-{% if me.labels.is_empty() %}<p class="empty">無い。</p>{% else %}
+{% if me.labels.is_empty() %}<p class="empty">ありません。</p>{% else %}
 <ul class="chips">
 {% for (key, value) in me.labels %}<li><span class="chip"><span class="muted">{{ key }}</span> {{ value }}</span></li>
 {% endfor %}
@@ -30,17 +30,17 @@
 </section>
 
 <section id="bindings">
-<h2>付随する id</h2>
+<h2>外部の id</h2>
 <div class="scroll">
 <table>
-<thead><tr><th>受けた時</th><th>種類</th><th>値</th><th></th></tr></thead>
+<thead><tr><th>受け取った時刻</th><th>種類</th><th>値</th><th></th></tr></thead>
 <tbody>
 {% for b in bindings %}
 <tr{% if !b.current %} class="past"{% endif %}>
 <td>{% call m::time(b.received) %}{% endcall %}</td>
 <td><code>{{ b.kind }}</code></td>
 <td><code>{{ b.value }}</code></td>
-<td>{% if b.is_key %}<span class="chip">鍵</span>{% endif %}{% if b.current %} <span class="chip role">今</span>{% endif %}</td>
+<td>{% if b.is_key %}<span class="chip">キー</span>{% endif %}{% if b.current %} <span class="chip role">今</span>{% endif %}</td>
 </tr>
 {% endfor %}
 </tbody>
@@ -49,8 +49,8 @@
 </section>
 
 <section id="launched-by">
-<h2>起こした人</h2>
-{% if chain.is_empty() %}<p class="empty">いない（根）。</p>{% else %}
+<h2>起動した人</h2>
+{% if chain.is_empty() %}<p class="empty">ありません（起点）。</p>{% else %}
 <ol class="chain">
 {% for (link, verb) in chain %}<li><a href="{{ link.href }}">{{ link.name }}</a> <span class="muted">{{ link.kind }}・{{ verb }}</span></li>
 {% endfor %}<li><strong>{{ me.name }}</strong></li>
@@ -59,8 +59,8 @@
 </section>
 
 <section id="children">
-<h2>起こした者</h2>
-{% if children.is_empty() %}<p class="empty">いない。</p>{% else %}
+<h2>起動したアクター</h2>
+{% if children.is_empty() %}<p class="empty">ありません。</p>{% else %}
 <ul class="links">
 {% for link in children %}<li><a href="{{ link.href }}">{{ link.name }}</a> <span class="muted">{{ link.kind }}</span></li>
 {% endfor %}
@@ -69,19 +69,19 @@
 </section>
 
 <section id="continued">
-<h2>前と後</h2>
+<h2>引き継ぎ</h2>
 <dl class="facts">
-<dt>前（継がせた者）</dt><dd>{% if before.is_empty() %}<span class="none">—</span>{% else %}{% for link in before %}<a href="{{ link.href }}">{{ link.name }}</a> {% endfor %}{% endif %}</dd>
-<dt>後（継いだ者）</dt><dd>{% if after.is_empty() %}<span class="none">—</span>{% else %}{% for link in after %}<a href="{{ link.href }}">{{ link.name }}</a> {% endfor %}{% endif %}</dd>
+<dt>引き継ぎ元</dt><dd>{% if before.is_empty() %}<span class="none">—</span>{% else %}{% for link in before %}<a href="{{ link.href }}">{{ link.name }}</a> {% endfor %}{% endif %}</dd>
+<dt>引き継ぎ先</dt><dd>{% if after.is_empty() %}<span class="none">—</span>{% else %}{% for link in after %}<a href="{{ link.href }}">{{ link.name }}</a> {% endfor %}{% endif %}</dd>
 </dl>
 </section>
 
 <section id="settings">
 <h2>model と effort の履歴</h2>
-{% if settings.is_empty() %}<p class="empty">無い。</p>{% else %}
+{% if settings.is_empty() %}<p class="empty">ありません。</p>{% else %}
 <div class="scroll">
 <table>
-<thead><tr><th>受けた時</th><th>model</th><th>effort</th><th>頼んだ・見た</th><th></th></tr></thead>
+<thead><tr><th>受け取った時刻</th><th>model</th><th>effort</th><th>指定・実際</th><th></th></tr></thead>
 <tbody>
 {% for s in settings %}
 <tr>
@@ -89,22 +89,22 @@
 <td><code>{{ s.model }}</code></td>
 <td><code>{{ s.effort }}</code></td>
 <td>{{ s.source }}</td>
-<td>{% if s.mismatch %}<span class="mismatch" title="その前に頼んだ model か effort と違う">印</span>{% endif %}{% if s.skewed %} {% call m::skew() %}{% endcall %}{% endif %}</td>
+<td>{% if s.mismatch %}<span class="mismatch" title="その前に指定した model か effort と違います">食い違い</span>{% endif %}{% if s.skewed %} {% call m::skew() %}{% endcall %}{% endif %}</td>
 </tr>
 {% endfor %}
 </tbody>
 </table>
 </div>
-<p class="muted">印: 見た行のうち、その前の最新の頼んだ行と、model か effort が違う物。</p>
+<p class="muted">食い違い: 実際の値のうち、その前に最後に指定した値と model か effort が違う物です。</p>
 {% endif %}
 </section>
 
 <section id="events">
 <h2>出来事</h2>
-{% if events.is_empty() %}<p class="empty">無い。</p>{% else %}
+{% if events.is_empty() %}<p class="empty">ありません。</p>{% else %}
 <div class="scroll">
 <table>
-<thead><tr><th>受けた時</th><th>出来事</th><th>訳（reason）</th><th>元（source）</th><th>送り手の時刻</th><th></th></tr></thead>
+<thead><tr><th>受け取った時刻</th><th>出来事</th><th>理由（reason）</th><th>きっかけ（source）</th><th>送り手の時刻</th><th></th></tr></thead>
 <tbody>
 {% for e in events %}
 <tr>
@@ -122,4 +122,4 @@
 {% endif %}
 </section>
 {% endblock %}
-{% block foot %} 答えた時: {% call m::time(as_of) %}{% endcall %}{% endblock %}
+{% block foot %} 表示した時刻: {% call m::time(as_of) %}{% endcall %}{% endblock %}
