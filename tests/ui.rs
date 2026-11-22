@@ -1536,3 +1536,321 @@ async fn 相関図は_見出しと行き来と説明と凡例と_script_を切�
         assert!(!js.contains(old), "network.js に前の字 {old} がある");
     }
 }
+
+// --- 期間の欄（browser の日時の欄と、期間をすぐ選ぶ link） ---
+
+/// 期間の欄を持つ画面と、その欄の名（から・まで）。
+const PERIOD_PAGES: [(&str, &str, &str); 4] = [
+    ("/", "active_from", "active_to"),
+    ("/graph/tree", "from", "to"),
+    ("/graph/timeline", "from", "to"),
+    ("/graph/network", "from", "to"),
+];
+
+/// 期間をすぐ選ぶ link の名（並ぶ順）。
+const QUICK: [&str; 4] = ["直近 1 時間", "今日", "昨日", "直近 7 日"];
+
+/// 画面を引く（相関図は script を許す道で）。
+async fn period_page(app: &App, uri: &str) -> String {
+    if uri.starts_with("/graph/network") {
+        network_html(app, uri).await
+    } else {
+        html(app, uri).await
+    }
+}
+
+/// `name="…"` の `<input>` の tag。
+fn input<'a>(body: &'a str, name: &str) -> &'a str {
+    let at = body
+        .find(&format!("name=\"{name}\""))
+        .unwrap_or_else(|| panic!("{name} の欄が無い\n{body}"));
+    let start = body[..at].rfind("<input").expect("<input");
+    &body[start..at + body[at..].find('>').expect(">")]
+}
+
+/// 名の付いた link（`>名</a>`）の URL。HTML の逃がしを戻す。
+fn link_to(body: &str, name: &str) -> String {
+    let at = body
+        .find(&format!(">{name}</a>"))
+        .unwrap_or_else(|| panic!("「{name}」の link が無い\n{body}"));
+    let rest = body[..at]
+        .rsplit_once("href=\"")
+        .unwrap_or_else(|| panic!("「{name}」に href が無い"))
+        .1;
+    unescape(rest.split_once('"').expect("\"").0)
+}
+
+/// URL の引数（名と値。`%XX` を戻す）。
+fn params_of(uri: &str) -> Vec<(String, String)> {
+    let Some((_, query)) = uri.split_once('?') else {
+        return Vec::new();
+    };
+    let decode = |s: &str| {
+        let bytes = s.as_bytes();
+        let mut out = Vec::new();
+        let mut i = 0;
+        while i < bytes.len() {
+            if bytes[i] == b'%' && i + 2 < bytes.len() {
+                out.push(u8::from_str_radix(&s[i + 1..i + 3], 16).expect("%XX"));
+                i += 3;
+            } else {
+                out.push(bytes[i]);
+                i += 1;
+            }
+        }
+        String::from_utf8(out).expect("UTF-8")
+    };
+    query
+        .split('&')
+        .map(|kv| {
+            let (k, v) = kv.split_once('=').unwrap_or((kv, ""));
+            (decode(k), decode(v))
+        })
+        .collect()
+}
+
+fn param<'a>(params: &'a [(String, String)], name: &str) -> &'a str {
+    params
+        .iter()
+        .find(|(n, _)| n == name)
+        .map(|(_, v)| v.as_str())
+        .unwrap_or_else(|| panic!("{name} が無い: {params:?}"))
+}
+
+fn instant(iso: &str) -> time::OffsetDateTime {
+    time::OffsetDateTime::parse(iso, &time::format_description::well_known::Rfc3339)
+        .unwrap_or_else(|e| panic!("{iso}: {e}"))
+}
+
+/// 時刻 `iso` の `secs` 秒あとを、秒まで（下は切る）の日本時間で: 日時の欄の字と、RFC 3339（`+09:00`）の字。
+fn jst(iso: &str, secs: i64) -> (String, String) {
+    let t = (instant(iso) + time::Duration::seconds(secs))
+        .to_offset(time::UtcOffset::from_hms(9, 0, 0).unwrap())
+        .replace_nanosecond(0)
+        .unwrap();
+    let rfc = t
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap();
+    assert!(rfc.ends_with("+09:00"), "{rfc}");
+    (rfc[..19].to_owned(), rfc)
+}
+
+#[tokio::test]
+async fn 期間の欄は_browser_の日時の欄で_今の期間を日本時間で出す() {
+    let s = sample().await;
+    for (path, from, to) in PERIOD_PAGES {
+        // 何も付けなければ、空の日時の欄。
+        let body = period_page(&s.app, path).await;
+        for name in [from, to] {
+            let tag = input(&body, name);
+            assert!(tag.contains("type=\"datetime-local\""), "{path}: {tag}");
+            assert!(tag.contains("value=\"\""), "{path}: {tag}");
+            // 秒やミリ秒の付いた値も、送れる（`step` が分の刻みだと、browser が送るのを断る）。
+            assert!(tag.contains("step=\"any\""), "{path}: {tag}");
+        }
+        // RFC 3339 の期間（前の link の形）は、日本時間の欄の字で出す。送り直すと同じ時刻。
+        let uri =
+            format!("{path}?{from}=2026-11-22T02:00:00Z&{to}=2026-11-22T12:00:07.120%2B09:00");
+        let body = period_page(&s.app, &uri).await;
+        assert!(
+            input(&body, from).contains("value=\"2026-11-22T11:00\""),
+            "{uri}: {}",
+            input(&body, from)
+        );
+        assert!(
+            input(&body, to).contains("value=\"2026-11-22T12:00:07.120\""),
+            "{uri}: {}",
+            input(&body, to)
+        );
+        // 日時の欄が送る字（日本時間）は、そのまま欄に戻る。
+        let uri = format!("{path}?{from}=2026-11-22T11:00&{to}=2026-11-22T12:30:05");
+        let body = period_page(&s.app, &uri).await;
+        assert!(
+            input(&body, from).contains("value=\"2026-11-22T11:00\""),
+            "{uri}: {}",
+            input(&body, from)
+        );
+        assert!(
+            input(&body, to).contains("value=\"2026-11-22T12:30:05\""),
+            "{uri}: {}",
+            input(&body, to)
+        );
+    }
+}
+
+#[tokio::test]
+async fn 日時の欄が送る日本時間の値は_同じ時刻の_rfc_3339_と同じ結果() {
+    let s = sample().await;
+    // 終わりの印の 1 秒あと（秒まで）: 稼働中の pm.1・tpm.1・se.2 だけが、その後も稼働している。
+    let (local, rfc) = jst(&s.end, 1);
+    let rfc = rfc.replace('+', "%2B");
+    let cases: Vec<(String, String, Vec<&str>)> = vec![
+        (
+            format!("/?active_from={local}"),
+            format!("/?active_from={rfc}"),
+            vec!["pm.1", "tpm.1", "se.2"],
+        ),
+        // 分までの字（秒を送らない browser の形）。
+        (
+            "/?label=tpm.key:t-23zs&active_to=2000-01-01T09:00".to_owned(),
+            "/?label=tpm.key:t-23zs&active_to=2000-01-01T09:00:00%2B09:00".to_owned(),
+            vec![],
+        ),
+        (
+            format!("/graph/tree?to={local}"),
+            format!("/graph/tree?to={rfc}"),
+            vec!["pm.1", "tpm.1", "se.1", "se.2", "other.1"],
+        ),
+        (
+            format!("/graph/timeline?to={local}"),
+            format!("/graph/timeline?to={rfc}"),
+            vec!["pm.1", "tpm.1", "se.1", "se.2", "other.1"],
+        ),
+        (
+            format!("/graph/tree?label=tpm.key:t-99&from=2000-01-01T09:00"),
+            format!("/graph/tree?label=tpm.key:t-99&from=2000-01-01T09:00:00%2B09:00"),
+            vec!["other.1"],
+        ),
+    ];
+    for (local_uri, rfc_uri, want) in cases {
+        let by_local = sorted(s.listed(&local_uri).await);
+        let by_rfc = sorted(s.listed(&rfc_uri).await);
+        assert_eq!(by_local, by_rfc, "{local_uri} と {rfc_uri}");
+        assert_eq!(by_local, sorted(s.ids_of(&want)), "{local_uri}");
+    }
+    // 相関図は、RFC 3339 にした期間を図の API に渡す（API は RFC 3339 だけを受ける）。
+    let body = network_html(
+        &s.app,
+        "/graph/network?label=tpm.key:t-99&from=2026-11-22T11:00",
+    )
+    .await;
+    let src = data_src(&body);
+    assert_eq!(
+        src,
+        "/v1/graph?label=tpm.key:t-99&from=2026-11-22T11:00:00%2B09:00"
+    );
+    let (status, answer) = s.app.get(&src).await;
+    assert_eq!(status, StatusCode::OK, "{src}: {answer}");
+    // 次のページの link も、RFC 3339 の期間を持つ（証拠に貼れる形）。
+    let body = html(
+        &s.app,
+        &format!("/?label=tpm.key:{KEY}&limit=1&active_from=2000-01-01T09:00"),
+    )
+    .await;
+    let next = next_link(&body).expect("次のページ");
+    assert_eq!(
+        param(&params_of(&next), "active_from"),
+        "2000-01-01T09:00:00+09:00",
+        "{next}"
+    );
+}
+
+#[tokio::test]
+async fn 期間をすぐ選ぶ_link_は_今の条件のまま_期間だけを日本時間の_rfc_3339_で替える() {
+    let s = sample().await;
+    // 一覧は、次のページの URL（after を持つ）から。
+    let first = html(&s.app, &format!("/?label=tpm.key:{KEY}&kind=ai&limit=2")).await;
+    let list = next_link(&first).expect("次のページ");
+    assert!(list.contains("after="), "{list}");
+    let uris = [
+        format!("{list}&active_to=2000-01-01T09:00"),
+        format!("/graph/tree?label=tpm.key:{KEY}&from=2000-01-01T09:00"),
+        format!("/graph/timeline?to=2030-01-01T00:00:00Z&label=tpm.key:{KEY}"),
+        format!("/graph/network?label=tpm.key:{KEY}&from=2000-01-01T09:00"),
+    ];
+    for ((path, from, to), uri) in PERIOD_PAGES.into_iter().zip(uris) {
+        let before = time::OffsetDateTime::now_utc()
+            .replace_nanosecond(0)
+            .unwrap();
+        let body = period_page(&s.app, &uri).await;
+        let after = time::OffsetDateTime::now_utc();
+        assert!(
+            body.contains("期間をすぐ選ぶ（今の条件のまま、期間だけを替えます）:"),
+            "{uri}\n{body}"
+        );
+        // 並ぶ順。
+        let at: Vec<usize> = QUICK
+            .iter()
+            .map(|q| body.find(&format!(">{q}</a>")).unwrap_or(usize::MAX))
+            .collect();
+        assert!(at.windows(2).all(|w| w[0] < w[1]), "{uri}: {at:?}");
+        let mut ranges = Vec::new();
+        for name in QUICK {
+            let href = link_to(&body, name);
+            assert!(
+                href.starts_with(&format!("{path}?")),
+                "{uri}: {name}: {href}"
+            );
+            let params = params_of(&href);
+            // ほかの条件は、そのまま残し、次のページの after は落とす。
+            let kept: Vec<&(String, String)> = params
+                .iter()
+                .filter(|(n, _)| n != from && n != to)
+                .collect();
+            let want: Vec<(String, String)> = params_of(&uri)
+                .into_iter()
+                .filter(|(n, _)| n != from && n != to && n != "after")
+                .collect();
+            assert_eq!(
+                kept,
+                want.iter().collect::<Vec<_>>(),
+                "{uri}: {name}: {href}"
+            );
+            assert!(!href.contains("after="), "{href}");
+            let (f, t) = (param(&params, from), param(&params, to));
+            for v in [f, t] {
+                assert!(v.ends_with("+09:00"), "{name}: {v}");
+            }
+            assert_eq!(
+                params.iter().filter(|(n, _)| n == from || n == to).count(),
+                2,
+                "{href}"
+            );
+            ranges.push((instant(f), instant(t), f.to_owned(), t.to_owned()));
+        }
+        let hour = time::Duration::hours(1);
+        let day = time::Duration::days(1);
+        let (h, today, yesterday, week) = (&ranges[0], &ranges[1], &ranges[2], &ranges[3]);
+        assert!(h.1 >= before && h.1 <= after, "{uri}: {} は今", h.3);
+        assert_eq!(h.1 - h.0, hour, "{uri}");
+        assert_eq!(week.1 - week.0, time::Duration::days(7), "{uri}");
+        assert!(
+            week.1 >= before && week.1 <= after,
+            "{uri}: {} は今",
+            week.3
+        );
+        assert!(today.2.ends_with("T00:00:00+09:00"), "{}", today.2);
+        assert_eq!(today.1 - today.0, day, "{uri}");
+        assert!(today.0 <= h.1 && h.1 < today.1, "{uri}: 今日は今を含む");
+        assert_eq!(yesterday.1, today.0, "{uri}");
+        assert_eq!(yesterday.1 - yesterday.0, day, "{uri}");
+    }
+    // link を辿ると、その期間で絞った画面（記録は今の物なので、直近 1 時間に入る）。
+    let body = html(&s.app, &format!("/?label=tpm.key:{KEY}")).await;
+    let href = link_to(&body, "直近 1 時間");
+    assert_eq!(
+        sorted(s.listed(&href).await),
+        sorted(s.ids_of(&["tpm.1", "se.1", "se.2"])),
+        "{href}"
+    );
+    let body = html(&s.app, "/graph/tree?label=tpm.key:t-99").await;
+    let href = link_to(&body, "直近 7 日");
+    assert_eq!(s.listed(&href).await, s.ids_of(&["other.1"]), "{href}");
+}
+
+#[tokio::test]
+async fn 日時の欄の読めない値は_引数の名を書いた_400_の画面() {
+    let s = sample().await;
+    for (uri, name) in [
+        ("/?active_from=2026-11-22T25:00", "active_from"),
+        ("/?active_to=2026-11-22T11", "active_to"),
+        ("/graph/tree?from=2026-13-01T00:00", "from"),
+        ("/graph/timeline?to=2026-11-22%2011:00", "to"),
+        ("/graph/network?from=2026-11-22T11:00Z", "from"),
+    ] {
+        let (status, headers, body) = page(&s.app, uri).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{uri}: {body}");
+        assert_html(uri, &headers, &body);
+        assert!(body.contains(name), "{uri}: {name} を書かない\n{body}");
+    }
+}

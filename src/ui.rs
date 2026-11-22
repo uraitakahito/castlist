@@ -138,6 +138,48 @@ fn time(iso: &str) -> Time {
     }
 }
 
+// --- 期間の欄 ---
+
+/// 一覧の期間の欄（稼働した期間）と、図の期間の欄（登録した期間）の名。
+const LIST_PERIOD: [&str; 2] = ["active_from", "active_to"];
+const GRAPH_PERIOD: [&str; 2] = ["from", "to"];
+
+/// 期間の欄の値を RFC 3339 にする。browser の日時の欄（`datetime-local`）が送る
+/// `YYYY-MM-DDTHH:MM`（`:SS`・`:SS.sss` も）は日本時間として `+09:00` を付ける。
+/// RFC 3339 の値（前の link）は、そのまま。どちらでもない値もそのまま返し、引数を読む所が 400 にする。
+fn from_local(value: &str) -> String {
+    value.to_owned()
+}
+
+/// RFC 3339 の値を、日時の欄（`datetime-local`）に入れる日本時間の字にする（form を送り直しても同じ時刻）。
+/// 秒が 0 なら分まで、ミリ秒が 0 なら秒まで。読めない値は、そのまま。
+fn to_local(value: &str) -> String {
+    value.to_owned()
+}
+
+/// 引数のうち、期間の欄（`names`）の値を RFC 3339 にそろえる（[`from_local`]）。
+fn period(pairs: &mut Pairs, names: [&str; 2]) {
+    let _ = (pairs, names);
+}
+
+/// 期間をすぐ選ぶ link の名と、その期間（RFC 3339・`+09:00`。秒まで）。`now` から決める。
+/// 直近 1 時間・直近 7 日は今まで、今日・昨日は日本時間の 0 時から次の 0 時まで。
+fn quick_ranges(now: OffsetDateTime) -> [(&'static str, String, String); 4] {
+    let _ = now;
+    ["直近 1 時間", "今日", "昨日", "直近 7 日"].map(|name| (name, String::new(), String::new()))
+}
+
+/// 期間をすぐ選ぶ link（名と URL）。今の引数のまま、期間（`names`）だけを替え、次のページの `after` は落とす。
+fn quick_links(
+    path: &str,
+    pairs: &Pairs,
+    names: [&str; 2],
+    now: OffsetDateTime,
+) -> Vec<(&'static str, String)> {
+    let _ = (path, pairs, names, now);
+    Vec::new()
+}
+
 fn kind_name(kind: &str) -> &'static str {
     if kind == "human" { "人" } else { "AI" }
 }
@@ -1223,8 +1265,181 @@ fn encode(s: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{encode, event_name, time};
+    use super::{
+        GRAPH_PERIOD, LIST_PERIOD, encode, event_name, from_local, period, quick_links,
+        quick_ranges, time, to_local,
+    };
     use crate::api::EVENT_TYPES;
+    use time::OffsetDateTime;
+    use time::format_description::well_known::Rfc3339;
+
+    fn at(iso: &str) -> OffsetDateTime {
+        OffsetDateTime::parse(iso, &Rfc3339).unwrap()
+    }
+
+    fn pairs(list: &[(&str, &str)]) -> Vec<(String, String)> {
+        list.iter()
+            .map(|(n, v)| ((*n).to_owned(), (*v).to_owned()))
+            .collect()
+    }
+
+    #[test]
+    fn 日時の欄の値は日本時間として_rfc_3339_にする() {
+        assert_eq!(from_local("2026-11-22T11:00"), "2026-11-22T11:00:00+09:00");
+        assert_eq!(
+            from_local("2026-11-22T11:00:05"),
+            "2026-11-22T11:00:05+09:00"
+        );
+        assert_eq!(
+            from_local("2026-11-22T11:00:05.250"),
+            "2026-11-22T11:00:05.250+09:00"
+        );
+    }
+
+    #[test]
+    fn rfc_3339_の値はそのまま() {
+        for iso in [
+            "2026-11-22T11:00:00+09:00",
+            "2026-11-22T02:00:00Z",
+            "2026-11-22T02:00:00.123Z",
+            "2026-11-21T21:00:00-05:00",
+        ] {
+            assert_eq!(from_local(iso), iso);
+        }
+    }
+
+    #[test]
+    fn 読めない値はそのまま返し_引数を読む所が断る() {
+        for bad in [
+            "きのう",
+            "",
+            "2026-11-22",
+            "2026-11-22T11",
+            "2026-13-01T00:00",
+            "2026-11-22T25:00",
+            "2026-11-22 11:00",
+            "2026-11-22T11:00Z",
+            "2026-11-22T11:00+09:00",
+        ] {
+            assert_eq!(from_local(bad), bad, "{bad}");
+        }
+    }
+
+    #[test]
+    fn 期間の欄だけを_rfc_3339_にそろえる() {
+        let mut list = pairs(&[
+            ("label", "tpm.key:t-23zs"),
+            ("active_from", "2026-11-22T11:00"),
+            ("active_to", "2026-11-22T12:30:00+09:00"),
+            ("at", "2026-11-22T11:00"),
+        ]);
+        period(&mut list, LIST_PERIOD);
+        assert_eq!(
+            list,
+            pairs(&[
+                ("label", "tpm.key:t-23zs"),
+                ("active_from", "2026-11-22T11:00:00+09:00"),
+                ("active_to", "2026-11-22T12:30:00+09:00"),
+                // 期間の欄でない時刻は、API と同じ（替えない）。
+                ("at", "2026-11-22T11:00"),
+            ])
+        );
+        let mut graph = pairs(&[("from", "2026-11-22T00:00"), ("to", "2026-11-23T00:00")]);
+        period(&mut graph, GRAPH_PERIOD);
+        assert_eq!(
+            graph,
+            pairs(&[
+                ("from", "2026-11-22T00:00:00+09:00"),
+                ("to", "2026-11-23T00:00:00+09:00"),
+            ])
+        );
+    }
+
+    #[test]
+    fn rfc_3339_の値を日時の欄の日本時間の字にする() {
+        assert_eq!(to_local("2026-11-22T11:00:00+09:00"), "2026-11-22T11:00");
+        assert_eq!(to_local("2026-11-22T02:00:00Z"), "2026-11-22T11:00");
+        assert_eq!(to_local("2026-11-22T20:30:00Z"), "2026-11-23T05:30");
+        assert_eq!(to_local("2026-11-22T02:00:07Z"), "2026-11-22T11:00:07");
+        assert_eq!(
+            to_local("2026-11-22T02:00:07.120Z"),
+            "2026-11-22T11:00:07.120"
+        );
+        assert_eq!(to_local("きのう"), "きのう");
+        // 欄の字を送り直すと、同じ時刻。
+        for iso in ["2026-11-22T02:00:00Z", "2026-11-22T02:00:07.120Z"] {
+            assert_eq!(at(&from_local(&to_local(iso))), at(iso), "{iso}");
+        }
+    }
+
+    #[test]
+    fn すぐ選ぶ期間は今から決め_今日と昨日は日本時間の_0_時から() {
+        let ranges = quick_ranges(at("2026-11-23T01:30:15.250Z"));
+        let want = [
+            (
+                "直近 1 時間",
+                "2026-11-23T09:30:15+09:00",
+                "2026-11-23T10:30:15+09:00",
+            ),
+            (
+                "今日",
+                "2026-11-23T00:00:00+09:00",
+                "2026-11-24T00:00:00+09:00",
+            ),
+            (
+                "昨日",
+                "2026-11-22T00:00:00+09:00",
+                "2026-11-23T00:00:00+09:00",
+            ),
+            (
+                "直近 7 日",
+                "2026-11-16T10:30:15+09:00",
+                "2026-11-23T10:30:15+09:00",
+            ),
+        ];
+        let got: Vec<(&str, &str, &str)> = ranges
+            .iter()
+            .map(|(n, f, t)| (*n, f.as_str(), t.as_str()))
+            .collect();
+        assert_eq!(got, want);
+        // UTC ではまだ前の日でも、日本時間の日で決める。
+        let ranges = quick_ranges(at("2026-11-22T20:00:00Z"));
+        assert_eq!(ranges[1].1, "2026-11-23T00:00:00+09:00");
+        assert_eq!(ranges[2].1, "2026-11-22T00:00:00+09:00");
+    }
+
+    #[test]
+    fn すぐ選ぶ_link_はほかの条件を残し_期間を替え_after_を落とす() {
+        let now = at("2026-11-23T01:30:15Z");
+        let list = pairs(&[
+            ("label", "tpm.key:t-23zs"),
+            ("active_from", "2026-11-01T00:00:00+09:00"),
+            ("kind", "ai"),
+            ("after", "abc"),
+            ("label", "tpm.role:se"),
+            ("limit", "10"),
+        ]);
+        let links = quick_links("/", &list, LIST_PERIOD, now);
+        let names: Vec<&str> = links.iter().map(|(n, _)| *n).collect();
+        assert_eq!(names, ["直近 1 時間", "今日", "昨日", "直近 7 日"]);
+        assert_eq!(
+            links[1].1,
+            "/?label=tpm.key:t-23zs&kind=ai&label=tpm.role:se&limit=10\
+             &active_from=2026-11-23T00:00:00%2B09:00&active_to=2026-11-24T00:00:00%2B09:00"
+        );
+        let graph = pairs(&[("to", "2026-11-01T00:00:00+09:00"), ("label", "a:b")]);
+        let links = quick_links("/graph/tree", &graph, GRAPH_PERIOD, now);
+        assert_eq!(
+            links[0].1,
+            "/graph/tree?label=a:b&from=2026-11-23T09:30:15%2B09:00&to=2026-11-23T10:30:15%2B09:00"
+        );
+        // 条件が無くても、期間だけを付ける。
+        let links = quick_links("/graph/network", &Vec::new(), GRAPH_PERIOD, now);
+        assert_eq!(
+            links[2].1,
+            "/graph/network?from=2026-11-22T00:00:00%2B09:00&to=2026-11-23T00:00:00%2B09:00"
+        );
+    }
 
     #[test]
     fn 出来事の種類はみな日本語の名を持つ() {
