@@ -1,0 +1,13 @@
+# async の code で、tokio の糸を塞ぐ呼び出しを断る（Cargo.toml の [lints.clippy] で誤りにする）。
+# 代わりの道は reason に書く。試験の道具（tests/）は同期で書くので、その file の頭で断りを外す。
+disallowed-methods = [
+  { path = "std::thread::sleep", reason = "糸を塞ぐ。tokio::time::sleep を使う" },
+  { path = "std::fs::read", reason = "糸を塞ぐ。tokio::fs を使う" },
+  { path = "std::fs::read_to_string", reason = "糸を塞ぐ。tokio::fs を使う" },
+  { path = "std::fs::write", reason = "糸を塞ぐ。tokio::fs を使う" },
+  { path = "std::fs::copy", reason = "糸を塞ぐ。tokio::fs を使う" },
+  { path = "std::fs::remove_file", reason = "糸を塞ぐ。tokio::fs を使う" },
+  { path = "std::fs::File::open", reason = "糸を塞ぐ。tokio::fs を使う" },
+  { path = "std::fs::File::create", reason = "糸を塞ぐ。tokio::fs を使う" },
+  { path = "std::net::TcpStream::connect", reason = "糸を塞ぐ。tokio::net を使う" },
+]

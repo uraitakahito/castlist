@@ -1,0 +1,2 @@
+f ./castlist-server
+d ./data
