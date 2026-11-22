@@ -16,7 +16,7 @@
   --warn-bg: #fff4dc;
   --bad: #b3261e;
   --bad-bg: #fde8e7;
-  /* 時間の帯の model の色（帯は薄く塗り、縁を濃く）。 */
+  /* タイムラインの model の色（帯は薄く塗り、縁を濃く）。 */
   --m-opus: #2a78d6;
   --m-sonnet: #eb6834;
   --m-haiku: #1baf7a;
@@ -189,7 +189,7 @@ svg.tree { display: block; font-family: system-ui, "Hiragino Sans", "Noto Sans J
 .tree .sub .on { fill: var(--on); font-weight: 700; }
 .tree .sub .off { fill: var(--off); font-weight: 700; }
 
-/* 時間の帯（/graph/timeline の SVG）。色は SVG の属性でなく、ここで決める（明るい色と暗い色）。 */
+/* タイムライン（/graph/timeline の SVG）。色は SVG の属性でなく、ここで決める（明るい色と暗い色）。 */
 .legend .keys { margin: 4px 0 8px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .legend .keys li { display: flex; align-items: center; gap: 4px; }
 .legend .swatch { display: inline-block; width: 18px; height: 10px; border-radius: 2px; border: 1.5px solid var(--m-none); background: var(--card); }
@@ -224,7 +224,7 @@ svg.timeline { display: block; font-family: system-ui, "Hiragino Sans", "Noto Sa
 .timeline .link.continued { stroke-dasharray: 5 4; }
 .timeline .arrow { fill: var(--muted); }
 
-/* 関係の網（/graph/network）。点と線は static/network.js が canvas に描き、色はこの file の色を読む。 */
+/* 相関図（/graph/network）。点と線は static/network.js が canvas に描き、色はこの file の色を読む。 */
 .network {
   height: 70vh;
   min-height: 420px;

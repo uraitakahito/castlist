@@ -158,7 +158,7 @@ fn actor_link(id: &str, nodes: &BTreeMap<&str, &ActorItem>) -> ActorLink {
     }
 }
 
-/// 一覧の行と、プロフィールの「今の様子」に出す物。
+/// 一覧の行と、プロフィールの「今の状態」に出す物。
 struct Row {
     href: String,
     name: String,
@@ -291,7 +291,7 @@ struct SettingRow {
     model: String,
     effort: String,
     source: &'static str,
-    /// 見た行が、その前の最新の頼んだ物と違う。
+    /// 実際の行（observed）が、その前に最後に指定した物（requested）と違う（画面の「食い違い」）。
     mismatch: bool,
     skewed: bool,
 }
@@ -626,7 +626,7 @@ struct TreeBox {
     /// 2 行目: 種類と、最新の model · effort（`claude-` を落とす）。
     detail: String,
     present: bool,
-    /// 3 行目の、居るかの後の出来事の名（無ければ空）。
+    /// 3 行目の、状態の後の出来事の名（無ければ空）。
     presence: String,
 }
 
@@ -996,7 +996,7 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
         let (Some(&i), Some(t)) = (index.get(s.actor_id.as_str()), millis(&s.received_at)) else {
             continue;
         };
-        // 見た行が、その前の最新の頼んだ行と違うか（プロフィールの印と同じ決め方）。
+        // 見た行が、その前の最新の頼んだ行と違うか（プロフィールの「食い違い」と同じ決め方）。
         let pair = (s.model.as_str(), s.effort.as_str());
         let mismatch = s.source == "observed" && requested.get(&i).is_some_and(|r| *r != pair);
         if s.source == "requested" {
@@ -1071,11 +1071,7 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
                     "{}（{}{}）",
                     change.label,
                     source_name(&setting.source),
-                    if mismatch {
-                        "・指定と違う"
-                    } else {
-                        ""
-                    }
+                    if mismatch { "・指定と違う" } else { "" }
                 ),
             ),
             None => (

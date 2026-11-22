@@ -1,6 +1,6 @@
 # 取り込んだ外の file
 
-関係の網（`/graph/network`）が使う外の JavaScript。CDN から読まず、castlist が binary に埋め込んで自分で配る。`ci/check-vendor.sh` が、この表の値と、npm の registry の物と、commit した file とを突き合わせる（CI の job `test`）。
+相関図（`/graph/network`）が使う外の JavaScript。CDN から読まず、castlist が binary に埋め込んで自分で配る。`ci/check-vendor.sh` が、この表の値と、npm の registry の物と、commit した file とを突き合わせる（CI の job `test`）。
 
 ## cytoscape
 
@@ -18,4 +18,4 @@
 | license_file | `static/vendor/cytoscape-LICENSE` |
 
 - 公開: 2026-11-10（npm の `latest`）。
-- 版を上げる時は、[画面](../../docs/src/ui.md) の「関係の網」の「版の上げ方」。
+- 版を上げる時は、[画面](../../docs/src/ui.md) の「相関図」の「版の上げ方」。

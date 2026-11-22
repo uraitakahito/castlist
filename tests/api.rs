@@ -696,7 +696,7 @@ async fn 付随する_id_と時刻で_その時のアクターを引く() {
 }
 
 #[tokio::test]
-async fn 相関図は_絞った外の一歩先も含める() {
+async fn 図の点と線は_絞った外の一歩先も含める() {
     let app = App::start().await;
     let (se1, se2, pm) = three(&app).await;
     app.put("/v1/links/h-1", &link("launched", PM, SE1)).await;

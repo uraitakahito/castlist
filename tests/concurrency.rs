@@ -326,10 +326,10 @@ async fn アクター_500_の系図を組む間も_引き当ては_100_ms_で答
     println!("一番遅い引き当て: {slowest:?}・組んだ系図: {rendered}");
 }
 
-/// 時間の帯を組む重い計算も、tokio の糸の外（spawn_blocking）で走る。500 のアクター（登場と model の替わり目つき）の
-/// 時間の帯を並べて組ませている間も、引き当て（/v1/resolve）は 100 ms で答える。
+/// タイムラインを組む重い計算も、tokio の糸の外（spawn_blocking）で走る。500 のアクター（登場と model の替わり目つき）の
+/// タイムラインを並べて組ませている間も、引き当て（/v1/resolve）は 100 ms で答える。
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn アクター_500_の時間の帯を組む間も_引き当ては_100_ms_で答える() {
+async fn アクター_500_のタイムラインを組む間も_引き当ては_100_ms_で答える() {
     let app = App::start().await;
     app.register(&common::app::human("pm")).await;
     let root_ref = "tpm.person:pm".to_owned();
@@ -410,11 +410,11 @@ async fn アクター_500_の時間の帯を組む間も_引き当ては_100_ms_
     for task in renders {
         rendered += task.await.unwrap();
     }
-    assert!(rendered > 0, "時間の帯を 1 度も組めていない");
-    println!("一番遅い引き当て: {slowest:?}・組んだ時間の帯: {rendered}");
+    assert!(rendered > 0, "タイムラインを 1 度も組めていない");
+    println!("一番遅い引き当て: {slowest:?}・組んだタイムライン: {rendered}");
 }
 
-/// 重い読み（相関図・時間の帯）は、読む接続 4 本のうち 2 本までしか同時に使わない。残りの 2 本は、いつも引き当てなどの
+/// 重い読み（図の点と線・タイムライン）は、読む接続 4 本のうち 2 本までしか同時に使わない。残りの 2 本は、いつも引き当てなどの
 /// 軽い読みに空いている（4 本を重い読みが占めると、引き当てが空きを待ち、100 ms を超えることがあった。2026-11-23 の CI）。
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn 重い読みは読む接続を_2_本までしか使わない() {

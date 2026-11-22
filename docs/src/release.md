@@ -24,7 +24,7 @@ image は外に出す物なので、入ってよい物を決めてあり、CI（
 | image の file | binary 1 つ（`castlist-server`）と、空の `/data` だけ。layer は 2 枚 | `ci/image-contents.txt` |
 | 設定 | 環境変数は DB の path と待ち受けの 2 つだけ。label は `org.opencontainers.image.source`・`version`・`revision` だけ。開ける port は 8080 だけ | `ci/check-image.sh` の頭 |
 | binary の中の字 | home の path・mail の形・秘密の鍵や token の頭が無い。gitleaks も掛ける（source にも） | `ci/scan-binary.sh`・`ci/strings-deny.txt`・`ci/strings-allow.txt` |
-| 動くか | 空の image の中で起き、外の Host と browser からの書き込みを断り、画面（関係の網も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せる | `ci/smoke-image.sh` |
+| 動くか | 空の image の中で起き、外の Host と browser からの書き込みを断り、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せる | `ci/smoke-image.sh` |
 
 - binary には、画面の template・CSS・script と、取り込んだ cytoscape（MIT。`static/vendor/`）が埋め込まれる。cytoscape は npm の物と同じかを `ci/check-vendor.sh` が見る。
 - build に秘密は要らない。`Containerfile` に `ARG` を書かず、`--build-arg`・`--secret` を使わない。label は、release の workflow が `--label` で付ける 3 つだけ。

@@ -55,7 +55,7 @@ jobs:
       - run: cargo test --locked --release --test load -- --ignored --nocapture
   e2e:
     if: github.event_name != 'schedule'
-    # 関係の網（/graph/network。script を使う唯一の画面）を、本物の browser（Chromium）で見る（e2e/ の Playwright の試験）。
+    # 相関図（/graph/network。script を使う唯一の画面）を、本物の browser（Chromium）で見る（e2e/ の Playwright の試験）。
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -84,7 +84,7 @@ jobs:
       - name: Chromium と、それが要る library を入れる
         working-directory: e2e
         run: pnpm exec playwright install --with-deps --only-shell chromium
-      - name: 関係の網の試験
+      - name: 相関図の試験
         working-directory: e2e
         env:
           # 上の段で作った物を起こす（作り直さない）。
