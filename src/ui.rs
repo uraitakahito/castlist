@@ -6,6 +6,8 @@
 //! - CSP（[`crate::CSP`]）が inline の script と style を断るので、style は castlist が配る CSS の file だけ。
 //! - 一覧の絞りは、監査の検索の API（`GET /v1/actors`）と同じ引数を URL に置く（[`search::actor_query`] で読む）。
 //! - 時刻は、castlist が受けた時刻（UTC）を日本の時刻（[`OFFSET`]）で出し、ISO の字を `<time datetime>` と `title` に置く。
+//! - 期間の欄は browser の日時の欄（`datetime-local`）。送られた字は日本時間として RFC 3339 にしてから、API と同じ引数で読む
+//!   （[`period`]。API の `/v1/` は RFC 3339 だけを受けるまま）。欄の横に、期間をすぐ選ぶ link（[`quick_links`]）を置く。
 
 use crate::api::{ApiError, GRAPH_PARAMS, GraphQuery};
 use crate::db::{self, ActorDetail, Db};
@@ -148,25 +150,76 @@ const GRAPH_PERIOD: [&str; 2] = ["from", "to"];
 /// `YYYY-MM-DDTHH:MM`（`:SS`・`:SS.sss` も）は日本時間として `+09:00` を付ける。
 /// RFC 3339 の値（前の link）は、そのまま。どちらでもない値もそのまま返し、引数を読む所が 400 にする。
 fn from_local(value: &str) -> String {
-    value.to_owned()
+    if OffsetDateTime::parse(value, &Rfc3339).is_ok() {
+        return value.to_owned();
+    }
+    let local = value.len() >= 16
+        && value.as_bytes()[10] == b'T'
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_digit() || b"-:T.".contains(&b));
+    let seconds = if value.len() == 16 { ":00" } else { "" };
+    let iso = format!("{value}{seconds}+09:00");
+    if local && OffsetDateTime::parse(&iso, &Rfc3339).is_ok() {
+        iso
+    } else {
+        value.to_owned()
+    }
 }
 
 /// RFC 3339 の値を、日時の欄（`datetime-local`）に入れる日本時間の字にする（form を送り直しても同じ時刻）。
 /// 秒が 0 なら分まで、ミリ秒が 0 なら秒まで。読めない値は、そのまま。
 fn to_local(value: &str) -> String {
-    value.to_owned()
+    let Ok(t) = OffsetDateTime::parse(value, &Rfc3339) else {
+        return value.to_owned();
+    };
+    let t = t.to_offset(OFFSET);
+    let mut out = format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}",
+        t.year(),
+        u8::from(t.month()),
+        t.day(),
+        t.hour(),
+        t.minute()
+    );
+    if t.second() != 0 || t.millisecond() != 0 {
+        out.push_str(&format!(":{:02}", t.second()));
+    }
+    if t.millisecond() != 0 {
+        out.push_str(&format!(".{:03}", t.millisecond()));
+    }
+    out
 }
 
 /// 引数のうち、期間の欄（`names`）の値を RFC 3339 にそろえる（[`from_local`]）。
 fn period(pairs: &mut Pairs, names: [&str; 2]) {
-    let _ = (pairs, names);
+    for (name, value) in pairs.iter_mut() {
+        if names.contains(&name.as_str()) {
+            *value = from_local(value);
+        }
+    }
 }
 
 /// 期間をすぐ選ぶ link の名と、その期間（RFC 3339・`+09:00`。秒まで）。`now` から決める。
-/// 直近 1 時間・直近 7 日は今まで、今日・昨日は日本時間の 0 時から次の 0 時まで。
+/// 直近 1 時間・直近 7 日は今まで（今の秒を切り上げる。今の秒の中に来た記録も入れる）、
+/// 今日・昨日は日本時間の 0 時から次の 0 時まで。
 fn quick_ranges(now: OffsetDateTime) -> [(&'static str, String, String); 4] {
-    let _ = now;
-    ["直近 1 時間", "今日", "昨日", "直近 7 日"].map(|name| (name, String::new(), String::new()))
+    let now = now.to_offset(OFFSET);
+    let now = if now.nanosecond() == 0 {
+        now
+    } else {
+        now.truncate_to_second() + time::Duration::SECOND
+    };
+    let today = now.replace_time(time::Time::MIDNIGHT);
+    let (hour, day) = (time::Duration::HOUR, time::Duration::DAY);
+    let iso = |t: OffsetDateTime| t.format(&Rfc3339).unwrap_or_default();
+    [
+        ("直近 1 時間", now - hour, now),
+        ("今日", today, today + day),
+        ("昨日", today - day, today),
+        ("直近 7 日", now - day * 7, now),
+    ]
+    .map(|(name, from, to)| (name, iso(from), iso(to)))
 }
 
 /// 期間をすぐ選ぶ link（名と URL）。今の引数のまま、期間（`names`）だけを替え、次のページの `after` は落とす。
@@ -176,8 +229,18 @@ fn quick_links(
     names: [&str; 2],
     now: OffsetDateTime,
 ) -> Vec<(&'static str, String)> {
-    let _ = (path, pairs, names, now);
-    Vec::new()
+    let kept = pairs
+        .iter()
+        .filter(|(n, _)| n != "after" && !names.contains(&n.as_str()));
+    quick_ranges(now)
+        .into_iter()
+        .map(|(name, from, to)| {
+            let mut link: Pairs = kept.clone().cloned().collect();
+            link.push((names[0].to_owned(), from));
+            link.push((names[1].to_owned(), to));
+            (name, format!("{path}?{}", query(&link)))
+        })
+        .collect()
 }
 
 fn kind_name(kind: &str) -> &'static str {
@@ -254,6 +317,8 @@ struct ListPage {
     defaulted: bool,
     days: i64,
     form: Form,
+    /// 期間をすぐ選ぶ link（名と URL）。
+    quick: Vec<(&'static str, String)>,
     next: Option<String>,
     as_of: Time,
 }
@@ -284,8 +349,8 @@ impl Form {
                 "kind" => form.kind = value,
                 "model" => form.model = value,
                 "effort" => form.effort = value,
-                "active_from" => form.active_from = value,
-                "active_to" => form.active_to = value,
+                "active_from" => form.active_from = to_local(&value),
+                "active_to" => form.active_to = to_local(&value),
                 "skewed" => form.skewed = value == "true",
                 "after" => {}
                 _ => form.hidden.push((name.clone(), value)),
@@ -403,7 +468,10 @@ pub async fn list(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>)
 async fn list_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<ListPage, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
+    period(&mut pairs, LIST_PERIOD);
     let form = Form::new(&pairs);
+    let now = OffsetDateTime::now_utc();
+    let quick = quick_links("/", &pairs, LIST_PERIOD, now);
     let mut effective = pairs.clone();
     if !effective.iter().any(|(n, _)| n == "order") {
         effective.push(("order".to_owned(), "desc".to_owned()));
@@ -412,11 +480,11 @@ async fn list_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Li
         effective.push(("limit".to_owned(), PAGE_SIZE.to_owned()));
     }
     let p = Params::new(effective.clone(), search::ACTOR_PARAMS, &["label"])?;
-    let as_of = db::now();
+    let as_of = db::stamp(now);
     let mut query: ActorQuery = search::actor_query(&p, &as_of)?;
     let defaulted = !query.narrowed();
     if defaulted {
-        let from = db::stamp(OffsetDateTime::now_utc() - time::Duration::days(DEFAULT_DAYS));
+        let from = db::stamp(now - time::Duration::days(DEFAULT_DAYS));
         query.active_from = Some(from.clone());
         // 次の頁も、同じ窓で続ける。
         effective.push(("active_from".to_owned(), from));
@@ -437,6 +505,7 @@ async fn list_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Li
         defaulted,
         days: DEFAULT_DAYS,
         form,
+        quick,
         next,
         as_of: time(&as_of),
     })
@@ -585,10 +654,13 @@ pub async fn tree(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>)
 async fn tree_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Response, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
+    period(&mut pairs, GRAPH_PERIOD);
     let form = TreeForm::new(&pairs);
+    let now = OffsetDateTime::now_utc();
+    let quick = quick_links("/graph/tree", &pairs, GRAPH_PERIOD, now);
     let p = Params::new(pairs, GRAPH_PARAMS, &[])?;
     let query = GraphQuery::new(&p)?;
-    let as_of = db::now();
+    let as_of = db::stamp(now);
     let graph = query.run(&db).await?;
     tokio::task::spawn_blocking(move || {
         let page = TreePage {
@@ -596,6 +668,7 @@ async fn tree_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Re
             count: graph.nodes.len(),
             svg: tree_svg(&graph),
             form,
+            quick,
             as_of: time(&as_of),
         };
         render(StatusCode::OK, &page)
@@ -615,6 +688,7 @@ async fn tree_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Re
 struct TreePage {
     css: &'static str,
     form: TreeForm,
+    quick: Vec<(&'static str, String)>,
     count: usize,
     /// 点が無ければ無い。
     svg: Option<TreeSvg>,
@@ -635,8 +709,8 @@ impl TreeForm {
         for (name, value) in pairs {
             match name.as_str() {
                 "label" => form.label.clone_from(value),
-                "from" => form.from.clone_from(value),
-                "to" => form.to.clone_from(value),
+                "from" => form.from = to_local(value),
+                "to" => form.to = to_local(value),
                 _ => {}
             }
         }
@@ -817,7 +891,14 @@ pub async fn network(q: Result<Query<Pairs>, QueryRejection>) -> Response {
 fn network_page(q: Result<Query<Pairs>, QueryRejection>) -> Result<NetworkPage, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
+    period(&mut pairs, GRAPH_PERIOD);
     let form = TreeForm::new(&pairs);
+    let quick = quick_links(
+        "/graph/network",
+        &pairs,
+        GRAPH_PERIOD,
+        OffsetDateTime::now_utc(),
+    );
     // 確かめた引数を、そのままの順で API と系図とタイムラインの URL に付ける。
     let query = match query(&pairs) {
         q if q.is_empty() => q,
@@ -832,6 +913,7 @@ fn network_page(q: Result<Query<Pairs>, QueryRejection>) -> Result<NetworkPage, 
         tree: format!("/graph/tree{query}"),
         timeline: format!("/graph/timeline{query}"),
         form,
+        quick,
     })
 }
 
@@ -842,6 +924,7 @@ struct NetworkPage {
     cytoscape: &'static str,
     script: &'static str,
     form: TreeForm,
+    quick: Vec<(&'static str, String)>,
     /// network.js が点と線を引く URL（同じ絞りの `GET /v1/graph`）。
     data_src: String,
     /// script を切った browser に勧める、同じ絞りの系図とタイムライン。
@@ -865,11 +948,14 @@ async fn timeline_page(
 ) -> Result<Response, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
+    period(&mut pairs, GRAPH_PERIOD);
     let form = TreeForm::new(&pairs);
+    let now = OffsetDateTime::now_utc();
+    let quick = quick_links("/graph/timeline", &pairs, GRAPH_PERIOD, now);
     let p = Params::new(pairs, GRAPH_PARAMS, &[])?;
     let query = GraphQuery::new(&p)?;
     let (from, to) = (p.time("from")?, p.time("to")?);
-    let as_of = db::now();
+    let as_of = db::stamp(now);
     let data = query.timeline(&db).await?;
     tokio::task::spawn_blocking(move || {
         let window = timeline::Window {
@@ -884,6 +970,7 @@ async fn timeline_page(
             legend: legend(&data.settings),
             svg: timeline_svg(&data, window),
             form,
+            quick,
             as_of: time(&as_of),
         };
         render(StatusCode::OK, &page)
@@ -903,6 +990,7 @@ async fn timeline_page(
 struct TimelinePage {
     css: &'static str,
     form: TreeForm,
+    quick: Vec<(&'static str, String)>,
     count: usize,
     /// 凡例の model（短い名と色の class）。
     legend: Vec<(String, &'static str)>,
