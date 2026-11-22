@@ -1707,8 +1707,8 @@ async fn 日時の欄が送る日本時間の値は_同じ時刻の_rfc_3339_と
             vec!["pm.1", "tpm.1", "se.1", "se.2", "other.1"],
         ),
         (
-            format!("/graph/tree?label=tpm.key:t-99&from=2000-01-01T09:00"),
-            format!("/graph/tree?label=tpm.key:t-99&from=2000-01-01T09:00:00%2B09:00"),
+            "/graph/tree?label=tpm.key:t-99&from=2000-01-01T09:00".to_owned(),
+            "/graph/tree?label=tpm.key:t-99&from=2000-01-01T09:00:00%2B09:00".to_owned(),
             vec!["other.1"],
         ),
     ];
@@ -1763,7 +1763,8 @@ async fn 期間をすぐ選ぶ_link_は_今の条件のまま_期間だけを日
             .replace_nanosecond(0)
             .unwrap();
         let body = period_page(&s.app, &uri).await;
-        let after = time::OffsetDateTime::now_utc();
+        // 直近の期間の終わりは、今の秒を切り上げた時刻（今の秒の中に来た記録も入れる）。
+        let after = time::OffsetDateTime::now_utc() + time::Duration::SECOND;
         assert!(
             body.contains("期間をすぐ選ぶ（今の条件のまま、期間だけを替えます）:"),
             "{uri}\n{body}"
