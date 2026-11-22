@@ -300,9 +300,9 @@ Auditor の使い方:
 }
 ```
 
-## `GET /v1/backup` DB の写し
+## `GET /v1/backup` DB のバックアップ
 
-動かしたまま、揃った写しを 1 つの SQLite の file で返す（`application/vnd.sqlite3`）。`curl -o castlist.db http://127.0.0.1:8802/v1/backup`。写しは DB の隣の一時の file に `VACUUM INTO` で作り、送り始めたら消す。
+動かしたまま、揃ったバックアップを 1 つの SQLite の file で返す（`application/vnd.sqlite3`）。`curl -fsS -o castlist-backup-$(date +%Y%m%d-%H%M).db http://127.0.0.1:8802/v1/backup`。バックアップは DB の隣の一時の file に `VACUUM INTO` で作り、送り始めたら消す。
 
 ## `GET /healthz`
 
