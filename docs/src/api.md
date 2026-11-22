@@ -8,7 +8,7 @@
 - 1 つの問い合わせは 5 秒まで。過ぎれば 503。書く接続を 2 秒待っても空かなければ 503「混んでいる」。どちらも、少し待ってから送り直す。
 - 本文に知らない欄があれば 422（外で決めた id を紛れ込ませない）。
 
-名の形: issuer・付随する id の種類・札の鍵・model・effort は、英小文字・数字・`-`・`.` で 64 字まで。名の接頭辞は、英小文字・数字・`-` で 32 字まで。値は空でない 256 字まで。送り手の id（出来事・線・model と effort）は、英数字と記号で 128 字まで。
+名の形: issuer・付随する id の種類・ラベルの鍵・model・effort は、英小文字・数字・`-`・`.` で 64 字まで。名の接頭辞は、英小文字・数字・`-` で 32 字まで。値は空でない 256 字まで。送り手の id（出来事・線・model と effort）は、英数字と記号で 128 字まで。
 
 | 状態 | 訳 |
 |---|---|
@@ -44,7 +44,7 @@
 ```
 
 - 201: 新しいアクター（`created: true`）。
-- 200: 鍵が既にある（`created: false`。同じ id と名）。この時は、鍵でない付随する id のうち、そのアクターの同じ種類の最新と違う物だけを足し、`settings` が最新と違えば `requested` の model と effort を足す。札は登録の初めの時だけ書く。
+- 200: 鍵が既にある（`created: false`。同じ id と名）。この時は、鍵でない付随する id のうち、そのアクターの同じ種類の最新と違う物だけを足し、`settings` が最新と違えば `requested` の model と effort を足す。ラベルは登録の初めの時だけ書く。
 - 422: `kind` が `ai`・`human` でない、名の形が違う、`bindings` が空、`at` が読めない、知らない欄がある。
 
 ## `PUT /v1/events/{id}` 出来事
@@ -109,7 +109,7 @@
 
 ## `GET /v1/actors/{id}` 1 つのアクター
 
-アクターの欄（`id`・`name`・`kind`・`issuer`・`at`・`received_at`・`clock_skew`）と、`labels`（札）・`bindings`（付随する id の全部）・`current_bindings`（種類ごとの最新）・`events`・`settings`（名で）・`current_settings`・`links_in`・`links_out`・`state`・`as_of`。どの一覧も受けた順（seq の順）。
+アクターの欄（`id`・`name`・`kind`・`issuer`・`at`・`received_at`・`clock_skew`）と、`labels`（ラベル）・`bindings`（付随する id の全部）・`current_bindings`（種類ごとの最新）・`events`・`settings`（名で）・`current_settings`・`links_in`・`links_out`・`state`・`as_of`。どの一覧も受けた順（seq の順）。
 
 ```json
 {
@@ -125,7 +125,7 @@
 
 ## 監査の検索
 
-Auditor（台帳の件を監査する AI の席）が、件の記録に残っている物だけで castlist を引くための道。Auditor が持つのは、project・issue の Key（札 `tpm.key`）・役（札 `tpm.role`）・cmux の workspace（付随する id `cmux.workspace.ref`）・時刻だけ。どれも読む接続だけで答え、ほかの問い合わせと同じく 5 秒まで。
+Auditor（台帳の件を監査する AI の席）が、件の記録に残っている物だけで castlist を引くための道。Auditor が持つのは、project・issue の Key（ラベル `tpm.key`）・役（ラベル `tpm.role`）・cmux の workspace（付随する id `cmux.workspace.ref`）・時刻だけ。どれも読む接続だけで答え、ほかの問い合わせと同じく 5 秒まで。
 
 ### 時刻の決まり
 
@@ -174,7 +174,7 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 
 | 引数 | 中身 |
 |---|---|
-| `label=鍵:値` | その札を持つ。何度でも付けられ、どれも持つ者だけ |
+| `label=鍵:値` | そのラベルを持つ。何度でも付けられ、どれも持つ者だけ |
 | `binding=種類:値` | その付随する id を、`at` の時（無ければ今）に最後に受けたアクター（1 つまで）。workspace のように使い回される物を、時刻で引き分ける |
 | `at` | `binding` の時刻。`binding` 無しでは 400 |
 | `active_from`・`active_to` | 居た間が窓に掛かる。居た間は、初めの登場から最後の退場まで。最新の居る・居ないの出来事が退場でなければ、今まで居る。登場の無いアクターは入らない |
@@ -195,7 +195,7 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 
 Auditor の使い方:
 
-- t-23zs の席のアクター（/clear で継いだ者も。継いだ者も同じ札で登録される）: `?label=tpm.key:t-23zs`
+- t-23zs の席のアクター（/clear で継いだ者も。継いだ者も同じラベルで登録される）: `?label=tpm.key:t-23zs`
 - t-23zs の席のアクターで、11:00〜12:00 に居た者: `?label=tpm.key:t-23zs&active_from=2026-11-22T11:00:00%2B09:00&active_to=2026-11-22T12:00:00%2B09:00`（`+` は `%2B` に）
 - t-23zs の software-engineer で、その時間に居た者: 上に `&label=tpm.role:software-engineer` を足す
 - workspace:3 に、11:30 に居たのは誰か: `?binding=cmux.workspace.ref:workspace:3&at=2026-11-22T11:30:00%2B09:00`
@@ -287,7 +287,7 @@ Auditor の使い方:
 
 ## `GET /v1/graph` 相関図
 
-`?label=鍵:値&from=時刻&to=時刻`（どれも無くてよい。どれも 1 つだけ）。札と、登録の受けた時刻の窓で、アクターを絞る。知らない引数・読めない時刻・形の違う `label` は 400（訳に引数の名）。絞った組に触れる線と、その線の向こうの端のアクター（一歩だけ）も含める（人の根が切れないように）。
+`?label=鍵:値&from=時刻&to=時刻`（どれも無くてよい。どれも 1 つだけ）。ラベルと、登録の受けた時刻の窓で、アクターを絞る。知らない引数・読めない時刻・形の違う `label` は 400（訳に引数の名）。絞った組に触れる線と、その線の向こうの端のアクター（一歩だけ）も含める（人の根が切れないように）。
 
 ```json
 {

@@ -8,9 +8,9 @@
 <legend>絞る（どれも AND。空の欄は付けないのと同じ）</legend>
 <div class="fields">
 {% for label in form.labels %}
-<label>札 <input name="label" value="{{ label }}" placeholder="tpm.key:t-23zs"></label>
+<label>ラベル <input name="label" value="{{ label }}" placeholder="tpm.key:t-23zs"></label>
 {% endfor %}
-<label>札 <input name="label" value="" placeholder="tpm.key:t-23zs"></label>
+<label>ラベル <input name="label" value="" placeholder="tpm.key:t-23zs"></label>
 <label>居るか <select name="active">
 <option value="">どれも</option>
 <option value="true"{% if form.active == "true" %} selected{% endif %}>いる</option>
@@ -34,7 +34,7 @@
 </fieldset>
 </form>
 {% if defaulted %}
-<p class="note">絞る条件が無いので、この {{ days }} 日に居た者（登場の記録がある者）を、新しい順に出す。登場の無いアクターは、札などで絞ると出る。</p>
+<p class="note">絞る条件が無いので、この {{ days }} 日に居た者（登場の記録がある者）を、新しい順に出す。登場の無いアクターは、ラベルなどで絞ると出る。</p>
 {% endif %}
 {% if rows.is_empty() %}
 <p class="empty">当たるアクターはいない。</p>

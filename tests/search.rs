@@ -373,7 +373,7 @@ async fn 問い_key_のアクター_clear_で足された者も() {
         "初めの登場の順: {answer}"
     );
     assert_eq!(answer["next"], Value::Null);
-    // 札を 2 つ重ねれば、どちらも持つ者だけ。
+    // ラベルを 2 つ重ねれば、どちらも持つ者だけ。
     let answer = ok(
         &s.app,
         &format!("/v1/actors?label=tpm.key:{KEY}&label=tpm.role:software-engineer"),

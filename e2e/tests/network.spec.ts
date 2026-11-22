@@ -183,7 +183,7 @@ test('model と effort の絞りは、合わない点とその線を隠し、外
   expect(await counts(page)).toMatchObject({ visibleNodes: 5, visibleEdges: 4 });
 });
 
-test('札と窓の絞りは、相関図の API に渡し、その答えだけを描く', async ({ page }) => {
+test('ラベルと窓の絞りは、相関図の API に渡し、その答えだけを描く', async ({ page }) => {
   const g = await graph(page, '?label=tpm.key:t-99');
   // other.1 と、線の向こうの端の tpm.1（一歩だけ）。
   expect(g.nodes.map((n) => n.name).sort()).toEqual(['other.1', 'tpm.1']);

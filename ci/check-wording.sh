@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 公開する字（README・CHANGELOG・本の docs/src・画面の templates）に、読む人の機械や、ある人の手元を前提にした言い方が無いかを見る。
 # castlist はだれの機械でも動かせる物として公開するので、「この Mac」のように 1 台を指す字や、ある人の home の path を書かない。
-# 見る形: 語の Mac（macOS は当てない）・/Users/<名>
+# 鍵と値の組（API の labels）は「ラベル」と呼ぶ。前の呼び方の「札」は書かない（Product Manager の答え）。
+# 見る形: 語の Mac（macOS は当てない）・/Users/<名>・札
 # 1 つでも当たれば、file と行を出して exit 1。
 # 使い方: ci/check-wording.sh [path…]（既定は README.md・CHANGELOG.md・docs/src・templates）
 set -euo pipefail
@@ -18,8 +19,8 @@ if [ -z "$files" ]; then
 fi
 
 # shellcheck disable=SC2086
-if grep -nE '(^|[^A-Za-z])Mac([^A-Za-z]|$)|/Users/[A-Za-z]' $files >&2; then
-  echo "NG: 公開する字に、1 台の機械やある人の手元を指す言い方がある（上の行）。「castlist を動かす機械」「host」のように、どの機械でも通じる言い方にする" >&2
+if grep -nE '(^|[^A-Za-z])Mac([^A-Za-z]|$)|/Users/[A-Za-z]|札' $files >&2; then
+  echo "NG: 公開する字に、1 台の機械やある人の手元を指す言い方か、前の呼び方「札」がある（上の行）。「castlist を動かす機械」「host」のように、どの機械でも通じる言い方にし、鍵と値の組は「ラベル」と書く" >&2
   exit 1
 fi
-echo "ok: 公開する字に、1 台の機械やある人の手元を指す言い方は無い"
+echo "ok: 公開する字に、1 台の機械やある人の手元を指す言い方と「札」は無い"

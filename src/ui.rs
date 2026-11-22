@@ -168,7 +168,7 @@ struct Row {
     presence: Option<(String, String)>,
     key: Option<String>,
     role: Option<String>,
-    /// 札の全部（鍵・値）。
+    /// ラベルの全部（鍵・値）。
     labels: Vec<(String, String)>,
     /// 最新の model と effort。
     setting: Option<(String, String)>,

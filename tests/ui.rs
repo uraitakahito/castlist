@@ -342,7 +342,7 @@ async fn 一覧は_条件が無ければ_この_7_日に居た者を新しい順
 }
 
 #[tokio::test]
-async fn 一覧の行は_名_種類_居るか_最後の出来事_札_model_と_effort_時刻を出す() {
+async fn 一覧の行は_名_種類_居るか_最後の出来事_ラベル_model_と_effort_時刻を出す() {
     let s = sample().await;
     let body = html(&s.app, "/").await;
     let se1 = row(&body, s.id("se.1"));
@@ -454,7 +454,7 @@ async fn 一覧の引数の誤りは_引数の名を書いた_400_の画面() {
 // --- プロフィール ---
 
 #[tokio::test]
-async fn プロフィールは_名_種類_id_issuer_札_今の様子を出す() {
+async fn プロフィールは_名_種類_id_issuer_ラベル_今の様子を出す() {
     let s = sample().await;
     let id = s.id("se.1");
     let body = html(&s.app, &format!("/actors/{id}")).await;
@@ -1275,4 +1275,28 @@ async fn 取り込んだ_cytoscape_は_sources_md_に書いた_sha256_と同じ�
         .map(|b| format!("{b:02x}"))
         .collect();
     assert_eq!(got, field("sha256"));
+}
+
+#[tokio::test]
+async fn どの画面も_鍵と値の組を_ラベルと呼び_札とは書かない() {
+    let s = sample().await;
+    let id = s.id("se.1");
+    let mut pages = Vec::new();
+    for path in [
+        "/".to_owned(),
+        format!("/actors/{id}"),
+        "/graph/tree".to_owned(),
+        "/graph/timeline".to_owned(),
+    ] {
+        pages.push((path.clone(), html(&s.app, &path).await));
+    }
+    // 関係の網は castlist が配る script を読むので、それを許す道で読む。
+    pages.push((
+        "/graph/network".to_owned(),
+        network_html(&s.app, "/graph/network").await,
+    ));
+    for (path, body) in pages {
+        assert!(body.contains("ラベル"), "{path} に「ラベル」が無い\n{body}");
+        assert!(!body.contains('札'), "{path} に「札」がある\n{body}");
+    }
 }
