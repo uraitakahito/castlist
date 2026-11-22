@@ -34,6 +34,14 @@ if grep -qiE '<script|<style|style=' "$tmp/index.html"; then
   exit 1
 fi
 grep -qF '<link rel="stylesheet" href="/static/site.css' "$tmp/index.html"
+# 系図: 同じ CSP が付き、inline の script と style が無い（空の DB なので、当たる者がいないと書く）。
+curl -fsS -D "$tmp/tree-head.txt" -o "$tmp/tree.html" "$url/graph/tree"
+tr -d '\r' <"$tmp/tree-head.txt" | grep -qixF "content-security-policy: $csp"
+if grep -qiE '<script|<style|style=' "$tmp/tree.html"; then
+  echo "NG: 系図に inline の script か style がある" >&2
+  exit 1
+fi
+grep -qF '当たるアクターはいない' "$tmp/tree.html"
 curl -fsS -D "$tmp/css-head.txt" -o "$tmp/site.css" "$url/static/site.css"
 tr -d '\r' <"$tmp/css-head.txt" | grep -qi '^content-type: text/css'
 test -s "$tmp/site.css"

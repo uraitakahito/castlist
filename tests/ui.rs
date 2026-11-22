@@ -633,3 +633,169 @@ async fn 利用者の字は_html_で逃がす() {
         assert!(!page.contains("<img"), "{uri}\n{page}");
     }
 }
+
+// --- 系図（相関図 A） ---
+
+/// 系図の SVG（`<svg` 〜 `</svg>`）。
+fn svg(body: &str) -> &str {
+    let start = body
+        .find("<svg")
+        .unwrap_or_else(|| panic!("svg が無い\n{body}"));
+    let end = start + body[start..].find("</svg>").expect("</svg>");
+    &body[start..end]
+}
+
+/// 系図の、そのアクターの箱（`<g class="node …">` 〜 `</g>`）。
+fn tree_node<'a>(svg: &'a str, id: &str) -> &'a str {
+    let at = svg
+        .find(&format!("href=\"/actors/{id}\""))
+        .unwrap_or_else(|| panic!("{id} の箱が無い\n{svg}"));
+    let start = svg[..at].rfind("<g class=\"node").expect("<g class=\"node");
+    let end = at + svg[at..].find("</g>").expect("</g>");
+    &svg[start..end]
+}
+
+#[tokio::test]
+async fn 一覧の頭から系図へ行ける() {
+    let s = sample().await;
+    let body = html(&s.app, "/").await;
+    assert!(body.contains("href=\"/graph/tree\""), "{body}");
+}
+
+#[tokio::test]
+async fn 系図は_点ごとに_1_つの_link_と_起こした線と継いだ線を描く() {
+    let s = sample().await;
+    let body = html(&s.app, "/graph/tree").await;
+    let svg = svg(&body);
+    assert_eq!(
+        sorted(listed(svg)),
+        sorted(s.ids_of(&["pm.1", "tpm.1", "se.1", "se.2", "other.1"])),
+        "{svg}"
+    );
+    // pm.1 → tpm.1 → se.1 は起こした（実線）、se.1 → se.2 は継いだ（点線）。
+    assert_eq!(svg.matches("class=\"edge launched\"").count(), 2, "{svg}");
+    assert_eq!(svg.matches("class=\"edge continued\"").count(), 1, "{svg}");
+    // 凡例。
+    for want in ["実線", "点線"] {
+        assert!(body.contains(want), "{want} が無い\n{body}");
+    }
+}
+
+#[tokio::test]
+async fn 系図の箱は_名_種類と短い_model_と_effort_居るかと出来事を出す() {
+    let s = sample().await;
+    let body = html(&s.app, "/graph/tree").await;
+    let svg = svg(&body);
+    let se1 = tree_node(svg, s.id("se.1"));
+    for want in [">se.1<", "AI", "opus-5-5 · high", "いない", "交代"] {
+        assert!(se1.contains(want), "se.1 の箱に {want} が無い\n{se1}");
+    }
+    assert!(!se1.contains("claude-"), "claude- を落とす\n{se1}");
+    assert!(se1.contains("class=\"node ai\""), "{se1}");
+    let pm = tree_node(svg, s.id("pm.1"));
+    for want in [">pm.1<", "人", "いる", "登場", "class=\"node human\""] {
+        assert!(pm.contains(want), "pm.1 の箱に {want} が無い\n{pm}");
+    }
+    let other = tree_node(svg, s.id("other.1"));
+    assert!(other.contains("haiku-5 · low"), "{other}");
+}
+
+#[tokio::test]
+async fn 系図の絞りは_相関図の_api_と同じ引数で狭める() {
+    let s = sample().await;
+    let cases: Vec<(String, Vec<&str>, usize, usize)> = vec![
+        // Key で絞った組と、そこから出る線の一歩先（人の根 pm.1）。
+        (
+            format!("/graph/tree?label=tpm.key:{KEY}"),
+            vec!["pm.1", "tpm.1", "se.1", "se.2"],
+            2,
+            1,
+        ),
+        (
+            "/graph/tree?label=tpm.key:t-99".to_owned(),
+            vec!["other.1"],
+            0,
+            0,
+        ),
+        (
+            format!("/graph/tree?to={}", s.se1_entered),
+            vec!["pm.1", "tpm.1", "se.1", "se.2"],
+            2,
+            1,
+        ),
+        // 画面の form は空の欄も送る。空の値は、付けなかったのと同じ。
+        (
+            format!("/graph/tree?label=tpm.key:{KEY}&from=&to="),
+            vec!["pm.1", "tpm.1", "se.1", "se.2"],
+            2,
+            1,
+        ),
+    ];
+    for (uri, want, launched, continued) in cases {
+        let body = html(&s.app, &uri).await;
+        let svg = svg(&body);
+        assert_eq!(sorted(listed(svg)), sorted(s.ids_of(&want)), "{uri}");
+        assert_eq!(
+            svg.matches("class=\"edge launched\"").count(),
+            launched,
+            "{uri}"
+        );
+        assert_eq!(
+            svg.matches("class=\"edge continued\"").count(),
+            continued,
+            "{uri}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn 系図に当たる者が無ければ_そう書き_svg_を出さない() {
+    let s = sample().await;
+    let body = html(&s.app, &format!("/graph/tree?from={}", s.end)).await;
+    assert!(!body.contains("<svg"), "{body}");
+    assert!(body.contains("当たるアクターはいない"), "{body}");
+}
+
+#[tokio::test]
+async fn 系図の引数の誤りは_引数の名を書いた_400_の画面() {
+    let s = sample().await;
+    for (uri, name) in [
+        ("/graph/tree?colour=red", "colour"),
+        ("/graph/tree?from=きのう", "from"),
+        ("/graph/tree?to=きのう", "to"),
+        ("/graph/tree?label=nocolon", "label"),
+        ("/graph/tree?label=a:b&label=c:d", "label"),
+    ] {
+        let (status, headers, body) = page(&s.app, uri).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{uri}: {body}");
+        assert_html(uri, &headers, &body);
+        assert!(body.contains(name), "{uri}: {name} を書かない\n{body}");
+    }
+}
+
+#[tokio::test]
+async fn 系図も利用者の字を_html_で逃がす() {
+    let s = sample().await;
+    let x = s
+        .app
+        .register(&seat(
+            "x",
+            "s-x",
+            "<script>alert(1)</script>",
+            "a\"b",
+            "workspace:1",
+        ))
+        .await;
+    let id = x["id"].as_str().unwrap();
+    let page = html(
+        &s.app,
+        "/graph/tree?label=tpm.key:%3Cscript%3Ealert(1)%3C/script%3E",
+    )
+    .await;
+    assert_eq!(listed(svg(&page)), vec![id.to_owned()], "{page}");
+    // 生の字は無く（html() が <script を見る）、逃がしを戻すと、form の欄に元の字がある。
+    assert!(
+        unescape(&page).contains("<script>alert(1)</script>"),
+        "{page}"
+    );
+}

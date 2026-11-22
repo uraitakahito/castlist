@@ -7,6 +7,7 @@
 pub mod api;
 pub mod db;
 pub mod search;
+pub mod tree;
 pub mod ui;
 
 use axum::extract::Request;
@@ -33,6 +34,7 @@ pub fn router(db: db::Db) -> Router {
         .route("/healthz", get(healthz))
         .route("/", get(ui::list))
         .route("/actors/{id}", get(ui::profile))
+        .route("/graph/tree", get(ui::tree))
         .route("/static/site.css", get(ui::site_css))
         .route("/v1/actors", post(api::register).get(search::actors))
         .route("/v1/actors/{id}", get(api::actor))
