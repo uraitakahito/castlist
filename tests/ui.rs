@@ -845,6 +845,93 @@ async fn タイムラインは_起こした線と継いだ線の矢印と_出来
 }
 
 #[tokio::test]
+async fn 推しの幕引きで終わった者は_便りの後を推しの帯で描き_一覧とプロフィールに停止_推しと書く() {
+    let app = App::start().await;
+    let lost = "claude.session:s-lost";
+    let actor = app
+        .register(&seat(
+            "lost",
+            "s-lost",
+            KEY,
+            "software-engineer",
+            "workspace:9",
+        ))
+        .await;
+    let id = actor["id"].as_str().unwrap().to_owned();
+    put(
+        &app,
+        "/v1/events/l-1",
+        &ev(lost, "entered", json!({}), &at(0)),
+    )
+    .await;
+    tick().await;
+    put(
+        &app,
+        "/v1/events/l-2",
+        &ev(lost, "reported_in", json!({}), &at(0)),
+    )
+    .await;
+    tick().await;
+    put(
+        &app,
+        "/v1/events/l-3",
+        &ev(
+            lost,
+            "closed",
+            json!({ "inferred": true, "reason": "workspace_gone" }),
+            &at(0),
+        ),
+    )
+    .await;
+    let body = html(&app, "/graph/timeline").await;
+    let lane = lane(svg(&body), &id);
+    let classes = segs(lane);
+    assert_eq!(classes.len(), 2, "{lane}");
+    assert!(!classes[0].contains("inferred"), "{lane}");
+    assert!(classes[1].contains("inferred"), "{lane}");
+    assert!(!lane.contains("class=\"open-end\""), "{lane}");
+    assert!(
+        lane.contains("（推し: 便りが途絶えた後、tpm が落ちたと推して閉じた）"),
+        "{lane}"
+    );
+    let legend = section(&body, "legend");
+    assert!(
+        legend.contains("<span class=\"inferred-key\"></span>点線の帯: 便りが途絶えた後、tpm が落ちたと推して閉じた（推しの幕引きまで）"),
+        "{legend}"
+    );
+    let list = html(&app, "/").await;
+    let line = row(&list, &id);
+    assert!(
+        line.contains("<span class=\"state off\">停止（推し）</span>"),
+        "{line}"
+    );
+    let profile = html(&app, &format!("/actors/{id}")).await;
+    assert!(
+        profile.contains("<span class=\"state off\">停止（推し）</span>"),
+        "{profile}"
+    );
+    // ふつうの幕引きは「停止」のまま。
+    put(
+        &app,
+        "/v1/events/l-4",
+        &ev(lost, "reentered", json!({}), &at(0)),
+    )
+    .await;
+    put(
+        &app,
+        "/v1/events/l-5",
+        &ev(lost, "closed", json!({}), &at(0)),
+    )
+    .await;
+    let list = html(&app, "/").await;
+    let line = row(&list, &id);
+    assert!(
+        line.contains("<span class=\"state off\">停止</span>"),
+        "{line}"
+    );
+}
+
+#[tokio::test]
 async fn タイムラインの絞りは_図の_api_と同じ引数で狭める() {
     let s = sample().await;
     let cases: Vec<(String, Vec<&str>)> = vec![

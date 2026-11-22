@@ -172,6 +172,20 @@ test('点に重ねた時の説明は、人にだけ種類（人）を付け、AI
   expect((await title(pm1.id)).split('\n')[0]).toBe('pm.1（人）');
 });
 
+test('点に重ねた時の状態は、稼働中・停止と、推しの幕引きで終わった者に停止（推し）と書く', async ({ page }) => {
+  const g = await graph(page);
+  await open(page);
+  const state = (name: string) =>
+    page.evaluate((nodeId) => {
+      const cy = (window as unknown as { castlistNetwork: any }).castlistNetwork;
+      cy.getElementById(nodeId).emit('mouseover');
+      return (cy.container().title as string).split('\n').at(-1);
+    }, byName(g, name).id);
+  expect(await state('tpm.1')).toBe('稼働中');
+  expect(await state('se.1')).toBe('停止');
+  expect(await state('other.1')).toBe('停止（推し）');
+});
+
 test('model と effort の絞りは、合わない点とその線を隠し、外すと戻す', async ({ page }) => {
   await open(page);
   // 出てくる model（短い名）と effort が選べる。

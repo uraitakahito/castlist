@@ -40,6 +40,8 @@ pub enum Presence {
     In,
     /// 交代・退場・幕引き。
     Out,
+    /// 推しの幕引き: 送り手（tpm）が、落ちたと推して後から送った幕引き。
+    Lost,
 }
 
 /// model と effort の替わり目: 受けた時刻と、帯に書く字（同じ字が続けば区切らない）。
@@ -107,6 +109,8 @@ pub struct Segment {
     pub open_start: bool,
     /// 居るまま（か、窓の右の端で切った）。
     pub open_end: bool,
+    /// 推しの幕引きで終わる帯の、最後の便り（その行の出来事と model と effort の替わり目の最新）から終わりまでの切れ。
+    pub inferred: bool,
     /// 帯の字を書く左の端（字の分の余白の内側）。書けなければ None（幅に収まらないか、線を避けると収まらない）。
     pub label_x: Option<u32>,
 }
@@ -224,6 +228,7 @@ pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
                     h: BAND_H,
                     open_start: open_start && k == 0,
                     open_end: open_end && k + 1 == parts.len(),
+                    inferred: false,
                     label_x: None,
                 });
             }
@@ -390,7 +395,7 @@ fn stays(presence: &[(i64, Presence)]) -> Vec<(i64, Option<i64>)> {
     for &(t, p) in presence {
         match (p, open) {
             (Presence::In, None) => open = Some(t),
-            (Presence::Out, Some(s)) => {
+            (Presence::Out | Presence::Lost, Some(s)) => {
                 out.push((s, Some(t.max(s))));
                 open = None;
             }
@@ -1111,5 +1116,108 @@ mod tests {
         let cjk = text_width("いない", 12);
         assert!(cjk >= 3 * 12, "{cjk}");
         assert!(text_width("あ", 12) > text_width("a", 12));
+    }
+
+    #[test]
+    fn 推しの幕引きで終わる帯は_最後の便りから終わりまでを推しの切れにする() {
+        let mut l0 = lane(
+            T0,
+            &[
+                (T0 + 10 * MIN, Presence::In),
+                (T0 + 50 * MIN, Presence::Lost),
+            ],
+        );
+        l0.marks = vec![T0 + 20 * MIN];
+        l0.changes = vec![change(T0 + 10 * MIN, "opus · high")];
+        let l = layout(&[l0], &[], hour());
+        let s = segments_of(&l, 0);
+        assert_eq!(s.len(), 2, "{l:?}");
+        assert_eq!(
+            (s[0].start, s[0].end, s[0].inferred),
+            (T0 + 10 * MIN, T0 + 20 * MIN, false)
+        );
+        assert_eq!(
+            (s[1].start, s[1].end, s[1].inferred),
+            (T0 + 20 * MIN, T0 + 50 * MIN, true)
+        );
+        // 推しの切れも、その間の model と effort を持つ。
+        assert_eq!(s[1].change, Some(0));
+        assert!(!s[1].open_end);
+    }
+
+    #[test]
+    fn 最後の便りは_model_と_effort_の替わり目も数え_登場だけなら帯は全部推し() {
+        let mut l0 = lane(
+            T0,
+            &[
+                (T0 + 10 * MIN, Presence::In),
+                (T0 + 50 * MIN, Presence::Lost),
+            ],
+        );
+        l0.changes = vec![change(T0 + 30 * MIN, "opus · high")];
+        let l = layout(&[l0], &[], hour());
+        let s = segments_of(&l, 0);
+        let flags: Vec<_> = s.iter().map(|s| (s.start, s.inferred)).collect();
+        assert_eq!(
+            flags,
+            [(T0 + 10 * MIN, false), (T0 + 30 * MIN, true)],
+            "{l:?}"
+        );
+        let l1 = lane(
+            T0,
+            &[
+                (T0 + 10 * MIN, Presence::In),
+                (T0 + 50 * MIN, Presence::Lost),
+            ],
+        );
+        let l = layout(&[l1], &[], hour());
+        let s = segments_of(&l, 0);
+        assert_eq!(s.len(), 1, "{l:?}");
+        assert!(s[0].inferred);
+    }
+
+    #[test]
+    fn ふつうの退場と居るままの帯は_推しの切れを作らない() {
+        let mut l0 = lane(
+            T0,
+            &[
+                (T0 + 10 * MIN, Presence::In),
+                (T0 + 50 * MIN, Presence::Out),
+            ],
+        );
+        l0.marks = vec![T0 + 20 * MIN];
+        let mut l1 = lane(T0 + MIN, &[(T0 + 11 * MIN, Presence::In)]);
+        l1.marks = vec![T0 + 20 * MIN];
+        let l = layout(&[l0, l1], &[], hour());
+        assert!(l.segments.iter().all(|s| !s.inferred), "{l:?}");
+        assert_eq!(segments_of(&l, 0).len(), 1);
+    }
+
+    #[test]
+    fn 推しの後にまた来れば_前の帯だけが推しで終わる() {
+        let mut l0 = lane(
+            T0,
+            &[
+                (T0 + 10 * MIN, Presence::In),
+                (T0 + 30 * MIN, Presence::Lost),
+                (T0 + 40 * MIN, Presence::In),
+            ],
+        );
+        l0.marks = vec![T0 + 15 * MIN, T0 + 45 * MIN];
+        let l = layout(&[l0], &[], hour());
+        let s = segments_of(&l, 0);
+        let got: Vec<_> = s
+            .iter()
+            .map(|s| (s.start, s.end, s.inferred, s.open_end))
+            .collect();
+        assert_eq!(
+            got,
+            [
+                (T0 + 10 * MIN, T0 + 15 * MIN, false, false),
+                (T0 + 15 * MIN, T0 + 30 * MIN, true, false),
+                (T0 + 40 * MIN, T0 + HOUR, false, true),
+            ],
+            "{l:?}"
+        );
     }
 }

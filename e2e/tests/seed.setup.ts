@@ -63,7 +63,11 @@ setup('見本の記録を置く', async ({ request }) => {
   await send(request, 'post', '/v1/actors', seat('other', 's-other', 't-99', 'claude-haiku-5', 'low'));
   await send(request, 'put', '/v1/links/l-tpm-other', line('launched', TPM, OTHER));
   await send(request, 'put', '/v1/events/e-other-in', event(OTHER, 'entered'));
-  await send(request, 'put', '/v1/events/e-other-out', event(OTHER, 'exited'));
+  // other.1 は、tpm が落ちたと推して閉じた（推しの幕引き）。
+  await send(request, 'put', '/v1/events/e-other-out', {
+    ...event(OTHER, 'closed'),
+    detail: { inferred: true, reason: 'workspace_gone' },
+  });
 
   const graph = await (await request.get('/v1/graph')).json();
   expect(graph.nodes.map((n: { name: string }) => n.name).sort()).toEqual(['other.1', 'pm.1', 'se.1', 'se.2', 'tpm.1']);

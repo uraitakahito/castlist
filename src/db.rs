@@ -227,6 +227,9 @@ pub struct State {
     /// 居る・居ないを替える出来事の最新の種類（まだ無ければ null）。
     pub presence: Option<String>,
     pub present: bool,
+    /// 今の状態を決めた出来事が、推しの幕引き（`closed` で `detail.inferred` が JSON の true）。
+    #[sqlx(default)]
+    pub inferred: bool,
     /// 初めの登場の received_at。
     pub entered_at: Option<String>,
     /// 最後の退場（cleared・exited・closed）の received_at。
@@ -271,6 +274,9 @@ pub struct Moment {
     #[sqlx(rename = "type")]
     pub kind: String,
     pub received_at: String,
+    /// 推しの幕引き（`closed` で `detail.inferred` が JSON の true）。
+    #[sqlx(default)]
+    pub inferred: bool,
 }
 
 /// タイムライン: 図の点と線と、点の出来事と model と effort の全部（どれも seq の順）。

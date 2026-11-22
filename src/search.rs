@@ -171,6 +171,9 @@ pub struct ActorItem {
     pub last_exited_at: Option<String>,
     pub last_exit_type: Option<String>,
     pub present: bool,
+    /// 今の状態を決めた出来事が、推しの幕引き（`closed` で `detail.inferred` が JSON の true）。
+    #[sqlx(default)]
+    pub inferred: bool,
     /// 居る・居ないを替える出来事の最新の種類（画面に出す。API の答えには出さない）。
     #[serde(skip)]
     pub presence: Option<String>,
