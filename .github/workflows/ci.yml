@@ -52,6 +52,12 @@ jobs:
   load:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    env:
+      # 一時の DB（tests/common の temp_db は TMPDIR の下）を memory の上に置く。CI の機械の disk は書き込みが時々
+      # 100〜200 ms 詰まり、書く接続（1 本）に並んだ書き手の待ちが積もって 2 秒（WRITE_WAIT）を越え、503 で落ちた
+      # （t-8b6j の測り: disk では約 30 回のうち 3 回落ち、/dev/shm では 10 回とも最大 100 ms 未満）。
+      # この試験が見るのは castlist の詰まりで、CI の機械の disk ではない。
+      TMPDIR: /dev/shm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
