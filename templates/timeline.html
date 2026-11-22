@@ -2,7 +2,7 @@
 {% import "macros.html" as m %}
 {% block title %}タイムライン{% endblock %}
 {% block main %}
-<h1>タイムライン <span class="kind"><a href="/">一覧へ</a> ・ <a href="/graph/tree">系図へ</a> ・ <a href="/graph/network">相関図へ</a></span></h1>
+<h1>タイムライン <span class="kind"><a href="/">一覧へ</a> ・ <a href="/graph/network">相関図へ</a></span></h1>
 <form class="filters" method="get" action="/graph/timeline">
 <fieldset>
 <legend>絞り込み</legend>
@@ -29,7 +29,7 @@
 <li><span class="open-key"></span>右端が尖った帯: まだ稼働中（か、表示する期間の外へ続く）</li>
 </ul>
 </section>
-<div class="scroll tree-wrap">
+<div class="scroll graph-wrap">
 <svg class="timeline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {{ svg.width }} {{ svg.height }}" width="{{ svg.width }}" height="{{ svg.height }}" role="img" aria-label="タイムライン">
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path class="arrow" d="M0,0L10,5L0,10z"/></marker></defs>
 <g class="axis">{% for t in svg.ticks %}<line class="grid" x1="{{ t.x }}" y1="{{ svg.grid_y0 }}" x2="{{ t.x }}" y2="{{ svg.grid_y1 }}"/><text class="tick" x="{{ t.x }}" y="{{ svg.tick_y }}" text-anchor="middle">{{ t.label }}</text>{% endfor %}{% if let Some(x) = svg.now %}<line class="now" x1="{{ x }}" y1="{{ svg.grid_y0 }}" x2="{{ x }}" y2="{{ svg.grid_y1 }}"><title>今（表示した時刻）</title></line>{% endif %}</g>

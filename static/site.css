@@ -169,26 +169,15 @@ tr.past td { color: var(--muted); }
 .facts dt { color: var(--muted); }
 .facts dd { margin: 0; }
 
-/* 系図（/graph/tree の SVG）。色は SVG の属性でなく、ここで決める（明るい色と暗い色）。 */
+/* 図の凡例（タイムライン・相関図）と、タイムラインの SVG の枠。 */
 .legend { color: var(--muted); font-size: 0.85rem; }
 .legend .key { display: inline-block; width: 28px; height: 0; margin-right: 4px; vertical-align: middle; border-top: 2px solid var(--muted); }
 .legend .key.continued { border-top-style: dashed; }
-.tree-wrap {
+.graph-wrap {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 8px;
 }
-svg.tree { display: block; font-family: system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; }
-.tree .edge { fill: none; stroke: var(--muted); stroke-width: 1.5; }
-.tree .edge.continued { stroke-dasharray: 5 4; }
-.tree .arrow { fill: var(--muted); }
-.tree .node rect { fill: var(--card); stroke: var(--accent); stroke-width: 1.5; }
-.tree .node.human rect { fill: var(--role); stroke: var(--on); stroke-width: 2; }
-.tree text { fill: var(--fg); }
-.tree .name { font-size: 13px; font-weight: 700; fill: var(--accent); }
-.tree .sub { font-size: 11px; fill: var(--muted); }
-.tree .sub .on { fill: var(--on); font-weight: 700; }
-.tree .sub .off { fill: var(--off); font-weight: 700; }
 
 /* タイムライン（/graph/timeline の SVG）。色は SVG の属性でなく、ここで決める（明るい色と暗い色）。 */
 .legend .keys { margin: 4px 0 8px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 16px; }

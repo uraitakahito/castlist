@@ -465,7 +465,7 @@ pub async fn actor(State(db): State<Db>, Path(id): Path<String>) -> Answer {
     }
 }
 
-/// 図の引数の名（`GET /v1/graph` と、画面の `GET /graph/tree`）。どれも 1 つだけ。
+/// 図の引数の名（`GET /v1/graph` と、画面の `GET /graph/timeline`・`GET /graph/network`）。どれも 1 つだけ。
 pub(crate) const GRAPH_PARAMS: &[&str] = &["label", "from", "to"];
 
 /// 図の絞り: ラベル（鍵・値）と、登録の受けた時刻の窓。

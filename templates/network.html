@@ -2,7 +2,7 @@
 {% import "macros.html" as m %}
 {% block title %}相関図{% endblock %}
 {% block main %}
-<h1>相関図 <span class="kind"><a href="/">一覧へ</a> ・ <a href="/graph/tree">系図へ</a> ・ <a href="/graph/timeline">タイムラインへ</a></span></h1>
+<h1>相関図 <span class="kind"><a href="/">一覧へ</a> ・ <a href="/graph/timeline">タイムラインへ</a></span></h1>
 <form class="filters" method="get" action="/graph/network">
 <fieldset>
 <legend>絞り込み</legend>
@@ -15,7 +15,7 @@
 <div class="actions"><button type="submit">絞り込む</button> <a href="/graph/network">条件を消す</a></div>
 </fieldset>
 </form>
-<noscript><p class="noscript note">この画面は JavaScript で描きます。JavaScript を切っている時は、同じ条件の<a href="{{ tree }}">系図</a>か<a href="{{ timeline }}">タイムライン</a>をお使いください（どちらも JavaScript を使いません）。</p></noscript>
+<noscript><p class="noscript note">この画面は JavaScript で描きます。JavaScript を切っている時は、同じ条件の<a href="{{ timeline }}">タイムライン</a>をお使いください（JavaScript を使いません）。</p></noscript>
 <div id="network-controls" class="filters" hidden>
 <fieldset>
 <legend>表示する点を選ぶ</legend>

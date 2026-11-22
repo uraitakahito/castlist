@@ -1,4 +1,4 @@
-//! 画面: アクターの一覧（`/`）とプロフィール（`/actors/{id}`）と系図（`/graph/tree`）とタイムライン（`/graph/timeline`）と
+//! 画面: アクターの一覧（`/`）とプロフィール（`/actors/{id}`）とタイムライン（`/graph/timeline`）と
 //! 相関図（`/graph/network`）と、それが読む CSS（`/static/site.css`）と script（`/static/network.js` と、取り込んだ cytoscape）。
 //!
 //! - サーバーが HTML を組んで返す（askama。`templates/`）。字はみな HTML として逃がす。
@@ -12,8 +12,7 @@
 use crate::api::{ApiError, GRAPH_PARAMS, GraphQuery, bad_request};
 use crate::db::{self, ActorDetail, Db};
 use crate::search::{self, ActorItem, ActorQuery, MAX_DEPTH, Pairs, Params};
-use crate::timeline::{self, END_ROOM, MARGIN, Presence, ROW_H};
-use crate::tree::{self, text_width};
+use crate::timeline::{self, END_ROOM, MARGIN, Presence, ROW_H, text_width};
 use askama::Template;
 use axum::extract::rejection::QueryRejection;
 use axum::extract::{Path, Query, State};
@@ -662,68 +661,15 @@ async fn profile_page(db: Db, id: &str) -> Result<Option<ProfilePage>, ApiError>
     }))
 }
 
-/// `GET /graph/tree?label=…&from=…&to=…`: 系図（図 A）。引数は `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
-/// 並べる計算と HTML を組むのは、tokio の糸を塞がないよう spawn_blocking の糸で行う。
-pub async fn tree(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Response {
-    match tree_page(db, q).await {
-        Ok(response) => response,
-        Err(e) => error_page(e),
-    }
-}
-
-async fn tree_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Response, ApiError> {
-    let mut pairs = search::pairs(q)?;
-    pairs.retain(|(_, v)| !v.is_empty());
-    period(&mut pairs, GRAPH_PERIOD)?;
-    let form = TreeForm::new(&pairs);
-    let now = OffsetDateTime::now_utc();
-    let quick = quick_links("/graph/tree", &pairs, GRAPH_PERIOD, now);
-    let p = Params::new(pairs, GRAPH_PARAMS, &[])?;
-    let query = GraphQuery::new(&p)?;
-    let as_of = db::stamp(now);
-    let graph = query.run(&db).await?;
-    tokio::task::spawn_blocking(move || {
-        let page = TreePage {
-            css: &CSS_HREF,
-            count: graph.nodes.len(),
-            svg: tree_svg(&graph),
-            form,
-            quick,
-            as_of: time(&as_of),
-        };
-        render(StatusCode::OK, &page)
-    })
-    .await
-    .map_err(|e| {
-        eprintln!("系図を表示できません: {e}");
-        ApiError(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "系図を表示できません".to_owned(),
-        )
-    })
-}
-
-#[derive(Template)]
-#[template(path = "tree.html")]
-struct TreePage {
-    css: &'static str,
-    form: TreeForm,
-    quick: Vec<(&'static str, String)>,
-    count: usize,
-    /// 点が無ければ無い。
-    svg: Option<TreeSvg>,
-    as_of: Time,
-}
-
-/// 系図の絞りの form（今の値）。
+/// 図（タイムライン・相関図）の絞りの form（今の値）。
 #[derive(Default)]
-struct TreeForm {
+struct GraphForm {
     label: String,
     from: String,
     to: String,
 }
 
-impl TreeForm {
+impl GraphForm {
     fn new(pairs: &Pairs) -> Self {
         let mut form = Self::default();
         for (name, value) in pairs {
@@ -738,168 +684,22 @@ impl TreeForm {
     }
 }
 
-struct TreeSvg {
-    width: u32,
-    height: u32,
-    boxes: Vec<TreeBox>,
-    lines: Vec<TreeLine>,
-}
-
-/// 系図の箱 1 つ（置き場と 3 行の字）。
-struct TreeBox {
-    href: String,
-    name: String,
-    human: bool,
-    x: u32,
-    y: u32,
-    w: u32,
-    h: u32,
-    /// 字を置く横の真ん中と、3 行の字の下の線。
-    cx: u32,
-    y1: u32,
-    y2: u32,
-    y3: u32,
-    /// 2 行目: 種類と、最新の model · effort（`claude-` を落とす）。
-    detail: String,
-    present: bool,
-    /// 3 行目の、状態の後の出来事の名（無ければ空）。
-    presence: String,
-}
-
-struct TreeLine {
+/// 図の線 1 本（SVG の path の class と `d`）。
+struct ArrowView {
     class: &'static str,
     d: String,
 }
 
-/// 名の字の大きさ（太字）と、2・3 行目の字の大きさ（px。site.css の `.tree` と同じ）。
+/// 名の字の大きさ（太字）と、種類の字の大きさ（px。site.css の `.timeline` と同じ）。
 const NAME_PX: u32 = 13;
 const SUB_PX: u32 = 11;
-/// 箱の字の左右の余白と、箱の狭さの下限。
-const BOX_PAD: u32 = 12;
-const BOX_MIN: u32 = 96;
-
-/// 系図の SVG に置く物。点が無ければ None。
-fn tree_svg(graph: &db::Graph) -> Option<TreeSvg> {
-    if graph.nodes.is_empty() {
-        return None;
-    }
-    let index: BTreeMap<&str, usize> = graph
-        .nodes
-        .iter()
-        .enumerate()
-        .map(|(i, n)| (n.actor.id.as_str(), i))
-        .collect();
-    let texts: Vec<(String, String, String)> = graph
-        .nodes
-        .iter()
-        .map(|n| {
-            let kind = kind_name(&n.actor.kind);
-            let detail = match &n.current_settings {
-                Some(s) if kind.is_empty() => format!("{} · {}", short_model(&s.model), s.effort),
-                Some(s) => format!("{kind} · {} · {}", short_model(&s.model), s.effort),
-                None => kind.to_owned(),
-            };
-            let state = n.state.as_ref();
-            let present = if state.is_some_and(|s| s.present) {
-                "稼働中"
-            } else {
-                "停止"
-            };
-            let presence = state
-                .and_then(|s| s.presence.as_deref())
-                .map(|p| format!("{present} · {}", event_name(p)))
-                .unwrap_or_else(|| present.to_owned());
-            (n.actor.name.clone(), detail, presence)
-        })
-        .collect();
-    let nodes: Vec<tree::Node> = graph
-        .nodes
-        .iter()
-        .zip(&texts)
-        .map(|(n, (name, detail, presence))| tree::Node {
-            // 太字は 1 px 大きく見積もる。
-            width: (text_width(name, NAME_PX + 1)
-                .max(text_width(detail, SUB_PX))
-                .max(text_width(presence, SUB_PX))
-                + BOX_PAD * 2)
-                .max(BOX_MIN),
-            order: n
-                .state
-                .as_ref()
-                .and_then(|s| s.entered_at.clone())
-                .unwrap_or_else(|| n.actor.received_at.clone()),
-        })
-        .collect();
-    let edges: Vec<tree::Edge> = graph
-        .edges
-        .iter()
-        .filter_map(|e| {
-            let kind = match e.kind.as_str() {
-                "launched" => tree::Kind::Launched,
-                "continued" => tree::Kind::Continued,
-                _ => return None,
-            };
-            Some(tree::Edge {
-                from: *index.get(e.from_actor.as_str())?,
-                to: *index.get(e.to_actor.as_str())?,
-                kind,
-            })
-        })
-        .collect();
-    let layout = tree::layout(&nodes, &edges);
-    let boxes = graph
-        .nodes
-        .iter()
-        .zip(texts)
-        .zip(&layout.boxes)
-        .map(|((n, (name, detail, _)), r)| {
-            let state = n.state.as_ref();
-            TreeBox {
-                href: format!("/actors/{}", n.actor.id),
-                name,
-                human: n.actor.kind == "human",
-                x: r.x,
-                y: r.y,
-                w: r.w,
-                h: r.h,
-                cx: r.x + r.w / 2,
-                y1: r.y + 20,
-                y2: r.y + 37,
-                y3: r.y + 52,
-                detail,
-                present: state.is_some_and(|s| s.present),
-                presence: state
-                    .and_then(|s| s.presence.as_deref())
-                    .map(|p| event_name(p).to_owned())
-                    .unwrap_or_default(),
-            }
-        })
-        .collect();
-    let lines = layout
-        .lines
-        .into_iter()
-        .map(|l| TreeLine {
-            class: match l.kind {
-                tree::Kind::Launched => "edge launched",
-                tree::Kind::Continued => "edge continued",
-            },
-            d: l.d,
-        })
-        .collect();
-    Some(TreeSvg {
-        width: layout.width,
-        height: layout.height,
-        boxes,
-        lines,
-    })
-}
 
 /// model の名を短くする（`claude-opus-5-5` → `opus-5-5`）。
 fn short_model(model: &str) -> &str {
     model.strip_prefix("claude-").unwrap_or(model)
 }
 
-/// `GET /graph/network?label=…&from=…&to=…`: 相関図（図 C）。引数は系図と同じ（空の値は付けなかったのと同じ）。
+/// `GET /graph/network?label=…&from=…&to=…`: 相関図（図 C）。引数は `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
 /// script を使う唯一の画面。HTML は枠だけで、点と線は `static/network.js` が `GET /v1/graph` から引いて描く。
 /// ここでは引数を確かめ（誤りは 400 の画面）、同じ引数を付けた API の URL を `data-src` に置く。
 pub async fn network(q: Result<Query<Pairs>, QueryRejection>) -> Response {
@@ -913,14 +713,14 @@ fn network_page(q: Result<Query<Pairs>, QueryRejection>) -> Result<NetworkPage, 
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
     period(&mut pairs, GRAPH_PERIOD)?;
-    let form = TreeForm::new(&pairs);
+    let form = GraphForm::new(&pairs);
     let quick = quick_links(
         "/graph/network",
         &pairs,
         GRAPH_PERIOD,
         OffsetDateTime::now_utc(),
     );
-    // 確かめた引数を、そのままの順で API と系図とタイムラインの URL に付ける。
+    // 確かめた引数を、そのままの順で API とタイムラインの URL に付ける。
     let query = match query(&pairs) {
         q if q.is_empty() => q,
         q => format!("?{q}"),
@@ -931,7 +731,6 @@ fn network_page(q: Result<Query<Pairs>, QueryRejection>) -> Result<NetworkPage, 
         cytoscape: CYTOSCAPE_PATH,
         script: &NETWORK_JS_HREF,
         data_src: format!("/v1/graph{query}"),
-        tree: format!("/graph/tree{query}"),
         timeline: format!("/graph/timeline{query}"),
         form,
         quick,
@@ -944,16 +743,15 @@ struct NetworkPage {
     css: &'static str,
     cytoscape: &'static str,
     script: &'static str,
-    form: TreeForm,
+    form: GraphForm,
     quick: Vec<(&'static str, String)>,
     /// network.js が点と線を引く URL（同じ絞りの `GET /v1/graph`）。
     data_src: String,
-    /// script を切った browser に勧める、同じ絞りの系図とタイムライン。
-    tree: String,
+    /// script を切った browser に勧める、同じ絞りのタイムライン。
     timeline: String,
 }
 
-/// `GET /graph/timeline?label=…&from=…&to=…`: タイムライン（図 B）。引数は系図と同じ（空の値は付けなかったのと同じ）。
+/// `GET /graph/timeline?label=…&from=…&to=…`: タイムライン（図 B）。引数は `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
 /// `from`・`to` を付ければ、横の時刻もその窓にする（無ければ記録の初めから終わりまで）。
 /// 並べる計算と HTML を組むのは、spawn_blocking の糸で行う。
 pub async fn timeline(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Response {
@@ -970,7 +768,7 @@ async fn timeline_page(
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
     period(&mut pairs, GRAPH_PERIOD)?;
-    let form = TreeForm::new(&pairs);
+    let form = GraphForm::new(&pairs);
     let now = OffsetDateTime::now_utc();
     let quick = quick_links("/graph/timeline", &pairs, GRAPH_PERIOD, now);
     let p = Params::new(pairs, GRAPH_PARAMS, &[])?;
@@ -1010,7 +808,7 @@ async fn timeline_page(
 #[template(path = "timeline.html")]
 struct TimelinePage {
     css: &'static str,
-    form: TreeForm,
+    form: GraphForm,
     quick: Vec<(&'static str, String)>,
     count: usize,
     /// 凡例の model（短い名と色の class）。
@@ -1033,7 +831,7 @@ struct TimelineSvg {
     now: Option<u32>,
     /// 上からの順。
     lanes: Vec<LaneView>,
-    arrows: Vec<TreeLine>,
+    arrows: Vec<ArrowView>,
 }
 
 /// タイムラインの行 1 つ。
@@ -1283,7 +1081,7 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
     let arrows = layout
         .arrows
         .into_iter()
-        .map(|a| TreeLine {
+        .map(|a| ArrowView {
             class: match a.kind {
                 timeline::Kind::Launched => "link launched",
                 timeline::Kind::Continued => "link continued",
@@ -1545,10 +1343,10 @@ mod tests {
              &active_from=2026-11-23T00:00:00%2B09:00&active_to=2026-11-24T00:00:00%2B09:00"
         );
         let graph = pairs(&[("to", "2026-11-01T00:00:00+09:00"), ("label", "a:b")]);
-        let links = quick_links("/graph/tree", &graph, GRAPH_PERIOD, now);
+        let links = quick_links("/graph/timeline", &graph, GRAPH_PERIOD, now);
         assert_eq!(
             links[0].1,
-            "/graph/tree?label=a:b&from=2026-11-23T09:30:15%2B09:00&to=2026-11-23T10:30:15%2B09:00"
+            "/graph/timeline?label=a:b&from=2026-11-23T09:30:15%2B09:00&to=2026-11-23T10:30:15%2B09:00"
         );
         // 条件が無くても、期間だけを付ける。
         let links = quick_links("/graph/network", &Vec::new(), GRAPH_PERIOD, now);
