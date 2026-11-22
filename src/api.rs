@@ -148,7 +148,10 @@ struct NewActorBody {
     #[serde(default)]
     labels: BTreeMap<String, String>,
     bindings: Vec<BindingBody>,
-    at: String,
+    /// 送り手の時刻。移る間は前の名 `at` も受ける。本文の写し（body_hash）には前の版と同じ名 `at` で書く
+    /// （前の版で受けた物を新しい名で送り直しても、同じ物になる）。
+    #[serde(rename(serialize = "at", deserialize = "sent_at"), alias = "at")]
+    sent_at: String,
     settings: Option<SettingsBody>,
 }
 
@@ -170,7 +173,7 @@ struct SettingsBody {
 /// `POST /v1/actors`: 登録する。鍵（bindings の初め）が既にあれば、そのアクターを 200 で返す。
 pub async fn register(State(db): State<Db>, bytes: Bytes) -> Answer {
     let b: NewActorBody = body(&bytes)?;
-    let at = parse_at(&b.at, "at")?;
+    let sent = parse_at(&b.sent_at, "sent_at")?;
     check(&[
         (
             is_name(&b.issuer),
@@ -221,8 +224,8 @@ pub async fn register(State(db): State<Db>, bytes: Bytes) -> Answer {
             prefix: &b.name_prefix,
             labels: &labels,
             bindings: &bindings,
-            at: &b.at,
-            at_time: at,
+            sent_at: &b.sent_at,
+            sent_time: sent,
             settings: b
                 .settings
                 .as_ref()
@@ -266,7 +269,10 @@ struct EventBody {
     kind: String,
     #[serde(default = "empty_object")]
     detail: Value,
-    at: String,
+    /// 送り手の時刻。移る間は前の名 `at` も受ける。本文の写し（body_hash）には前の版と同じ名 `at` で書く
+    /// （前の版で受けた物を新しい名で送り直しても、同じ物になる）。
+    #[serde(rename(serialize = "at", deserialize = "sent_at"), alias = "at")]
+    sent_at: String,
 }
 
 fn empty_object() -> Value {
@@ -276,7 +282,7 @@ fn empty_object() -> Value {
 /// `PUT /v1/events/{id}`: 出来事を足す。
 pub async fn put_event(State(db): State<Db>, Path(id): Path<String>, bytes: Bytes) -> Answer {
     let b: EventBody = body(&bytes)?;
-    let at = parse_at(&b.at, "at")?;
+    let sent = parse_at(&b.sent_at, "sent_at")?;
     let by = parse_ref(&b.by)?;
     check(&[
         (is_id(&id), "id は英数字と記号で 128 字まで"),
@@ -299,8 +305,8 @@ pub async fn put_event(State(db): State<Db>, Path(id): Path<String>, bytes: Byte
                 by: &by,
                 kind: &b.kind,
                 detail: &detail,
-                at: &b.at,
-                at_time: at,
+                sent_at: &b.sent_at,
+                sent_time: sent,
                 body_hash: &hash(&b),
             },
         )
@@ -316,13 +322,16 @@ struct LinkBody {
     kind: String,
     from: String,
     to: String,
-    at: String,
+    /// 送り手の時刻。移る間は前の名 `at` も受ける。本文の写し（body_hash）には前の版と同じ名 `at` で書く
+    /// （前の版で受けた物を新しい名で送り直しても、同じ物になる）。
+    #[serde(rename(serialize = "at", deserialize = "sent_at"), alias = "at")]
+    sent_at: String,
 }
 
 /// `PUT /v1/links/{id}`: 線を足す。
 pub async fn put_link(State(db): State<Db>, Path(id): Path<String>, bytes: Bytes) -> Answer {
     let b: LinkBody = body(&bytes)?;
-    let at = parse_at(&b.at, "at")?;
+    let sent = parse_at(&b.sent_at, "sent_at")?;
     let from = parse_ref(&b.from)?;
     let to = parse_ref(&b.to)?;
     check(&[
@@ -344,8 +353,8 @@ pub async fn put_link(State(db): State<Db>, Path(id): Path<String>, bytes: Bytes
                 kind: &b.kind,
                 from: &from,
                 to: &to,
-                at: &b.at,
-                at_time: at,
+                sent_at: &b.sent_at,
+                sent_time: sent,
                 body_hash: &hash(&b),
             },
         )
@@ -361,13 +370,16 @@ struct SettingBody {
     model: String,
     effort: String,
     source: String,
-    at: String,
+    /// 送り手の時刻。移る間は前の名 `at` も受ける。本文の写し（body_hash）には前の版と同じ名 `at` で書く
+    /// （前の版で受けた物を新しい名で送り直しても、同じ物になる）。
+    #[serde(rename(serialize = "at", deserialize = "sent_at"), alias = "at")]
+    sent_at: String,
 }
 
 /// `PUT /v1/settings/{id}`: model と effort を足す。
 pub async fn put_setting(State(db): State<Db>, Path(id): Path<String>, bytes: Bytes) -> Answer {
     let b: SettingBody = body(&bytes)?;
-    let at = parse_at(&b.at, "at")?;
+    let sent = parse_at(&b.sent_at, "sent_at")?;
     let by = parse_ref(&b.by)?;
     check(&[
         (is_id(&id), "id は英数字と記号で 128 字まで"),
@@ -397,8 +409,8 @@ pub async fn put_setting(State(db): State<Db>, Path(id): Path<String>, bytes: By
                 model: &b.model,
                 effort: &b.effort,
                 source: &b.source,
-                at: &b.at,
-                at_time: at,
+                sent_at: &b.sent_at,
+                sent_time: sent,
                 body_hash: &hash(&b),
             },
         )

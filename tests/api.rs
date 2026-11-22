@@ -83,7 +83,7 @@ async fn 鍵の付随する_id_は_2_つのアクターに付かない() {
     let app = App::start().await;
     let (se1, se2, _) = three(&app).await;
     let refused = sqlx::query(
-        "insert into bindings(actor_id, issuer, type, value, is_key, at, received_at)
+        "insert into bindings(actor_id, issuer, type, value, is_key, sent_at, received_at)
          values(?1, 'tpm', 'claude.session', 's-1', 1, ?2, ?2)",
     )
     .bind(se2["id"].as_str())
@@ -318,7 +318,7 @@ async fn 出来事の種類は_10_だけ() {
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
     // DB の CHECK も断る。
     let refused = sqlx::query(
-        "insert into events(id, actor_id, type, at, received_at, clock_skew, body_hash)
+        "insert into events(id, actor_id, type, sent_at, received_at, clock_skew, body_hash)
          values('k-y', ?1, 'danced', ?2, ?2, 0, 'x')",
     )
     .bind(se1["id"].as_str())
@@ -510,7 +510,9 @@ async fn 時計が_5_分より離れていても受け_clock_skew_を立てる()
     let mut body = event(SE1, "reported_in", "2026-01-02T03:04:05+09:00");
     body["detail"] = json!({});
     app.put("/v1/events/c-6", &body).await;
-    let kept: String = app.scalar("select at from events where id = 'c-6'").await;
+    let kept: String = app
+        .scalar("select sent_at from events where id = 'c-6'")
+        .await;
     assert_eq!(kept, "2026-01-02T03:04:05+09:00");
 }
 
@@ -520,7 +522,7 @@ async fn received_at_は戻らない() {
     let se1 = app.register(&ai("se", "s-1")).await;
     // 先の時刻の行が既にあっても、次の行はそれより前にならない。
     sqlx::query(
-        "insert into events(id, actor_id, type, at, received_at, clock_skew, body_hash)
+        "insert into events(id, actor_id, type, sent_at, received_at, clock_skew, body_hash)
          values('future', ?1, 'reported_in', ?2, '2099-01-01T00:00:00.000Z', 1, 'x')",
     )
     .bind(se1["id"].as_str())

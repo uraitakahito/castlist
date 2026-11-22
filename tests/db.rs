@@ -119,31 +119,31 @@ async fn 外のキーの列のどれも_無い親を指す行を断る() {
         ),
         (
             "bindings.actor_id",
-            "insert into bindings(actor_id, issuer, type, value, is_key, at, received_at) values('missing', 'tpm', 't', 'v', 0, ?2, ?2)",
+            "insert into bindings(actor_id, issuer, type, value, is_key, sent_at, received_at) values('missing', 'tpm', 't', 'v', 0, ?2, ?2)",
         ),
         (
             "links.from_actor",
-            "insert into links(id, type, from_actor, to_actor, at, received_at, clock_skew, body_hash) values('fk-1', 'continued', 'missing', ?1, ?2, ?2, 0, 'x')",
+            "insert into links(id, type, from_actor, to_actor, sent_at, received_at, clock_skew, body_hash) values('fk-1', 'continued', 'missing', ?1, ?2, ?2, 0, 'x')",
         ),
         (
             "links.to_actor",
-            "insert into links(id, type, from_actor, to_actor, at, received_at, clock_skew, body_hash) values('fk-2', 'continued', ?1, 'missing', ?2, ?2, 0, 'x')",
+            "insert into links(id, type, from_actor, to_actor, sent_at, received_at, clock_skew, body_hash) values('fk-2', 'continued', ?1, 'missing', ?2, ?2, 0, 'x')",
         ),
         (
             "events.actor_id",
-            "insert into events(id, actor_id, type, at, received_at, clock_skew, body_hash) values('fk-3', 'missing', 'entered', ?2, ?2, 0, 'x')",
+            "insert into events(id, actor_id, type, sent_at, received_at, clock_skew, body_hash) values('fk-3', 'missing', 'entered', ?2, ?2, 0, 'x')",
         ),
         (
             "settings.actor_id",
-            "insert into settings(actor_id, model_id, effort_id, source, at, received_at, clock_skew) values('missing', (select min(id) from models), (select min(id) from efforts), 'observed', ?2, ?2, 0)",
+            "insert into settings(actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew) values('missing', (select min(id) from models), (select min(id) from efforts), 'observed', ?2, ?2, 0)",
         ),
         (
             "settings.model_id",
-            "insert into settings(actor_id, model_id, effort_id, source, at, received_at, clock_skew) values(?1, 999999, (select min(id) from efforts), 'observed', ?2, ?2, 0)",
+            "insert into settings(actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew) values(?1, 999999, (select min(id) from efforts), 'observed', ?2, ?2, 0)",
         ),
         (
             "settings.effort_id",
-            "insert into settings(actor_id, model_id, effort_id, source, at, received_at, clock_skew) values(?1, (select min(id) from models), 999999, 'observed', ?2, ?2, 0)",
+            "insert into settings(actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew) values(?1, (select min(id) from models), 999999, 'observed', ?2, ?2, 0)",
         ),
     ];
     for (column, sql) in cases {
