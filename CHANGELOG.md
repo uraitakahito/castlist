@@ -2,7 +2,21 @@
 
 版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/v1/`）と DB の移行（`migrations/`）が変わったかを書く。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
 
-## 0.2.0
+## 0.3.0
+
+不正終了の原因を、後から調べられるようにした。系図の画面を消した。API（`/v1/`）は道を 1 つ足しただけで、移行の SQL は替わらない（0.2.0 と同じ volume で起き、0.2.0 へもそのまま戻せる）。起こし方・環境変数・image の中身も変わらない。
+
+- 記録: 自分の終わり方と、時刻つきの記録を、volume の `/data/logs/` に残す（[動かす](https://uraitakahito.github.io/castlist/run.html) の「落ちた後に調べる」）。`container logs` は container を起こし直すと消えるが、こちらは残る。
+  - 起きるたびに、前回の終わり方を 1 行で出す（`previous: …`）: きれいに止まった・止める合図は受けたが終わり切らなかった・panic（場所と文）・誤りで終わった（訳）・停止の印なし（最後に生きていた時刻）。
+  - 記録の file（`server.log`）には、今までの行に加えて、問い合わせごとの 1 行（method・path・status・かかった時間）を書く。
+  - **ディスクの上限**: 記録は 1 MiB × 4 file で回し、終わり方の印は 64 KiB まで。合わせて 4 MiB と 64 KiB を超えない。書けない時も castlist は動く（行を捨てる）。
+- API: `GET /v1/logs` を足した。印と記録を古い順の字で返す（止めずに読める）。ほかの道は替わらない。
+- **log の行の形が変わった**: `container logs` に出るどの行も、頭に時刻（UTC）と重さ（`INFO` など）が付く（`2026-01-02T03:04:05.000000Z  INFO castlist_server: castlist 0.3.0 listen=… db=…`）。行の中の文（`castlist <版> listen=… db=…`・`castlist stopped`）は変わらない。初めの行は、前回の終わり方になった。問い合わせごとの行は `container logs` には出ない（量を増やさないため）。誤りの行は、stderr でなく stdout に出る。止める合図を受けた時に `signal SIGTERM`（か `SIGINT`）の行を出す。
+- 画面: 系図の画面（`/graph/tree`）を消した。前の URL は 404。一覧・タイムライン・相関図の頭の「系図へ」も無い（Product Manager の決めごと: 系図は使わない）。API と移行は替わらない。
+- docs: 図の呼び名から記号（図 B・図 C）を外し、名だけ（タイムライン・相関図）にした。
+- 中: 記録の 1 行を同期で書く `src/runlog.rs` だけ、塞ぐ呼び出しの断り（clippy）を外した（`panic = "abort"` で、落ちる直前の行を残すため）。
+- 試験: 試験ごとに空の folder を作り、その中に DB を置く（記録が DB の隣の `logs/` にできるため）。本物の binary を止め方ごとに起こし直す試験（`tests/runlog.rs`）と、image の smoke での確かめを足した。
+
 
 送り手の時刻の名を `at` から `sent_at` にした（PM の答え。`at` だけでは誰の時刻か分からないため）。API（`/v1/`）と移行の SQL が替わる。
 
