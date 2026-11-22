@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}関係の網{% endblock %}
+{% block main %}
+<h1>関係の網 <span class="kind"><a href="/">一覧へ</a> ・ <a href="/graph/tree">系図へ</a> ・ <a href="/graph/timeline">時間の帯へ</a></span></h1>
+<form class="filters" method="get" action="/graph/network">
+<fieldset>
+<legend>絞る（系図と同じ。空の欄は付けないのと同じ。絞った組から出る線の先も一歩だけ出す）</legend>
+<div class="fields">
+<label>札 <input name="label" value="{{ form.label }}" placeholder="tpm.key:t-23zs"></label>
+<label>登録の窓の初め <input name="from" value="{{ form.from }}" placeholder="2026-11-22T11:00:00+09:00"></label>
+<label>終わり <input name="to" value="{{ form.to }}" placeholder="2026-11-22T12:00:00+09:00"></label>
+</div>
+<div class="actions"><button type="submit">絞る</button> <a href="/graph/network">外す</a></div>
+</fieldset>
+</form>
+<noscript><p class="noscript note">この画面は JavaScript で描く。JavaScript を切っている時は、同じ絞りの<a href="{{ tree }}">系図</a>か<a href="{{ timeline }}">時間の帯</a>を使う（どちらも script を使わない）。</p></noscript>
+<div id="network-controls" class="filters" hidden>
+<fieldset>
+<legend>見せる点を選ぶ（この頁の中だけ。合わない点と、その線を隠す）</legend>
+<div class="fields">
+<label>model <select id="f-model"><option value="">どれも</option></select></label>
+<label>effort <select id="f-effort"><option value="">どれも</option></select></label>
+</div>
+</fieldset>
+</div>
+<section id="legend" class="legend">
+<p>点は 1 つのアクター（名を下に書く）。色は最新の model、形は種類。薄い点は今いない者。点を押すとプロフィールへ、字に重ねると model · effort と居るかが出る。点は引いて動かせる（並べ直しは頁の読み直し）。</p>
+<ul class="keys">
+<li><span class="node-key m-opus"></span>opus</li>
+<li><span class="node-key m-sonnet"></span>sonnet</li>
+<li><span class="node-key m-haiku"></span>haiku</li>
+<li><span class="node-key m-other"></span>ほかの model</li>
+<li><span class="node-key m-none"></span>記録なし</li>
+<li><span class="node-key human"></span>角のある形: 人</li>
+<li><span class="key launched"></span>実線の矢印: 起こした</li>
+<li><span class="key continued"></span>点線の矢印: 継いだ（/clear の交代・fork の分身）</li>
+</ul>
+</section>
+<div id="network" class="network" data-src="{{ data_src }}" role="img" aria-label="関係の網"></div>
+<p id="network-status" class="legend" aria-live="polite"></p>
+<script src="{{ cytoscape }}"></script>
+<script src="{{ script }}"></script>
+{% endblock %}

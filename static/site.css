@@ -224,6 +224,25 @@ svg.timeline { display: block; font-family: system-ui, "Hiragino Sans", "Noto Sa
 .timeline .link.continued { stroke-dasharray: 5 4; }
 .timeline .arrow { fill: var(--muted); }
 
+/* 関係の網（/graph/network）。点と線は static/network.js が canvas に描き、色はこの file の色を読む。 */
+.network {
+  height: 70vh;
+  min-height: 420px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+/* cytoscape が自分で差し込もうとする決まり（CSP が inline の style を断るので、ここに置く。network.js の MARK）。 */
+.__________cytoscape_container { position: relative; }
+.network.pointing { cursor: pointer; }
+.legend .node-key { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--m-none); }
+.legend .node-key.m-opus { background: var(--m-opus); }
+.legend .node-key.m-sonnet { background: var(--m-sonnet); }
+.legend .node-key.m-haiku { background: var(--m-haiku); }
+.legend .node-key.m-other { background: var(--m-other); }
+.legend .node-key.human { width: 16px; border-radius: 3px; border: 2px solid var(--on); }
+.noscript { margin: 0 0 12px; }
+
 @media (max-width: 700px) {
   main { padding: 8px; }
   .filters input:not([type]) { width: 100%; }
