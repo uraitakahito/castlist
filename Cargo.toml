@@ -16,10 +16,19 @@ path = "src/main.rs"
 axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "query", "tokio"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-time = { version = "0.3", features = ["formatting"] }
-tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "net", "signal"] }
+# 本文の写し（同じ id で同じ本文か）を比べる SHA-256。sqlx が使う版と同じ物。
+sha2 = { version = "0.11.1", default-features = false }
+# SQL は動く時に組む形（query・query_as）だけを使う。macros は、移行の SQL を binary に埋め込む migrate!() のため。
+sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
+time = { version = "0.3", features = ["formatting", "parsing"] }
+tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "net", "signal", "fs", "time"] }
+tokio-util = { version = "0.7", features = ["io"] }
+# アクターの id（UUID v7）。
+uuid = { version = "1", default-features = false, features = ["std", "v7"] }
 
 [dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.5", features = ["util"] }
 
 # 並列の問い合わせを待たせないための決まり（docs/src/development.md の「待たせない書き方」）。
 # 塞ぐ呼び出しは clippy.toml の disallowed-methods で断り、鍵を握ったままの await も断る。
