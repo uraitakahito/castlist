@@ -1,6 +1,6 @@
 # API
 
-どれも JSON。host（castlist を動かす機械）の外からは届かない。`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403（browser で開いたほかのページからの読み書きを断る物。同じ network の container は `Host: 127.0.0.1` で読み書きできる。[動かす](run.md) の「断るのは、機械の外からだけ」）。
+どれも JSON。host（castlist を動かす機械）の外からは届かない。`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403（browser で開いたほかのページからの読み書きを断る物。同じ network の container は `Host: 127.0.0.1` で読み書きできる。[動かす](run.md) の「同じ network の container からは届く」）。
 
 - アクターは、鍵の付随する id（`種類:値`。例 `claude.session:5f0c…`・`tpm.person:pm`）で指す。本当の id への引き当ては castlist がする。値には `:` があってよい（初めの `:` で分ける）。
 - 時刻は RFC 3339。送り手の時刻（`sent_at`。送り手が送る時に付けた、送り手の時計の時刻）は、そのまま残す。0.1.x の名 `at` も、移る間は受ける（両方を付ければ 422。答えはいつも `sent_at`）。castlist が受けた時刻（`received_at`）は UTC・ミリ秒まで。

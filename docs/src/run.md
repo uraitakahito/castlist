@@ -21,9 +21,11 @@ Apple Container（`container` CLI）で、release の image を動かす。host�
 - domain `box` は、host に前からある物を使う（`container system dns list` に出る）。無い機械では、Product Manager が `sudo container system dns create box` で作る。
 - 0.1.0 までの docs は名を `castlist` としていた。その名で動かしている時は、下の「版を上げる」の時に、新しい名で起こし直す（volume はそのまま付く）。
 
-### 断るのは、機械の外からだけ
+### 同じ network の container からは届く
 
-castlist は、`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求を 403 で断る。これは、browser で開いたほかのページが castlist に書く・読む（DNS rebinding など）のを断る物で、**同じ network の container からの要求は断らない**。container の中で `0.0.0.0:8080` で待つので、network `default` の container は、`Host: 127.0.0.1` を付ければ読み書きできる（置き場はそうして聞く）。host の外（LAN・インターネット）からは、`-p 127.0.0.1:…` で出すので届かない。
+network `default` の container は、`Host: 127.0.0.1` を付ければ castlist に読み書きできる（置き場はそうして聞く）。container の中で `0.0.0.0:8080` で待つため。
+
+castlist が 403 で断るのは、`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求。browser で開いたほかのページが castlist に書く・読む（DNS rebinding など）のを断る物。host の外（LAN・インターネット）からは、`-p 127.0.0.1:…` で出すので、そもそも届かない。
 
 ## 初めて起こす
 
