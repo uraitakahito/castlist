@@ -1857,7 +1857,7 @@ async fn 日時の欄の読めない値は_引数の名を書いた_400_の画�
 }
 
 #[tokio::test]
-async fn どの画面も_種類の印は人だけに付け_AI_とは書かない() {
+async fn どの画面も_種類の印は人だけに付け_ai_とは書かない() {
     let s = sample().await;
     let id = s.id("se.1");
     let mut pages = Vec::new();
