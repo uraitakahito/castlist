@@ -3,7 +3,7 @@
 castlist が HTML を組んで返す画面（askama。`templates/`）。この Mac の browser で `http://127.0.0.1:8802/` を開く。
 
 - 字はみな HTML として逃がす（札・名・出来事の `detail` など、送り手が書いた字も）。
-- script は使わない。style は castlist が配る CSS（`GET /static/site.css`。binary に埋め込む）だけで、inline の style も無い。
+- script を使うのは関係の網（相関図 C）だけで、castlist が配る file（`GET /static/network.js` と、取り込んだ cytoscape）だけを読む。inline の script は無い。style は castlist が配る CSS（`GET /static/site.css`）だけで、inline の style も無い。どの file も binary に埋め込む。
 - どの画面にも Content-Security-Policy を付ける: `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`。`form-action 'self'` は、一覧の絞りの form を castlist 自身へ送るため。
 - 時刻は、castlist が受けた時刻（`received_at`）を日本の時刻（UTC+9）で出す。ISO の字は `<time datetime>` と `title` に置く（字に重ねると出る）。
 - 明るい色と暗い色の両方を持つ（`prefers-color-scheme`）。
@@ -90,6 +90,47 @@ castlist が HTML を組んで返す画面（askama。`templates/`）。この M
 
 並べ方（`src/timeline.rs`。DB に触らない純な計算で、単体の試験を持つ）は、行ごとの居る・居ないの出来事と替わり目と印の時刻（ミリ秒）、線、窓を受けて、帯の切れ・矢印・印・目盛りの置き場を返す。同じ入力からは、いつも同じ図。並べる計算と HTML を組むのは `tokio::task::spawn_blocking` の糸で行う。色は `site.css` の class で決める（明るい色と暗い色）。矢印は帯の下に、帯の字は印の上に（縁取りを付けて）描く。
 
+## `GET /graph/network` 関係の網（相関図 C）
+
+誰が誰を起こし、誰が誰を継いだかを、点と線の網で出す。script を使う唯一の画面。一覧の頭の「関係の網」と、系図と時間の帯の頭から行ける（関係の網の頭からは、一覧・系図・時間の帯へ戻れる）。
+
+- 絞りは系図と同じ（`label`・`from`・`to`）。castlist は引数を確かめるだけで（誤りは 400 の画面）、点と線は描かない。同じ引数を付けた `GET /v1/graph` の URL を、絵の場所の `data-src` に置く。
+- `static/network.js` が、その URL から点と線を引き（同じ origin。CSP の `connect-src 'self'`）、cytoscape で canvas に描く。字は DOM の `textContent` でだけ置く。
+- JavaScript を切った browser には、同じ絞りの系図と時間の帯を勧める字を出す（`<noscript>`。script は要らない）。下の「見せる点を選ぶ」欄は出さない。
+
+| 物 | 描き方 |
+|---|---|
+| 点 | 1 つのアクター。名を下に書く（下地を地の色で塗り、横切る線を隠す）。AI は丸、人は角を丸めた四角で縁を緑に |
+| 点の色 | 最新の model の系統（時間の帯と同じ決め方: `opus`・`sonnet`・`haiku`・ほか・記録なし）。色は `site.css` の `--m-opus` などを読むので、明るい色と暗い色の両方で替わる（替われば描き直す） |
+| 薄い点 | 今いない者（塗りを薄く。名は薄くしない） |
+| 実線の矢印 | 起こした（`launched`） |
+| 点線の矢印 | 継いだ（`continued`。/clear の交代・fork の分身） |
+
+- 並べ方は cytoscape の `cose`（力で引き合う並べ方）。初めの置き場は答えの順に円に置くので、同じ答えからは同じ図。点は引いて動かせ、ホイールで大きさを替えられる（並べ直しは頁の読み直し）。
+- 点を押すと、そのアクターのプロフィールへ。字に重ねると、名・種類・model · effort・居るかが出る。
+- 「見せる点を選ぶ」の model（短い名）と effort は、頁の中だけで、合わない点と、その点に付く線を隠す（API には聞き直さない）。選べる値は、描いた点に出てくる物と「記録なし」。
+- 絵の下に、アクターと線の数と、API が答えた時（日本の時刻）を書く。絞った時は、見えている数も。
+
+CSP を緩めずに cytoscape を使うための、2 つの決まり（`static/network.js`）:
+
+- cytoscape は、初めに `<style>` を head に差し込もうとする（CSP の `style-src 'self'` が断り、違反になる）。同じ id（`__________cytoscape_stylesheet`）の印を先に置くと差し込まないので、そうする。差し込むはずだった決まり（容れ物を `position: relative` に）は `site.css` に書く。
+- cytoscape は、絵の画面の中の位置を覚えておき、押した所の点を探す。覚え直すのは window の scroll と大きさの替わりの知らせが来た時だけなので、指が入った時と押す前に覚え直させる（`cy.resize()`）。
+
+### 取り込んだ cytoscape
+
+- [cytoscape](https://js.cytoscape.org/) 3.35.0（MIT。The Cytoscape Consortium）。npm の tarball の `package/dist/cytoscape.min.js` を、そのまま `static/vendor/cytoscape-3.35.0.min.js` に置き、castlist が binary に埋め込んで `GET /static/vendor/cytoscape-3.35.0.min.js` で配る（CDN からは読まない）。license の写しは `static/vendor/cytoscape-LICENSE`。
+- 出どころの記録は `static/vendor/SOURCES.md`（package・version・tarball の URL・registry の `integrity`・tarball の中の path・置いた file の sha256・license）。
+- `ci/check-vendor.sh`（CI の job `test`）が、registry の記録の tarball と `integrity` が SOURCES.md と同じか、落とした tarball の sha512 が `integrity` と同じか、tarball の中の file と commit した file の sha256 が SOURCES.md と同じか、license の file が tarball の物と同じかを見る。1 つでも違えば落ちる（書き替えた写しを当てることも CI で見る）。
+- 試験の `tests/ui.rs` も、castlist が配る物の sha256 が SOURCES.md と同じかを見る。
+
+版の上げ方:
+
+1. 新しい版が npm の `latest` で、公開から 2 日たっていることを見る（`curl -s https://registry.npmjs.org/cytoscape | jq '."dist-tags", .time["<版>"]'`）。
+2. 空の folder で tarball を落とし、`package/dist/cytoscape.min.js` を `static/vendor/cytoscape-<版>.min.js` に、`package/LICENSE` を `static/vendor/cytoscape-LICENSE` に写す。古い版の file は消す。
+3. `static/vendor/SOURCES.md` の version・tarball・integrity（`https://registry.npmjs.org/cytoscape/<版>` の `dist.integrity`）・file・sha256 を書き替える。
+4. 版の入った path を替える: `src/ui.rs` の `CYTOSCAPE_JS`・`CYTOSCAPE_PATH`、`tests/ui.rs` の `CYTOSCAPE`、CI の「見張りが、書き替えた写しを当てるか」の file の名。
+5. `ci/check-vendor.sh`・`cargo test --locked`・`cd e2e && pnpm test`（console の誤りと CSP の違反が 0 か）を流す。cytoscape の変わり目（release の知らせ）で、`<style>` の差し込みと位置の覚え方が替わっていないかも見る。
+
 ## 出来事の名
 
 id は英語のまま（API と DB）。日本語の名は画面だけで、`src/ui.rs` の `EVENT_NAMES` の 1 か所に置く。
@@ -107,6 +148,6 @@ id は英語のまま（API と DB）。日本語の名は画面だけで、`src
 | `model_unreadable` | model 不明 |
 | `retracted` | 取り消し |
 
-## `GET /static/site.css`
+## `GET /static/site.css`・`GET /static/network.js`・`GET /static/vendor/cytoscape-3.35.0.min.js`
 
-画面の CSS（`text/css`）。画面は `/static/site.css?v=<中身の写しの頭>` で読むので、中身が替われば browser は読み直す。長く持たせてよい（`Cache-Control: public, max-age=31536000, immutable`）。
+画面の CSS（`text/css`）と、関係の網の script（`application/javascript`）。どれも binary に埋め込む。画面は `/static/site.css?v=<中身の写しの頭>`・`/static/network.js?v=<中身の写しの頭>` で読み、cytoscape は版が path に入るので、中身が替われば browser は読み直す。長く持たせてよい（`Cache-Control: public, max-age=31536000, immutable`）。

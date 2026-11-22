@@ -1,7 +1,8 @@
-//! 画面: アクターの一覧（`/`）とプロフィール（`/actors/{id}`）と系図（`/graph/tree`）と時間の帯（`/graph/timeline`）と、
-//! それが読む CSS（`/static/site.css`）。
+//! 画面: アクターの一覧（`/`）とプロフィール（`/actors/{id}`）と系図（`/graph/tree`）と時間の帯（`/graph/timeline`）と
+//! 関係の網（`/graph/network`）と、それが読む CSS（`/static/site.css`）と script（`/static/network.js` と、取り込んだ cytoscape）。
 //!
-//! - サーバーが HTML を組んで返す（askama。`templates/`）。字はみな HTML として逃がす。script は使わない。
+//! - サーバーが HTML を組んで返す（askama。`templates/`）。字はみな HTML として逃がす。
+//!   script を使うのは関係の網だけで、castlist が配る file だけを読む（inline の script は無い）。
 //! - CSP（[`crate::CSP`]）が inline の script と style を断るので、style は castlist が配る CSS の file だけ。
 //! - 一覧の絞りは、監査の検索の API（`GET /v1/actors`）と同じ引数を URL に置く（[`search::actor_query`] で読む）。
 //! - 時刻は、castlist が受けた時刻（UTC）を日本の時刻（[`OFFSET`]）で出し、ISO の字を `<time datetime>` と `title` に置く。
@@ -57,27 +58,55 @@ pub fn event_name(kind: &str) -> &str {
         .map_or(kind, |(_, name)| name)
 }
 
-// --- CSS ---
+// --- CSS と script ---
 
 const SITE_CSS: &str = include_str!("../static/site.css");
 
-/// CSS の path。中身の写しを `?v=` に付けるので、中身が替われば browser は読み直す（長く持たせてよい）。
-static CSS_HREF: LazyLock<String> = LazyLock::new(|| {
-    let digest = Sha256::digest(SITE_CSS.as_bytes());
-    let v: String = digest.iter().take(6).map(|b| format!("{b:02x}")).collect();
-    format!("/static/site.css?v={v}")
-});
+/// 関係の網（`/graph/network`）が使う cytoscape（npm の物をそのまま取り込んだ。static/vendor/SOURCES.md）。
+const CYTOSCAPE_JS: &str = include_str!("../static/vendor/cytoscape-3.35.0.min.js");
 
-/// `GET /static/site.css`: 画面の CSS（binary に埋め込んだ物）。
-pub async fn site_css() -> Response {
+/// cytoscape の path。版が名に入るので、中身が替われば path も替わる。
+pub const CYTOSCAPE_PATH: &str = "/static/vendor/cytoscape-3.35.0.min.js";
+
+/// 関係の網を描く、castlist の script。
+const NETWORK_JS: &str = include_str!("../static/network.js");
+
+/// 中身の写しの頭を `?v=` に付けた path。中身が替われば browser は読み直す（長く持たせてよい）。
+fn versioned(path: &str, body: &str) -> String {
+    let digest = Sha256::digest(body.as_bytes());
+    let v: String = digest.iter().take(6).map(|b| format!("{b:02x}")).collect();
+    format!("{path}?v={v}")
+}
+
+static CSS_HREF: LazyLock<String> = LazyLock::new(|| versioned("/static/site.css", SITE_CSS));
+static NETWORK_JS_HREF: LazyLock<String> =
+    LazyLock::new(|| versioned("/static/network.js", NETWORK_JS));
+
+/// binary に埋め込んだ file を、長く持たせてよい答えで返す（path が中身ごとに替わるので）。
+fn asset(content_type: &'static str, body: &'static str) -> Response {
     (
         [
-            (header::CONTENT_TYPE, "text/css; charset=utf-8"),
+            (header::CONTENT_TYPE, content_type),
             (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
         ],
-        SITE_CSS,
+        body,
     )
         .into_response()
+}
+
+/// `GET /static/site.css`: 画面の CSS。
+pub async fn site_css() -> Response {
+    asset("text/css; charset=utf-8", SITE_CSS)
+}
+
+/// `GET /static/vendor/cytoscape-3.35.0.min.js`: 関係の網が使う cytoscape。
+pub async fn cytoscape_js() -> Response {
+    asset("application/javascript; charset=utf-8", CYTOSCAPE_JS)
+}
+
+/// `GET /static/network.js`: 関係の網を描く script。
+pub async fn network_js() -> Response {
+    asset("application/javascript; charset=utf-8", NETWORK_JS)
 }
 
 // --- 画面に出す形 ---
@@ -733,6 +762,51 @@ fn short_model(model: &str) -> &str {
     model.strip_prefix("claude-").unwrap_or(model)
 }
 
+/// `GET /graph/network?label=…&from=…&to=…`: 関係の網（相関図 C）。引数は系図と同じ（空の値は付けなかったのと同じ）。
+/// script を使う唯一の画面。HTML は枠だけで、点と線は `static/network.js` が `GET /v1/graph` から引いて描く。
+/// ここでは引数を確かめ（誤りは 400 の画面）、同じ引数を付けた API の URL を `data-src` に置く。
+pub async fn network(q: Result<Query<Pairs>, QueryRejection>) -> Response {
+    match network_page(q) {
+        Ok(page) => render(StatusCode::OK, &page),
+        Err(e) => error_page(e),
+    }
+}
+
+fn network_page(q: Result<Query<Pairs>, QueryRejection>) -> Result<NetworkPage, ApiError> {
+    let mut pairs = search::pairs(q)?;
+    pairs.retain(|(_, v)| !v.is_empty());
+    let form = TreeForm::new(&pairs);
+    // 確かめた引数を、そのままの順で API と系図と時間の帯の URL に付ける。
+    let query = match query(&pairs) {
+        q if q.is_empty() => q,
+        q => format!("?{q}"),
+    };
+    GraphQuery::new(&Params::new(pairs, GRAPH_PARAMS, &[])?)?;
+    Ok(NetworkPage {
+        css: &CSS_HREF,
+        cytoscape: CYTOSCAPE_PATH,
+        script: &NETWORK_JS_HREF,
+        data_src: format!("/v1/graph{query}"),
+        tree: format!("/graph/tree{query}"),
+        timeline: format!("/graph/timeline{query}"),
+        form,
+    })
+}
+
+#[derive(Template)]
+#[template(path = "network.html")]
+struct NetworkPage {
+    css: &'static str,
+    cytoscape: &'static str,
+    script: &'static str,
+    form: TreeForm,
+    /// network.js が点と線を引く URL（同じ絞りの `GET /v1/graph`）。
+    data_src: String,
+    /// script を切った browser に勧める、同じ絞りの系図と時間の帯。
+    tree: String,
+    timeline: String,
+}
+
 /// `GET /graph/timeline?label=…&from=…&to=…`: 時間の帯（相関図 B）。引数は系図と同じ（空の値は付けなかったのと同じ）。
 /// `from`・`to` を付ければ、横の時刻もその窓にする（無ければ記録の初めから終わりまで）。
 /// 並べる計算と HTML を組むのは、spawn_blocking の糸で行う。
@@ -1126,11 +1200,16 @@ fn chain(
 
 /// 一覧の URL（`/?名=値&…`）。
 fn href(pairs: &[(String, String)]) -> String {
+    format!("/?{}", query(pairs))
+}
+
+/// URL の引数の字（`名=値&…`。`?` は付けない）。
+fn query(pairs: &[(String, String)]) -> String {
     let query: Vec<String> = pairs
         .iter()
         .map(|(n, v)| format!("{}={}", encode(n), encode(v)))
         .collect();
-    format!("/?{}", query.join("&"))
+    query.join("&")
 }
 
 /// URL の引数の値を % で包む（英数字と `-._~:` の外）。
