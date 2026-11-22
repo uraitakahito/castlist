@@ -28,6 +28,8 @@ jobs:
       - run: ci/check-sql.sh
       # 見張りが、そういう SQL を本当に当てるか（当てなければ落とす）。
       - run: "! ci/check-sql.sh ci/testdata/bad-sql.rs"
+      # release の workflow が使う、tag と版の突き合わせ（ci/check-release-version.sh）の試験。
+      - run: ci/test-check-release-version.sh
       # 取り込んだ外の JavaScript（static/vendor/）が、npm に出ている物と同じか（static/vendor/SOURCES.md）。
       - run: ci/check-vendor.sh
       # 見張りが、書き替えた file を本当に当てるか（当てなければ落とす）。
