@@ -1598,7 +1598,7 @@ async fn 期間をすぐ選ぶ_link_は_今の条件のまま_期間だけを日
         // 直近の期間の終わりは、今の秒を切り上げた時刻（今の秒の中に来た記録も入れる）。
         let after = time::OffsetDateTime::now_utc() + time::Duration::SECOND;
         assert!(
-            body.contains("期間をすぐ選ぶ（今の条件のまま、期間だけを替えます）:"),
+            body.contains("期間（今の条件のまま、期間だけを替えます）:"),
             "{uri}\n{body}"
         );
         // 並ぶ順。
