@@ -5,9 +5,9 @@ AI と人の「アクター」の台帳のサーバー。
 - Claude Code の session 1 つ（起動 1 回）を、1 つのアクターとする。`/clear` と fork で新しいアクターに替わり、resume では同じアクターが続く。人（Product Manager）も 1 つのアクター。
 - 本当の id と名は castlist だけが出す。Claude Code の session の id や cmux の workspace は、それに「付随する id」。
 - 登場・退場と、誰が誰を起動したかを、足すだけの記録（書き替えも消しもしない）で残す。
-- 図（系図・タイムライン・相関図）と、監査のための検索を持つ。
+- 図（タイムライン・相関図）と、監査のための検索を持つ。
 
-v0.1.0 を出した（image は `ghcr.io/uraitakahito/castlist:v0.1.0`）。画面の字の直し（状態・図の名など）は、まだ出していない次の版に入る。アクターの登録・出来事・線・model と effort の記録と、引き当て・図の点と線・監査の検索・DB の写しの [API](api.md) が答え、アクターの一覧とプロフィールと系図（図 A）とタイムライン（図 B）と相関図（図 C）の[画面](ui.md)がある（表は [DB](db.md)）。動かし方は [動かす](run.md)、出し方は [release を出す](release.md)。
+v0.2.0 を出した（image は `ghcr.io/uraitakahito/castlist:v0.2.0`）。系図の画面（`/graph/tree`）を消したのは、まだ出していない次の版に入る。アクターの登録・出来事・線・model と effort の記録と、引き当て・図の点と線・監査の検索・DB の写しの [API](api.md) が答え、アクターの一覧とプロフィールとタイムライン（図 B）と相関図（図 C）の[画面](ui.md)がある（表は [DB](db.md)）。動かし方は [動かす](run.md)、出し方は [release を出す](release.md)。
 
 ## 守り
 

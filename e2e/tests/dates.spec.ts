@@ -38,7 +38,7 @@ test('期間の欄は日時の欄で、入れた日本時間で絞り、送っ�
 });
 
 test('RFC 3339 の期間の link は、日本時間の欄の値で出し、そのまま送り直せる', async ({ page }) => {
-  await page.goto('/graph/tree?from=2000-01-01T00:00:00Z&to=2030-01-01T00:00:07.120%2B09:00');
+  await page.goto('/graph/timeline?from=2000-01-01T00:00:00Z&to=2030-01-01T00:00:07.120%2B09:00');
   const from = page.locator('input[name="from"]');
   const to = page.locator('input[name="to"]');
   await expect(from).toHaveValue('2000-01-01T09:00');
@@ -50,7 +50,7 @@ test('RFC 3339 の期間の link は、日本時間の欄の値で出し、そ�
   await expect(page).toHaveURL(/to=2030-01-01T00%3A00%3A07\.12(&|$)/);
   await expect(page.locator('input[name="to"]')).toHaveValue('2030-01-01T00:00:07.12');
   await expect(page.locator('input[name="to"]')).toHaveAttribute('value', '2030-01-01T00:00:07.120');
-  await expect(page.locator('svg.tree')).toBeVisible();
+  await expect(page.locator('svg.timeline')).toBeVisible();
 });
 
 test('期間をすぐ選ぶ link は、ほかの条件のまま期間だけを替えて絞る', async ({ page }) => {

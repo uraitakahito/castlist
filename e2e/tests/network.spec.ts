@@ -231,12 +231,11 @@ test('見張りは、CSP の違反を本当に当てる', async ({ page }) => {
 test.describe('JavaScript を切った browser', () => {
   test.use({ javaScriptEnabled: false });
 
-  test('系図とタイムラインを使うよう書き、絞りの欄は出さない', async ({ page }) => {
+  test('タイムラインを使うよう書き、絞りの欄は出さない', async ({ page }) => {
     await page.goto('/graph/network?label=tpm.key:t-23zs');
     const note = page.locator('.noscript');
     await expect(note).toBeVisible();
     await expect(note).toContainText('JavaScript');
-    await expect(note.locator('a[href="/graph/tree?label=tpm.key:t-23zs"]')).toBeVisible();
     await expect(note.locator('a[href="/graph/timeline?label=tpm.key:t-23zs"]')).toBeVisible();
     await expect(page.locator('#network-controls')).toBeHidden();
   });

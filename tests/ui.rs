@@ -632,9 +632,9 @@ async fn 利用者の字は_html_で逃がす() {
     }
 }
 
-// --- 系図（図 A） ---
+// --- 消した系図（前の `/graph/tree`） ---
 
-/// 系図の SVG（`<svg` 〜 `</svg>`）。
+/// 図の SVG（`<svg` 〜 `</svg>`）。
 fn svg(body: &str) -> &str {
     let start = body
         .find("<svg")
@@ -643,158 +643,42 @@ fn svg(body: &str) -> &str {
     &body[start..end]
 }
 
-/// 系図の、そのアクターの箱（`<g class="node …">` 〜 `</g>`）。
-fn tree_node<'a>(svg: &'a str, id: &str) -> &'a str {
-    let at = svg
-        .find(&format!("href=\"/actors/{id}\""))
-        .unwrap_or_else(|| panic!("{id} の箱が無い\n{svg}"));
-    let start = svg[..at].rfind("<g class=\"node").expect("<g class=\"node");
-    let end = at + svg[at..].find("</g>").expect("</g>");
-    &svg[start..end]
-}
-
 #[tokio::test]
-async fn 一覧の頭から系図へ行ける() {
+async fn 系図の画面は無く_前の_url_は_404() {
     let s = sample().await;
-    let body = html(&s.app, "/").await;
-    assert!(body.contains("href=\"/graph/tree\""), "{body}");
-}
-
-#[tokio::test]
-async fn 系図は_点ごとに_1_つの_link_と_起こした線と継いだ線を描く() {
-    let s = sample().await;
-    let body = html(&s.app, "/graph/tree").await;
-    let svg = svg(&body);
-    assert_eq!(
-        sorted(listed(svg)),
-        sorted(s.ids_of(&["pm.1", "tpm.1", "se.1", "se.2", "other.1"])),
-        "{svg}"
-    );
-    // pm.1 → tpm.1 → se.1 は起こした（実線）、se.1 → se.2 は継いだ（点線）。
-    assert_eq!(svg.matches("class=\"edge launched\"").count(), 2, "{svg}");
-    assert_eq!(svg.matches("class=\"edge continued\"").count(), 1, "{svg}");
-    // 凡例。
-    for want in ["実線", "点線"] {
-        assert!(body.contains(want), "{want} が無い\n{body}");
-    }
-}
-
-#[tokio::test]
-async fn 系図の箱は_名_種類と短い_model_と_effort_状態と出来事を出す() {
-    let s = sample().await;
-    let body = html(&s.app, "/graph/tree").await;
-    let svg = svg(&body);
-    let se1 = tree_node(svg, s.id("se.1"));
-    assert!(!se1.contains("AI"), "系図の箱に「AI」の印を出さない\n{se1}");
-    for want in [">se.1<", "opus-5-5 · high", "停止", "交代"] {
-        assert!(se1.contains(want), "se.1 の箱に {want} が無い\n{se1}");
-    }
-    assert!(!se1.contains("claude-"), "claude- を落とす\n{se1}");
-    assert!(se1.contains("class=\"node ai\""), "{se1}");
-    let pm = tree_node(svg, s.id("pm.1"));
-    for want in [">pm.1<", "人", "稼働中", "登場", "class=\"node human\""] {
-        assert!(pm.contains(want), "pm.1 の箱に {want} が無い\n{pm}");
-    }
-    let other = tree_node(svg, s.id("other.1"));
-    assert!(other.contains("haiku-5 · low"), "{other}");
-}
-
-#[tokio::test]
-async fn 系図の絞りは_図の_api_と同じ引数で狭める() {
-    let s = sample().await;
-    let cases: Vec<(String, Vec<&str>, usize, usize)> = vec![
-        // Key で絞った組と、そこから出る線の一歩先（人の根 pm.1）。
-        (
-            format!("/graph/tree?label=tpm.key:{KEY}"),
-            vec!["pm.1", "tpm.1", "se.1", "se.2"],
-            2,
-            1,
-        ),
-        (
-            "/graph/tree?label=tpm.key:t-99".to_owned(),
-            vec!["other.1"],
-            0,
-            0,
-        ),
-        (
-            format!("/graph/tree?to={}", s.se1_entered),
-            vec!["pm.1", "tpm.1", "se.1", "se.2"],
-            2,
-            1,
-        ),
-        // 画面の form は空の欄も送る。空の値は、付けなかったのと同じ。
-        (
-            format!("/graph/tree?label=tpm.key:{KEY}&from=&to="),
-            vec!["pm.1", "tpm.1", "se.1", "se.2"],
-            2,
-            1,
-        ),
-    ];
-    for (uri, want, launched, continued) in cases {
-        let body = html(&s.app, &uri).await;
-        let svg = svg(&body);
-        assert_eq!(sorted(listed(svg)), sorted(s.ids_of(&want)), "{uri}");
-        assert_eq!(
-            svg.matches("class=\"edge launched\"").count(),
-            launched,
-            "{uri}"
-        );
-        assert_eq!(
-            svg.matches("class=\"edge continued\"").count(),
-            continued,
-            "{uri}"
-        );
-    }
-}
-
-#[tokio::test]
-async fn 系図に当たる者が無ければ_そう書き_svg_を出さない() {
-    let s = sample().await;
-    let body = html(&s.app, &format!("/graph/tree?from={}", s.end)).await;
-    assert!(!body.contains("<svg"), "{body}");
-    assert!(body.contains("条件に合うアクターはいません"), "{body}");
-}
-
-#[tokio::test]
-async fn 系図の引数の誤りは_引数の名を書いた_400_の画面() {
-    let s = sample().await;
-    for (uri, name) in [
-        ("/graph/tree?colour=red", "colour"),
-        ("/graph/tree?label=nocolon", "label"),
-        ("/graph/tree?label=a:b&label=c:d", "label"),
+    for uri in [
+        "/graph/tree",
+        "/graph/tree?label=tpm.key:t-23zs",
+        "/graph/tree?from=2000-01-01T09:00",
     ] {
-        let (status, headers, body) = page(&s.app, uri).await;
-        assert_eq!(status, StatusCode::BAD_REQUEST, "{uri}: {body}");
-        assert_html(uri, &headers, &body);
-        assert!(body.contains(name), "{uri}: {name} を書かない\n{body}");
+        let (status, _, body) = page(&s.app, uri).await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{uri}: {body}");
     }
 }
 
 #[tokio::test]
-async fn 系図も利用者の字を_html_で逃がす() {
+async fn どの画面からも系図へ行かない() {
     let s = sample().await;
-    let x = s
-        .app
-        .register(&seat(
-            "x",
-            "s-x",
-            "<script>alert(1)</script>",
-            "a\"b",
-            "workspace:1",
-        ))
-        .await;
-    let id = x["id"].as_str().unwrap();
-    let page = html(
-        &s.app,
-        "/graph/tree?label=tpm.key:%3Cscript%3Ealert(1)%3C/script%3E",
-    )
-    .await;
-    assert_eq!(listed(svg(&page)), vec![id.to_owned()], "{page}");
-    // 生の字は無く（html() が <script を見る）、逃がしを戻すと、form の欄に元の字がある。
-    assert!(
-        unescape(&page).contains("<script>alert(1)</script>"),
-        "{page}"
-    );
+    let id = s.id("se.1");
+    let mut pages = Vec::new();
+    for path in [
+        "/".to_owned(),
+        format!("/actors/{id}"),
+        "/graph/timeline".to_owned(),
+    ] {
+        pages.push((path.clone(), html(&s.app, &path).await));
+    }
+    pages.push((
+        "/graph/network".to_owned(),
+        network_html(&s.app, "/graph/network?label=tpm.key:t-23zs").await,
+    ));
+    for (path, body) in &pages {
+        assert!(
+            !body.contains("/graph/tree"),
+            "{path} に系図の link がある\n{body}"
+        );
+        assert!(!body.contains("系図"), "{path} に「系図」がある\n{body}");
+    }
 }
 
 // --- タイムライン（図 B） ---
@@ -818,14 +702,11 @@ fn segs(lane: &str) -> Vec<&str> {
 }
 
 #[tokio::test]
-async fn 一覧と系図からタイムラインへ行け_タイムラインから系図と一覧へ戻れる() {
+async fn 一覧からタイムラインへ行け_タイムラインから一覧へ戻れる() {
     let s = sample().await;
-    for uri in ["/", "/graph/tree"] {
-        let body = html(&s.app, uri).await;
-        assert!(body.contains("href=\"/graph/timeline\""), "{uri}\n{body}");
-    }
+    let body = html(&s.app, "/").await;
+    assert!(body.contains("href=\"/graph/timeline\""), "{body}");
     let body = html(&s.app, "/graph/timeline").await;
-    assert!(body.contains("href=\"/graph/tree\""), "{body}");
     assert!(body.contains("href=\"/\""), "{body}");
 }
 
@@ -1094,18 +975,14 @@ fn data_src(body: &str) -> String {
 }
 
 #[tokio::test]
-async fn 一覧と系図とタイムラインから相関図へ行け_相関図から三つへ戻れる() {
+async fn 一覧とタイムラインから相関図へ行け_相関図から二つへ戻れる() {
     let s = sample().await;
-    for uri in ["/", "/graph/tree", "/graph/timeline"] {
+    for uri in ["/", "/graph/timeline"] {
         let body = html(&s.app, uri).await;
         assert!(body.contains("href=\"/graph/network\""), "{uri}\n{body}");
     }
     let body = network_html(&s.app, "/graph/network").await;
-    for want in [
-        "href=\"/\"",
-        "href=\"/graph/tree\"",
-        "href=\"/graph/timeline\"",
-    ] {
+    for want in ["href=\"/\"", "href=\"/graph/timeline\""] {
         assert!(body.contains(want), "{want} が無い\n{body}");
     }
 }
@@ -1126,7 +1003,7 @@ async fn 相関図は_castlist_が配る_script_だけを読み_inline_の_scrip
 }
 
 #[tokio::test]
-async fn 相関図は_script_を切った_browser_に系図とタイムラインを勧める() {
+async fn 相関図は_script_を切った_browser_にタイムラインを勧める() {
     let s = sample().await;
     let body = network_html(&s.app, "/graph/network?label=tpm.key:t-23zs").await;
     let noscript = body
@@ -1134,9 +1011,8 @@ async fn 相関図は_script_を切った_browser_に系図とタイムライン
         .and_then(|(_, rest)| rest.split_once("</noscript>"))
         .map(|(inner, _)| inner)
         .unwrap_or_else(|| panic!("noscript が無い\n{body}"));
-    // 同じ絞りのまま、系図とタイムラインへ。
+    // 同じ絞りのまま、タイムラインへ。
     for want in [
-        "href=\"/graph/tree?label=tpm.key:t-23zs\"",
         "href=\"/graph/timeline?label=tpm.key:t-23zs\"",
         "JavaScript",
     ] {
@@ -1279,7 +1155,6 @@ async fn どの画面も_鍵と値の組を_ラベルと呼び_札とは書か�
     for path in [
         "/".to_owned(),
         format!("/actors/{id}"),
-        "/graph/tree".to_owned(),
         "/graph/timeline".to_owned(),
     ] {
         pages.push((path.clone(), html(&s.app, &path).await));
@@ -1295,7 +1170,7 @@ async fn どの画面も_鍵と値の組を_ラベルと呼び_札とは書か�
     }
 }
 
-// --- 画面の字（Product Manager の答えた字の一覧: 状態は「稼働中・停止」、図は系図・タイムライン・相関図、説明は「です・ます」） ---
+// --- 画面の字（Product Manager の答えた字の一覧: 状態は「稼働中・停止」、図はタイムライン・相関図、説明は「です・ます」） ---
 
 /// どの画面にも出る、下の字。
 const FOOTER: &str = "時刻は日本時間（UTC+9）で、castlist が受け取った時刻です。時刻にマウスを重ねると ISO 8601 の形で表示します。";
@@ -1353,7 +1228,7 @@ async fn 一覧は_状態を稼働中と停止で書き_絞り込みの欄と説
         "/",
         &body,
         &[
-            "<a href=\"/graph/tree\">系図</a> ・ <a href=\"/graph/timeline\">タイムライン</a> ・ <a href=\"/graph/network\">相関図</a>",
+            "<a href=\"/graph/timeline\">タイムライン</a> ・ <a href=\"/graph/network\">相関図</a></span></h1>",
             "<legend>絞り込み</legend>",
             "状態 <select name=\"active\">",
             "<option value=\"\">すべて</option>",
@@ -1429,37 +1304,6 @@ async fn プロフィールは_欄と節を決めた字で書く() {
 }
 
 #[tokio::test]
-async fn 系図は_見出しと行き来と絞り込みと凡例を決めた字で書く() {
-    let s = sample().await;
-    let body = html(&s.app, "/graph/tree").await;
-    assert_words(
-        "/graph/tree",
-        &body,
-        &[
-            "<title>系図 ・ castlist</title>",
-            "<a href=\"/\">一覧へ</a> ・ <a href=\"/graph/timeline\">タイムラインへ</a> ・ <a href=\"/graph/network\">相関図へ</a>",
-            "<legend>絞り込み</legend>",
-            "登録した期間（から）",
-            "（まで）",
-            ">絞り込む</button>",
-            ">条件を消す</a>",
-            ">稼働中</tspan>",
-            ">停止</tspan>",
-            "実線: 起動した（上が起動したアクター）",
-            "点線: 引き継いだ（/clear の交代・fork の分身。引き継ぎ元の右に置きます）",
-            "名前を押すとプロフィールを表示します。5 のアクター。",
-            "表示した時刻:",
-        ],
-    );
-    let body = html(&s.app, &format!("/graph/tree?from={}", s.end)).await;
-    assert_words(
-        "/graph/tree（空）",
-        &body,
-        &["条件に合うアクターはいません。条件を減らすか、"],
-    );
-}
-
-#[tokio::test]
 async fn タイムラインは_見出しと行き来と説明と凡例を決めた字で書く() {
     let s = sample().await;
     let body = html(&s.app, "/graph/timeline").await;
@@ -1470,7 +1314,7 @@ async fn タイムラインは_見出しと行き来と説明と凡例を決め�
         &body,
         &[
             "<title>タイムライン ・ castlist</title>",
-            "<h1>タイムライン <span class=\"kind\"><a href=\"/\">一覧へ</a> ・ <a href=\"/graph/tree\">系図へ</a> ・ <a href=\"/graph/network\">相関図へ</a>",
+            "<h1>タイムライン <span class=\"kind\"><a href=\"/\">一覧へ</a> ・ <a href=\"/graph/network\">相関図へ</a></span></h1>",
             "<legend>絞り込み</legend>",
             "登録した期間（から）",
             "横は castlist が受け取った時刻（日本時間）です。行は 1 つのアクターで、人を上に、ほかは最初の登場の順に並べます。帯は稼働していた期間で、model と effort が替わった所で区切ります。帯にマウスを重ねると、値と時刻を表示します。名前を押すとプロフィールを表示します。",
@@ -1500,7 +1344,7 @@ async fn 相関図は_見出しと行き来と説明と凡例と_script_を切�
         &body,
         &[
             "<title>相関図 ・ castlist</title>",
-            "<h1>相関図 <span class=\"kind\"><a href=\"/\">一覧へ</a> ・ <a href=\"/graph/tree\">系図へ</a> ・ <a href=\"/graph/timeline\">タイムラインへ</a>",
+            "<h1>相関図 <span class=\"kind\"><a href=\"/\">一覧へ</a> ・ <a href=\"/graph/timeline\">タイムラインへ</a></span></h1>",
             "<legend>表示する点を選ぶ</legend>",
             "<option value=\"\">すべて</option>",
             "点は 1 つのアクターで、名前を下に書きます。色は最新の model、形は種類です。薄い点は停止したアクターです。点を押すとプロフィールを、名前にマウスを重ねると model · effort と状態を表示します。点はドラッグで動かせます（元の並びに戻すには、ページを読み直します）。",
@@ -1508,7 +1352,7 @@ async fn 相関図は_見出しと行き来と説明と凡例と_script_を切�
             "実線の矢印: 起動した",
             "点線の矢印: 引き継いだ（/clear の交代・fork の分身）",
             "この画面は JavaScript で描きます。JavaScript を切っている時は、同じ条件の",
-            "タイムライン</a>をお使いください（どちらも JavaScript を使いません）。",
+            "タイムライン</a>をお使いください（JavaScript を使いません）。",
             "aria-label=\"相関図\"",
         ],
     );
@@ -1535,9 +1379,8 @@ async fn 相関図は_見出しと行き来と説明と凡例と_script_を切�
 // --- 期間の欄（browser の日時の欄と、期間をすぐ選ぶ link） ---
 
 /// 期間の欄を持つ画面と、その欄の名（から・まで）。
-const PERIOD_PAGES: [(&str, &str, &str); 4] = [
+const PERIOD_PAGES: [(&str, &str, &str); 3] = [
     ("/", "active_from", "active_to"),
-    ("/graph/tree", "from", "to"),
     ("/graph/timeline", "from", "to"),
     ("/graph/network", "from", "to"),
 ];
@@ -1692,18 +1535,13 @@ async fn 日時の欄が送る日本時間の値は_同じ時刻の_rfc_3339_と
             vec![],
         ),
         (
-            format!("/graph/tree?to={local}"),
-            format!("/graph/tree?to={rfc}"),
-            vec!["pm.1", "tpm.1", "se.1", "se.2", "other.1"],
-        ),
-        (
             format!("/graph/timeline?to={local}"),
             format!("/graph/timeline?to={rfc}"),
             vec!["pm.1", "tpm.1", "se.1", "se.2", "other.1"],
         ),
         (
-            "/graph/tree?label=tpm.key:t-99&from=2000-01-01T09:00".to_owned(),
-            "/graph/tree?label=tpm.key:t-99&from=2000-01-01T09:00:00%2B09:00".to_owned(),
+            "/graph/timeline?label=tpm.key:t-99&from=2000-01-01T09:00".to_owned(),
+            "/graph/timeline?label=tpm.key:t-99&from=2000-01-01T09:00:00%2B09:00".to_owned(),
             vec!["other.1"],
         ),
     ];
@@ -1749,7 +1587,6 @@ async fn 期間をすぐ選ぶ_link_は_今の条件のまま_期間だけを日
     assert!(list.contains("after="), "{list}");
     let uris = [
         format!("{list}&active_to=2000-01-01T09:00"),
-        format!("/graph/tree?label=tpm.key:{KEY}&from=2000-01-01T09:00"),
         format!("/graph/timeline?to=2030-01-01T00:00:00Z&label=tpm.key:{KEY}"),
         format!("/graph/network?label=tpm.key:{KEY}&from=2000-01-01T09:00"),
     ];
@@ -1829,7 +1666,7 @@ async fn 期間をすぐ選ぶ_link_は_今の条件のまま_期間だけを日
         sorted(s.ids_of(&["tpm.1", "se.1", "se.2"])),
         "{href}"
     );
-    let body = html(&s.app, "/graph/tree?label=tpm.key:t-99").await;
+    let body = html(&s.app, "/graph/timeline?label=tpm.key:t-99").await;
     let href = link_to(&body, "直近 7 日");
     assert_eq!(s.listed(&href).await, s.ids_of(&["other.1"]), "{href}");
 }
@@ -1841,8 +1678,10 @@ async fn 日時の欄の読めない値は_欄の名と直し方を_です_ま�
         ("/?active_from=2026-11-22T25:00", "稼働した期間（から）"),
         ("/?active_to=2026-11-22T11", "稼働した期間（まで）"),
         ("/?active_from=きのう", "稼働した期間（から）"),
-        ("/graph/tree?from=2026-13-01T00:00", "登録した期間（から）"),
-        ("/graph/tree?to=きのう", "登録した期間（まで）"),
+        (
+            "/graph/timeline?from=2026-13-01T00:00",
+            "登録した期間（から）",
+        ),
         (
             "/graph/timeline?to=2026-11-22%2011:00",
             "登録した期間（まで）",
@@ -1875,7 +1714,6 @@ async fn どの画面も_種類の印は人だけに付け_ai_とは書かない
     for path in [
         "/".to_owned(),
         format!("/actors/{id}"),
-        "/graph/tree".to_owned(),
         "/graph/timeline".to_owned(),
     ] {
         pages.push((path.clone(), html(&s.app, &path).await));
@@ -1905,7 +1743,7 @@ async fn どの画面も_種類の印は人だけに付け_ai_とは書かない
 async fn どの画面も_枠の見出しに括弧書きを付けない() {
     let s = sample().await;
     let mut pages = Vec::new();
-    for path in ["/", "/graph/tree", "/graph/timeline"] {
+    for path in ["/", "/graph/timeline"] {
         pages.push((path, html(&s.app, path).await));
     }
     pages.push((

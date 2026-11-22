@@ -10,8 +10,6 @@
 //!   （空いた所に収まらなければ書かない）。
 //! - 同じ入力からは、いつも同じ答え。
 
-use crate::tree::text_width;
-
 /// 図の縁の余白。
 pub const MARGIN: u32 = 16;
 /// 上の目盛りの字の段の高さ。
@@ -516,13 +514,19 @@ pub fn ticks(start: i64, end: i64, plot_x: u32, plot_w: u32, offset_s: i64) -> V
     out
 }
 
+/// 字の幅（px）の見積もり。字の大きさ `px` に、ASCII は 0.62 字、ほか（漢字・仮名・記号）は 1 字を掛けて足し、切り上げる。
+pub fn text_width(s: &str, px: u32) -> u32 {
+    // 百分の一の字で数える（小数を使わない）。
+    let hundredths: u32 = s.chars().map(|c| if c.is_ascii() { 62 } else { 100 }).sum();
+    (hundredths * px).div_ceil(100)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
         BAND_H, Change, Kind, LABEL_PAD, LABEL_PX, LINE_ROOM, Lane, Layout, Link, MIN_TICK_PX,
-        PLOT_W, Presence, ROW_H, Window, layout, ticks,
+        PLOT_W, Presence, ROW_H, Window, layout, text_width, ticks,
     };
-    use crate::tree::text_width;
 
     /// 2026-11-22T04:00:00Z（日本の時刻で 13:00）。
     const T0: i64 = 1_795_320_000_000;
@@ -1097,5 +1101,15 @@ mod tests {
     fn 行が無ければ_空() {
         let l = layout(&[], &[], hour());
         assert!(l.segments.is_empty() && l.rows.is_empty());
+    }
+
+    #[test]
+    fn 字の幅は_漢字と仮名を_ascii_より広く見積もる() {
+        assert_eq!(text_width("", 12), 0);
+        let ascii = text_width("se.1", 12);
+        assert!(ascii >= 4 * 7, "{ascii}");
+        let cjk = text_width("いない", 12);
+        assert!(cjk >= 3 * 12, "{cjk}");
+        assert!(text_width("あ", 12) > text_width("a", 12));
     }
 }
