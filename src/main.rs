@@ -6,7 +6,14 @@ use tokio::signal::unix::{SignalKind, signal};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listen = std::env::var("CASTLIST_LISTEN").unwrap_or_else(|_| "0.0.0.0:8080".to_owned());
     let path = std::env::var("CASTLIST_DB").unwrap_or_else(|_| "/data/castlist.db".to_owned());
-    let db = Db::open(std::path::Path::new(&path)).await?;
+    // 開けない時（移行に落ちた・外のキーの崩れた行がある）は、訳を出して起きない。
+    let db = match Db::open(std::path::Path::new(&path)).await {
+        Ok(db) => db,
+        Err(e) => {
+            eprintln!("castlist: {e}");
+            std::process::exit(1);
+        }
+    };
     let listener = tokio::net::TcpListener::bind(&listen).await?;
     println!(
         "castlist {} listen={listen} db={path}",

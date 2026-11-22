@@ -24,6 +24,18 @@ jobs:
       # 塞ぐ呼び出し（clippy.toml の disallowed-methods）と、鍵を握ったままの await も、ここで落ちる。
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
+      # 台帳は足すだけ: Rust の source に、行を書き替える・消す SQL が無いか。
+      - run: ci/check-sql.sh
+      # 見張りが、そういう SQL を本当に当てるか（当てなければ落とす）。
+      - run: "! ci/check-sql.sh ci/testdata/bad-sql.rs"
+  load:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+      # 本物の binary を起こし、50 の客が 10 秒叩く（誤りと 5xx が 0・p99 が 200 ms 未満。tests/load.rs）。
+      - run: cargo test --locked --release --test load -- --ignored --nocapture
   image:
     if: github.event_name != 'schedule'
     # 動かす Mac と同じ CPU の種類（arm64）で作る。

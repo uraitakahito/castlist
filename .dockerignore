@@ -2,6 +2,8 @@
 # 足す時は、ci/image-contents.txt（出す image に入ってよい物）も見直す。
 *
 !src
+!migrations
+!build.rs
 !.cargo
 !Cargo.toml
 !Cargo.lock
