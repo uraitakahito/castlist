@@ -454,7 +454,7 @@ fn render(status: StatusCode, page: &impl Template) -> Response {
     match page.render() {
         Ok(html) => (status, Html(html)).into_response(),
         Err(e) => {
-            eprintln!("画面を表示できません: {e}");
+            tracing::error!("画面を表示できません: {e}");
             (StatusCode::INTERNAL_SERVER_ERROR, "画面を表示できません").into_response()
         }
     }
@@ -796,7 +796,7 @@ async fn timeline_page(
     })
     .await
     .map_err(|e| {
-        eprintln!("タイムラインを表示できません: {e}");
+        tracing::error!("タイムラインを表示できません: {e}");
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
             "タイムラインを表示できません".to_owned(),

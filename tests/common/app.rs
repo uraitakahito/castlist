@@ -12,22 +12,24 @@ use time::format_description::well_known::Rfc3339;
 use time::{Duration, OffsetDateTime};
 use tower::ServiceExt;
 
-/// 一時の DB の path（試験ごとに別）。
+/// 一時の DB の path（試験ごとに別の、空の folder の中）。
+/// サーバーは DB の隣の `logs/` に記録を残すので、folder を分けないと、試験どうしで記録が混ざる。
 pub fn temp_db(tag: &str) -> PathBuf {
     static SEQ: AtomicU32 = AtomicU32::new(0);
-    std::env::temp_dir().join(format!(
-        "castlist-test-{tag}-{}-{}.db",
+    let dir = std::env::temp_dir().join(format!(
+        "castlist-test-{tag}-{}-{}",
         std::process::id(),
         SEQ.fetch_add(1, Ordering::Relaxed)
-    ))
+    ));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("試験の folder");
+    dir.join("castlist.db")
 }
 
-/// DB の file と、WAL の file を消す。
+/// DB の file と WAL の file と記録を、folder ごと消す。
 pub fn remove_db(path: &Path) {
-    for suffix in ["", "-wal", "-shm"] {
-        let mut name = path.as_os_str().to_owned();
-        name.push(suffix);
-        let _ = std::fs::remove_file(PathBuf::from(name));
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::remove_dir_all(dir);
     }
 }
 

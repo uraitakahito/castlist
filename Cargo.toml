@@ -25,6 +25,11 @@ sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "run
 time = { version = "0.3", features = ["formatting", "parsing"] }
 tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "net", "signal", "fs", "time"] }
 tokio-util = { version = "0.7", features = ["io"] }
+# 問い合わせごとの記録（method・path・status・かかった時間）。
+tower-http = { version = "0.7", default-features = false, features = ["trace"] }
+# 時刻つきの記録。書き先は stdout と、大きさで回す file（src/runlog.rs）。
+tracing = { version = "0.1", default-features = false, features = ["std"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt", "registry"] }
 # アクターの id（UUID v7）。
 uuid = { version = "1", default-features = false, features = ["std", "v7"] }
 

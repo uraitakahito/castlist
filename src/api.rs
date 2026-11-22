@@ -59,7 +59,7 @@ impl From<WriteError> for ApiError {
             WriteError::Invalid(message) => invalid(message),
             WriteError::Conflict(message) => ApiError(StatusCode::CONFLICT, message),
             WriteError::Db(e) => {
-                eprintln!("DB の誤り: {e}");
+                tracing::error!("DB の誤り: {e}");
                 ApiError(StatusCode::INTERNAL_SERVER_ERROR, "DB の誤り".to_owned())
             }
         }
@@ -517,7 +517,7 @@ pub async fn backup(State(db): State<Db>) -> Answer {
     // 開いた後は名が要らない。消しても、読み終えるまで中身は残る。
     let _ = tokio::fs::remove_file(&path).await;
     let file = file.map_err(|e| {
-        eprintln!("写しを開けない: {e}");
+        tracing::error!("写しを開けない: {e}");
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
             "写しを開けない".to_owned(),
@@ -534,6 +534,21 @@ pub async fn backup(State(db): State<Db>) -> Answer {
         Body::from_stream(ReaderStream::new(file)),
     )
         .into_response())
+}
+
+/// `GET /v1/logs`: 残した記録（終わり方の印と、時刻つきの行）を、古い順の字で返す（`curl <URL>/v1/logs`）。
+/// 落ちた後に、castlist を止めずに読むための道。多くて 4 MiB と 64 KiB。
+pub async fn logs(runlog: crate::runlog::RunLog) -> Answer {
+    let text = tokio::task::spawn_blocking(move || runlog.read_all())
+        .await
+        .map_err(|e| {
+            tracing::error!("記録を読めない: {e}");
+            ApiError(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "記録を読めない".to_owned(),
+            )
+        })?;
+    Ok(([(header::CONTENT_TYPE, "text/plain; charset=utf-8")], text).into_response())
 }
 
 #[cfg(test)]
