@@ -1,8 +1,8 @@
 // 見本の記録を、公の API で置く（ほかの試験より先に 1 度だけ。browser の外から送るので Origin は付かない）。
-//   pm.1（人）─起こした→ tpm.1（opus-5-5 · high）─起こした→ se.1（頼んだのは opus、見たのは sonnet-5 · high。/clear で退く）
-//   se.1 ─継いだ→ se.2（opus-5-5 · high）
-//   tpm.1 ─起こした→ other.1（別の Key の t-99。haiku-5 · low。退いた）
-// 点は 5 つ、線は 4 本（起こした 3・継いだ 1）。
+//   pm.1（人）─起動した→ tpm.1（opus-5-5 · high）─起動した→ se.1（指定は opus、実際は sonnet-5 · high。/clear で退く）
+//   se.1 ─引き継いだ→ se.2（opus-5-5 · high）
+//   tpm.1 ─起動した→ other.1（別の Key の t-99。haiku-5 · low。退いた）
+// 点は 5 つ、線は 4 本（起動した 3・引き継いだ 1）。
 import { expect, test as setup, type APIRequestContext } from '@playwright/test';
 
 const now = () => new Date().toISOString();
