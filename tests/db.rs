@@ -231,3 +231,85 @@ async fn 引き当てと見る_sql_は大きな表を端から読まない() {
         assert!(scans.is_empty(), "{name} が端から読む: {details:?}\n{sql}");
     }
 }
+
+/// docs/src/db.md の「列」の章の表（`### \`<表>\`` ごとに「列・型・NULL・既定・…」の行）。
+fn documented_columns() -> std::collections::BTreeMap<String, Vec<[String; 4]>> {
+    let doc = include_str!("../docs/src/db.md");
+    let mut tables = std::collections::BTreeMap::new();
+    let mut in_section = false;
+    let mut table: Option<String> = None;
+    for line in doc.lines() {
+        if let Some(h) = line.strip_prefix("## ") {
+            in_section = h.trim() == "列";
+            table = None;
+        } else if !in_section {
+            continue;
+        } else if let Some(h) = line.strip_prefix("### ") {
+            table = Some(h.trim().trim_matches('`').to_owned());
+            tables.insert(table.clone().unwrap(), Vec::new());
+        } else if let (Some(t), true) = (&table, line.starts_with("| `")) {
+            let cells: Vec<String> = line
+                .split('|')
+                .skip(1)
+                .take(4)
+                .map(|c| c.trim().trim_matches('`').to_owned())
+                .collect();
+            tables
+                .get_mut(t)
+                .unwrap()
+                .push(cells.try_into().expect("列・型・NULL・既定の 4 つの欄"));
+        }
+    }
+    tables
+}
+
+#[tokio::test]
+async fn docs_の列の表は_移行した_db_の列と合う() {
+    let path = temp_db("columns");
+    let db = Db::open(&path).await.unwrap();
+    let documented = documented_columns();
+    let names: Vec<String> = sqlx::query_scalar(
+        "select name from sqlite_schema where type = 'table'
+         and name not like 'sqlite_%' and name != '_sqlx_migrations' order by name",
+    )
+    .fetch_all(db.read())
+    .await
+    .unwrap();
+    assert_eq!(
+        documented.keys().cloned().collect::<Vec<_>>(),
+        names,
+        "db.md の「列」の章の表と、DB の表が合わない"
+    );
+    for name in &names {
+        let rows: Vec<(String, String, i64, Option<String>, i64)> = sqlx::query_as(
+            "select name, type, \"notnull\", dflt_value, pk from pragma_table_xinfo(?1) order by cid",
+        )
+        .bind(name)
+        .fetch_all(db.read())
+        .await
+        .unwrap();
+        // NULL の欄: not null か主キーなら「不可」。型は大文字で書く。既定が無ければ空。
+        let actual: Vec<[String; 4]> = rows
+            .into_iter()
+            .map(|(column, ty, notnull, default, pk)| {
+                let null = if notnull == 1 || pk > 0 {
+                    "不可"
+                } else {
+                    "可"
+                };
+                [
+                    column,
+                    ty.to_uppercase(),
+                    null.to_owned(),
+                    default.unwrap_or_default(),
+                ]
+            })
+            .collect();
+        assert_eq!(
+            documented[name], actual,
+            "db.md の {name} の列（列・型・NULL・既定）が、移行した DB と合わない"
+        );
+    }
+    db.close().await;
+    remove_db(&path);
+}
