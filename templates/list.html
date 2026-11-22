@@ -23,13 +23,14 @@
 </select></label>
 <label>model <input name="model" value="{{ form.model }}" placeholder="claude-opus-5-5"></label>
 <label>effort <input name="effort" value="{{ form.effort }}" placeholder="high"></label>
-<label>稼働した期間（から） <input name="active_from" value="{{ form.active_from }}" placeholder="2026-11-22T11:00:00+09:00"></label>
-<label>（まで） <input name="active_to" value="{{ form.active_to }}" placeholder="2026-11-22T12:00:00+09:00"></label>
+<label>稼働した期間（から） <input type="datetime-local" step="any" name="active_from" value="{{ form.active_from }}"></label>
+<label>（まで） <input type="datetime-local" step="any" name="active_to" value="{{ form.active_to }}"></label>
 <label class="check"><input type="checkbox" name="skewed" value="true"{% if form.skewed %} checked{% endif %}> 時刻ずれあり</label>
 {% for (name, value) in form.hidden %}
 <input type="hidden" name="{{ name }}" value="{{ value }}">
 {% endfor %}
 </div>
+{% call m::quick(quick) %}{% endcall %}
 <div class="actions"><button type="submit">絞り込む</button> <a href="/">条件を消す</a></div>
 </fieldset>
 </form>

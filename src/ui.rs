@@ -6,6 +6,8 @@
 //! - CSP（[`crate::CSP`]）が inline の script と style を断るので、style は castlist が配る CSS の file だけ。
 //! - 一覧の絞りは、監査の検索の API（`GET /v1/actors`）と同じ引数を URL に置く（[`search::actor_query`] で読む）。
 //! - 時刻は、castlist が受けた時刻（UTC）を日本の時刻（[`OFFSET`]）で出し、ISO の字を `<time datetime>` と `title` に置く。
+//! - 期間の欄は browser の日時の欄（`datetime-local`）。送られた字は日本時間として RFC 3339 にしてから、API と同じ引数で読む
+//!   （[`period`]。API の `/v1/` は RFC 3339 だけを受けるまま）。欄の横に、期間をすぐ選ぶ link（[`quick_links`]）を置く。
 
 use crate::api::{ApiError, GRAPH_PARAMS, GraphQuery};
 use crate::db::{self, ActorDetail, Db};
@@ -138,6 +140,109 @@ fn time(iso: &str) -> Time {
     }
 }
 
+// --- 期間の欄 ---
+
+/// 一覧の期間の欄（稼働した期間）と、図の期間の欄（登録した期間）の名。
+const LIST_PERIOD: [&str; 2] = ["active_from", "active_to"];
+const GRAPH_PERIOD: [&str; 2] = ["from", "to"];
+
+/// 期間の欄の値を RFC 3339 にする。browser の日時の欄（`datetime-local`）が送る
+/// `YYYY-MM-DDTHH:MM`（`:SS`・`:SS.sss` も）は日本時間として `+09:00` を付ける。
+/// RFC 3339 の値（前の link）は、そのまま。どちらでもない値もそのまま返し、引数を読む所が 400 にする。
+fn from_local(value: &str) -> String {
+    if OffsetDateTime::parse(value, &Rfc3339).is_ok() {
+        return value.to_owned();
+    }
+    let local = value.len() >= 16
+        && value.as_bytes()[10] == b'T'
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_digit() || b"-:T.".contains(&b));
+    let seconds = if value.len() == 16 { ":00" } else { "" };
+    let iso = format!("{value}{seconds}+09:00");
+    if local && OffsetDateTime::parse(&iso, &Rfc3339).is_ok() {
+        iso
+    } else {
+        value.to_owned()
+    }
+}
+
+/// RFC 3339 の値を、日時の欄（`datetime-local`）に入れる日本時間の字にする（form を送り直しても同じ時刻）。
+/// 秒が 0 なら分まで、ミリ秒が 0 なら秒まで。読めない値は、そのまま。
+fn to_local(value: &str) -> String {
+    let Ok(t) = OffsetDateTime::parse(value, &Rfc3339) else {
+        return value.to_owned();
+    };
+    let t = t.to_offset(OFFSET);
+    let mut out = format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}",
+        t.year(),
+        u8::from(t.month()),
+        t.day(),
+        t.hour(),
+        t.minute()
+    );
+    if t.second() != 0 || t.millisecond() != 0 {
+        out.push_str(&format!(":{:02}", t.second()));
+    }
+    if t.millisecond() != 0 {
+        out.push_str(&format!(".{:03}", t.millisecond()));
+    }
+    out
+}
+
+/// 引数のうち、期間の欄（`names`）の値を RFC 3339 にそろえる（[`from_local`]）。
+fn period(pairs: &mut Pairs, names: [&str; 2]) {
+    for (name, value) in pairs.iter_mut() {
+        if names.contains(&name.as_str()) {
+            *value = from_local(value);
+        }
+    }
+}
+
+/// 期間をすぐ選ぶ link の名と、その期間（RFC 3339・`+09:00`。秒まで）。`now` から決める。
+/// 直近 1 時間・直近 7 日は今まで（今の秒を切り上げる。今の秒の中に来た記録も入れる）、
+/// 今日・昨日は日本時間の 0 時から次の 0 時まで。
+fn quick_ranges(now: OffsetDateTime) -> [(&'static str, String, String); 4] {
+    let now = now.to_offset(OFFSET);
+    let now = if now.nanosecond() == 0 {
+        now
+    } else {
+        now.truncate_to_second() + time::Duration::SECOND
+    };
+    let today = now.replace_time(time::Time::MIDNIGHT);
+    let (hour, day) = (time::Duration::HOUR, time::Duration::DAY);
+    let iso = |t: OffsetDateTime| t.format(&Rfc3339).unwrap_or_default();
+    [
+        ("直近 1 時間", now - hour, now),
+        ("今日", today, today + day),
+        ("昨日", today - day, today),
+        ("直近 7 日", now - day * 7, now),
+    ]
+    .map(|(name, from, to)| (name, iso(from), iso(to)))
+}
+
+/// 期間をすぐ選ぶ link（名と URL）。今の引数のまま、期間（`names`）だけを替え、次のページの `after` は落とす。
+fn quick_links(
+    path: &str,
+    pairs: &Pairs,
+    names: [&str; 2],
+    now: OffsetDateTime,
+) -> Vec<(&'static str, String)> {
+    let kept = pairs
+        .iter()
+        .filter(|(n, _)| n != "after" && !names.contains(&n.as_str()));
+    quick_ranges(now)
+        .into_iter()
+        .map(|(name, from, to)| {
+            let mut link: Pairs = kept.clone().cloned().collect();
+            link.push((names[0].to_owned(), from));
+            link.push((names[1].to_owned(), to));
+            (name, format!("{path}?{}", query(&link)))
+        })
+        .collect()
+}
+
 fn kind_name(kind: &str) -> &'static str {
     if kind == "human" { "人" } else { "AI" }
 }
@@ -212,6 +317,8 @@ struct ListPage {
     defaulted: bool,
     days: i64,
     form: Form,
+    /// 期間をすぐ選ぶ link（名と URL）。
+    quick: Vec<(&'static str, String)>,
     next: Option<String>,
     as_of: Time,
 }
@@ -242,8 +349,8 @@ impl Form {
                 "kind" => form.kind = value,
                 "model" => form.model = value,
                 "effort" => form.effort = value,
-                "active_from" => form.active_from = value,
-                "active_to" => form.active_to = value,
+                "active_from" => form.active_from = to_local(&value),
+                "active_to" => form.active_to = to_local(&value),
                 "skewed" => form.skewed = value == "true",
                 "after" => {}
                 _ => form.hidden.push((name.clone(), value)),
@@ -361,7 +468,10 @@ pub async fn list(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>)
 async fn list_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<ListPage, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
+    period(&mut pairs, LIST_PERIOD);
     let form = Form::new(&pairs);
+    let now = OffsetDateTime::now_utc();
+    let quick = quick_links("/", &pairs, LIST_PERIOD, now);
     let mut effective = pairs.clone();
     if !effective.iter().any(|(n, _)| n == "order") {
         effective.push(("order".to_owned(), "desc".to_owned()));
@@ -370,11 +480,11 @@ async fn list_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Li
         effective.push(("limit".to_owned(), PAGE_SIZE.to_owned()));
     }
     let p = Params::new(effective.clone(), search::ACTOR_PARAMS, &["label"])?;
-    let as_of = db::now();
+    let as_of = db::stamp(now);
     let mut query: ActorQuery = search::actor_query(&p, &as_of)?;
     let defaulted = !query.narrowed();
     if defaulted {
-        let from = db::stamp(OffsetDateTime::now_utc() - time::Duration::days(DEFAULT_DAYS));
+        let from = db::stamp(now - time::Duration::days(DEFAULT_DAYS));
         query.active_from = Some(from.clone());
         // 次の頁も、同じ窓で続ける。
         effective.push(("active_from".to_owned(), from));
@@ -395,6 +505,7 @@ async fn list_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Li
         defaulted,
         days: DEFAULT_DAYS,
         form,
+        quick,
         next,
         as_of: time(&as_of),
     })
@@ -543,10 +654,13 @@ pub async fn tree(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>)
 async fn tree_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Response, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
+    period(&mut pairs, GRAPH_PERIOD);
     let form = TreeForm::new(&pairs);
+    let now = OffsetDateTime::now_utc();
+    let quick = quick_links("/graph/tree", &pairs, GRAPH_PERIOD, now);
     let p = Params::new(pairs, GRAPH_PARAMS, &[])?;
     let query = GraphQuery::new(&p)?;
-    let as_of = db::now();
+    let as_of = db::stamp(now);
     let graph = query.run(&db).await?;
     tokio::task::spawn_blocking(move || {
         let page = TreePage {
@@ -554,6 +668,7 @@ async fn tree_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Re
             count: graph.nodes.len(),
             svg: tree_svg(&graph),
             form,
+            quick,
             as_of: time(&as_of),
         };
         render(StatusCode::OK, &page)
@@ -573,6 +688,7 @@ async fn tree_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Re
 struct TreePage {
     css: &'static str,
     form: TreeForm,
+    quick: Vec<(&'static str, String)>,
     count: usize,
     /// 点が無ければ無い。
     svg: Option<TreeSvg>,
@@ -593,8 +709,8 @@ impl TreeForm {
         for (name, value) in pairs {
             match name.as_str() {
                 "label" => form.label.clone_from(value),
-                "from" => form.from.clone_from(value),
-                "to" => form.to.clone_from(value),
+                "from" => form.from = to_local(value),
+                "to" => form.to = to_local(value),
                 _ => {}
             }
         }
@@ -775,7 +891,14 @@ pub async fn network(q: Result<Query<Pairs>, QueryRejection>) -> Response {
 fn network_page(q: Result<Query<Pairs>, QueryRejection>) -> Result<NetworkPage, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
+    period(&mut pairs, GRAPH_PERIOD);
     let form = TreeForm::new(&pairs);
+    let quick = quick_links(
+        "/graph/network",
+        &pairs,
+        GRAPH_PERIOD,
+        OffsetDateTime::now_utc(),
+    );
     // 確かめた引数を、そのままの順で API と系図とタイムラインの URL に付ける。
     let query = match query(&pairs) {
         q if q.is_empty() => q,
@@ -790,6 +913,7 @@ fn network_page(q: Result<Query<Pairs>, QueryRejection>) -> Result<NetworkPage, 
         tree: format!("/graph/tree{query}"),
         timeline: format!("/graph/timeline{query}"),
         form,
+        quick,
     })
 }
 
@@ -800,6 +924,7 @@ struct NetworkPage {
     cytoscape: &'static str,
     script: &'static str,
     form: TreeForm,
+    quick: Vec<(&'static str, String)>,
     /// network.js が点と線を引く URL（同じ絞りの `GET /v1/graph`）。
     data_src: String,
     /// script を切った browser に勧める、同じ絞りの系図とタイムライン。
@@ -823,11 +948,14 @@ async fn timeline_page(
 ) -> Result<Response, ApiError> {
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
+    period(&mut pairs, GRAPH_PERIOD);
     let form = TreeForm::new(&pairs);
+    let now = OffsetDateTime::now_utc();
+    let quick = quick_links("/graph/timeline", &pairs, GRAPH_PERIOD, now);
     let p = Params::new(pairs, GRAPH_PARAMS, &[])?;
     let query = GraphQuery::new(&p)?;
     let (from, to) = (p.time("from")?, p.time("to")?);
-    let as_of = db::now();
+    let as_of = db::stamp(now);
     let data = query.timeline(&db).await?;
     tokio::task::spawn_blocking(move || {
         let window = timeline::Window {
@@ -842,6 +970,7 @@ async fn timeline_page(
             legend: legend(&data.settings),
             svg: timeline_svg(&data, window),
             form,
+            quick,
             as_of: time(&as_of),
         };
         render(StatusCode::OK, &page)
@@ -861,6 +990,7 @@ async fn timeline_page(
 struct TimelinePage {
     css: &'static str,
     form: TreeForm,
+    quick: Vec<(&'static str, String)>,
     count: usize,
     /// 凡例の model（短い名と色の class）。
     legend: Vec<(String, &'static str)>,
@@ -1223,8 +1353,185 @@ fn encode(s: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{encode, event_name, time};
+    use super::{
+        GRAPH_PERIOD, LIST_PERIOD, encode, event_name, from_local, period, quick_links,
+        quick_ranges, time, to_local,
+    };
     use crate::api::EVENT_TYPES;
+    use time::OffsetDateTime;
+    use time::format_description::well_known::Rfc3339;
+
+    fn at(iso: &str) -> OffsetDateTime {
+        OffsetDateTime::parse(iso, &Rfc3339).unwrap()
+    }
+
+    fn pairs(list: &[(&str, &str)]) -> Vec<(String, String)> {
+        list.iter()
+            .map(|(n, v)| ((*n).to_owned(), (*v).to_owned()))
+            .collect()
+    }
+
+    #[test]
+    fn 日時の欄の値は日本時間として_rfc_3339_にする() {
+        assert_eq!(from_local("2026-11-22T11:00"), "2026-11-22T11:00:00+09:00");
+        assert_eq!(
+            from_local("2026-11-22T11:00:05"),
+            "2026-11-22T11:00:05+09:00"
+        );
+        assert_eq!(
+            from_local("2026-11-22T11:00:05.250"),
+            "2026-11-22T11:00:05.250+09:00"
+        );
+    }
+
+    #[test]
+    fn rfc_3339_の値はそのまま() {
+        for iso in [
+            "2026-11-22T11:00:00+09:00",
+            "2026-11-22T02:00:00Z",
+            "2026-11-22T02:00:00.123Z",
+            "2026-11-21T21:00:00-05:00",
+        ] {
+            assert_eq!(from_local(iso), iso);
+        }
+    }
+
+    #[test]
+    fn 読めない値はそのまま返し_引数を読む所が断る() {
+        for bad in [
+            "きのう",
+            "",
+            "2026-11-22",
+            "2026-11-22T11",
+            "2026-13-01T00:00",
+            "2026-11-22T25:00",
+            "2026-11-22 11:00",
+            "2026-11-22T11:00Z",
+            "2026-11-22T11:00+09:00",
+        ] {
+            assert_eq!(from_local(bad), bad, "{bad}");
+        }
+    }
+
+    #[test]
+    fn 期間の欄だけを_rfc_3339_にそろえる() {
+        let mut list = pairs(&[
+            ("label", "tpm.key:t-23zs"),
+            ("active_from", "2026-11-22T11:00"),
+            ("active_to", "2026-11-22T12:30:00+09:00"),
+            ("at", "2026-11-22T11:00"),
+        ]);
+        period(&mut list, LIST_PERIOD);
+        assert_eq!(
+            list,
+            pairs(&[
+                ("label", "tpm.key:t-23zs"),
+                ("active_from", "2026-11-22T11:00:00+09:00"),
+                ("active_to", "2026-11-22T12:30:00+09:00"),
+                // 期間の欄でない時刻は、API と同じ（替えない）。
+                ("at", "2026-11-22T11:00"),
+            ])
+        );
+        let mut graph = pairs(&[("from", "2026-11-22T00:00"), ("to", "2026-11-23T00:00")]);
+        period(&mut graph, GRAPH_PERIOD);
+        assert_eq!(
+            graph,
+            pairs(&[
+                ("from", "2026-11-22T00:00:00+09:00"),
+                ("to", "2026-11-23T00:00:00+09:00"),
+            ])
+        );
+    }
+
+    #[test]
+    fn rfc_3339_の値を日時の欄の日本時間の字にする() {
+        assert_eq!(to_local("2026-11-22T11:00:00+09:00"), "2026-11-22T11:00");
+        assert_eq!(to_local("2026-11-22T02:00:00Z"), "2026-11-22T11:00");
+        assert_eq!(to_local("2026-11-22T20:30:00Z"), "2026-11-23T05:30");
+        assert_eq!(to_local("2026-11-22T02:00:07Z"), "2026-11-22T11:00:07");
+        assert_eq!(
+            to_local("2026-11-22T02:00:07.120Z"),
+            "2026-11-22T11:00:07.120"
+        );
+        assert_eq!(to_local("きのう"), "きのう");
+        // 欄の字を送り直すと、同じ時刻。
+        for iso in ["2026-11-22T02:00:00Z", "2026-11-22T02:00:07.120Z"] {
+            assert_eq!(at(&from_local(&to_local(iso))), at(iso), "{iso}");
+        }
+    }
+
+    #[test]
+    fn すぐ選ぶ期間は今から決め_今日と昨日は日本時間の_0_時から() {
+        // 直近の期間の終わりは、今の秒を切り上げた時刻（今の秒の中に来た記録も入れる）。
+        let ranges = quick_ranges(at("2026-11-23T01:30:15.250Z"));
+        let want = [
+            (
+                "直近 1 時間",
+                "2026-11-23T09:30:16+09:00",
+                "2026-11-23T10:30:16+09:00",
+            ),
+            (
+                "今日",
+                "2026-11-23T00:00:00+09:00",
+                "2026-11-24T00:00:00+09:00",
+            ),
+            (
+                "昨日",
+                "2026-11-22T00:00:00+09:00",
+                "2026-11-23T00:00:00+09:00",
+            ),
+            (
+                "直近 7 日",
+                "2026-11-16T10:30:16+09:00",
+                "2026-11-23T10:30:16+09:00",
+            ),
+        ];
+        let got: Vec<(&str, &str, &str)> = ranges
+            .iter()
+            .map(|(n, f, t)| (*n, f.as_str(), t.as_str()))
+            .collect();
+        assert_eq!(got, want);
+        // ちょうどの秒なら、切り上げない。
+        let ranges = quick_ranges(at("2026-11-23T01:30:15Z"));
+        assert_eq!(ranges[0].2, "2026-11-23T10:30:15+09:00");
+        // UTC ではまだ前の日でも、日本時間の日で決める。
+        let ranges = quick_ranges(at("2026-11-22T20:00:00Z"));
+        assert_eq!(ranges[1].1, "2026-11-23T00:00:00+09:00");
+        assert_eq!(ranges[2].1, "2026-11-22T00:00:00+09:00");
+    }
+
+    #[test]
+    fn すぐ選ぶ_link_はほかの条件を残し_期間を替え_after_を落とす() {
+        let now = at("2026-11-23T01:30:15Z");
+        let list = pairs(&[
+            ("label", "tpm.key:t-23zs"),
+            ("active_from", "2026-11-01T00:00:00+09:00"),
+            ("kind", "ai"),
+            ("after", "abc"),
+            ("label", "tpm.role:se"),
+            ("limit", "10"),
+        ]);
+        let links = quick_links("/", &list, LIST_PERIOD, now);
+        let names: Vec<&str> = links.iter().map(|(n, _)| *n).collect();
+        assert_eq!(names, ["直近 1 時間", "今日", "昨日", "直近 7 日"]);
+        assert_eq!(
+            links[1].1,
+            "/?label=tpm.key:t-23zs&kind=ai&label=tpm.role:se&limit=10\
+             &active_from=2026-11-23T00:00:00%2B09:00&active_to=2026-11-24T00:00:00%2B09:00"
+        );
+        let graph = pairs(&[("to", "2026-11-01T00:00:00+09:00"), ("label", "a:b")]);
+        let links = quick_links("/graph/tree", &graph, GRAPH_PERIOD, now);
+        assert_eq!(
+            links[0].1,
+            "/graph/tree?label=a:b&from=2026-11-23T09:30:15%2B09:00&to=2026-11-23T10:30:15%2B09:00"
+        );
+        // 条件が無くても、期間だけを付ける。
+        let links = quick_links("/graph/network", &Vec::new(), GRAPH_PERIOD, now);
+        assert_eq!(
+            links[2].1,
+            "/graph/network?from=2026-11-22T00:00:00%2B09:00&to=2026-11-23T00:00:00%2B09:00"
+        );
+    }
 
     #[test]
     fn 出来事の種類はみな日本語の名を持つ() {
