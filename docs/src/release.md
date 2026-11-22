@@ -8,7 +8,8 @@ image は public で、だれでも取って中を見られる。**出すのは 
 4. `push`（`packages: write` と、release を書くための `contents: write`）が、確かめたその image（作り直さない）を `ghcr.io/uraitakahito/castlist:v<version>` に置き、release に digest と中身の一覧を書く。同じ tag がもう ghcr.io にあれば置かない。
 5. release の中身の一覧が「`castlist-server` と空の `data` だけ」であることを見る（この時、image はもう public。違っていたら、すぐ下の「機微な物が出てしまった時」をする）。
 6. 同じ tag の push で、docs の workflow（`.github/workflows/docs.yml`）が本を GitHub Pages（https://uraitakahito.github.io/castlist/）に出す。出たのを見る。
-7. Product Manager に、[動かす](run.md) の 1 行（初めてなら「初めて起こす」、2 度目からは「版を上げる」）を送る。castlist を起こすのは Product Manager だけ。
+7. roster（`tpm`）で、`cli/src/castlist.ts` の `CASTLIST_VERSION` を新しい版にする PR を出す。`tpm` は、castlist が止まっていて container も無い時に、この版で `container run` の 1 行を出すので、上げ忘れると古い版を起こす 1 行が出る（roster の docs の「開発」の「castlist を上げる時」）。
+8. Product Manager に、[動かす](run.md) の 1 行（初めてなら「初めて起こす」、2 度目からは「版を上げる」）を送る。castlist を起こすのは Product Manager だけ。
 
 - 出した tag は打ち直さない（digest が変わり、書き留めた値と合わなくなる）。直す時は、次の版を出す。
 - **機微な物が出てしまった時**: GitHub の package の画面で、その版を消す。秘密なら、すぐ替える（消しても、pull した人の手元には残る前提で動く）。直して次の版を出し、`ci/` の決まりに、同じ物を止める形を足す。
