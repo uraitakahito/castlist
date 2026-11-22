@@ -1049,3 +1049,230 @@ async fn 時間の帯も利用者の字を_html_で逃がす() {
         "{page}"
     );
 }
+
+// --- 関係の網（相関図 C） ---
+
+/// 取り込んだ cytoscape の path（static/vendor/SOURCES.md の file と同じ）。
+const CYTOSCAPE: &str = "/static/vendor/cytoscape-3.35.0.min.js";
+
+/// 関係の網の画面: 200 の HTML で CSP が付き、script は castlist が配る 2 つの file だけ（中身の無い `<script src>`）で、
+/// inline の script と style が無く、castlist の CSS を読むことを見る。
+async fn network_html(app: &App, uri: &str) -> String {
+    let (status, headers, body) = page(app, uri).await;
+    assert_eq!(status, StatusCode::OK, "{uri}: {body}");
+    let vendor = format!("<script src=\"{CYTOSCAPE}\"></script>");
+    assert_eq!(
+        body.matches(&vendor).count(),
+        1,
+        "{uri}: cytoscape を読まない\n{body}"
+    );
+    let ours = body
+        .split_once("<script src=\"/static/network.js?v=")
+        .and_then(|(_, rest)| rest.split_once("\"></script>"))
+        .map(|(v, _)| v)
+        .unwrap_or_else(|| panic!("{uri}: network.js を読まない\n{body}"));
+    assert!(
+        !ours.is_empty() && ours.chars().all(|c| c.is_ascii_hexdigit()),
+        "{uri}: network.js の ?v= が中身の写しでない: {ours}"
+    );
+    // 2 つの script の印を除けば、ほかの画面と同じ決まり（<script も style も無い）。
+    let rest = body.replace(&vendor, "").replace(
+        &format!("<script src=\"/static/network.js?v={ours}\"></script>"),
+        "",
+    );
+    assert_html(uri, &headers, &rest);
+    body
+}
+
+/// 関係の網が絵を描く場所（`id="network"` の要素）の、data を引く URL（`data-src`。HTML の逃がしを戻す）。
+fn data_src(body: &str) -> String {
+    let at = body
+        .find("id=\"network\"")
+        .unwrap_or_else(|| panic!("id=\"network\" が無い\n{body}"));
+    let tag = &body[body[..at].rfind('<').expect("<")..at + body[at..].find('>').expect(">")];
+    let rest = tag
+        .split_once("data-src=\"")
+        .unwrap_or_else(|| panic!("data-src が無い\n{tag}"))
+        .1;
+    unescape(rest.split_once('"').expect("\"").0)
+}
+
+#[tokio::test]
+async fn 一覧と系図と時間の帯から関係の網へ行け_関係の網から三つへ戻れる() {
+    let s = sample().await;
+    for uri in ["/", "/graph/tree", "/graph/timeline"] {
+        let body = html(&s.app, uri).await;
+        assert!(body.contains("href=\"/graph/network\""), "{uri}\n{body}");
+    }
+    let body = network_html(&s.app, "/graph/network").await;
+    for want in [
+        "href=\"/\"",
+        "href=\"/graph/tree\"",
+        "href=\"/graph/timeline\"",
+    ] {
+        assert!(body.contains(want), "{want} が無い\n{body}");
+    }
+}
+
+#[tokio::test]
+async fn 関係の網は_castlist_が配る_script_だけを読み_inline_の_script_と_style_が無い() {
+    let s = sample().await;
+    let body = network_html(&s.app, "/graph/network").await;
+    // 凡例（model の色・人の形・線の形）と、model と effort の絞り。
+    for want in [
+        "m-opus", "m-sonnet", "m-haiku", "m-other", "m-none", "実線", "点線", "人",
+    ] {
+        assert!(body.contains(want), "{want} が無い\n{body}");
+    }
+    for want in ["id=\"f-model\"", "id=\"f-effort\""] {
+        assert!(body.contains(want), "{want} が無い\n{body}");
+    }
+}
+
+#[tokio::test]
+async fn 関係の網は_script_を切った_browser_に系図と時間の帯を勧める() {
+    let s = sample().await;
+    let body = network_html(&s.app, "/graph/network?label=tpm.key:t-23zs").await;
+    let noscript = body
+        .split_once("<noscript>")
+        .and_then(|(_, rest)| rest.split_once("</noscript>"))
+        .map(|(inner, _)| inner)
+        .unwrap_or_else(|| panic!("noscript が無い\n{body}"));
+    // 同じ絞りのまま、系図と時間の帯へ。
+    for want in [
+        "href=\"/graph/tree?label=tpm.key:t-23zs\"",
+        "href=\"/graph/timeline?label=tpm.key:t-23zs\"",
+        "JavaScript",
+    ] {
+        assert!(noscript.contains(want), "{want} が無い\n{noscript}");
+    }
+}
+
+#[tokio::test]
+async fn 関係の網は_絞りを相関図の_api_へそのまま渡す() {
+    let s = sample().await;
+    let cases = [
+        ("/graph/network".to_owned(), "/v1/graph".to_owned()),
+        (
+            "/graph/network?label=tpm.key:t-99&from=&to=".to_owned(),
+            "/v1/graph?label=tpm.key:t-99".to_owned(),
+        ),
+        (
+            format!("/graph/network?to={}&label=tpm.key:{KEY}", s.se1_entered),
+            format!(
+                "/v1/graph?to={}&label=tpm.key:{KEY}",
+                s.se1_entered.replace('+', "%2B")
+            ),
+        ),
+    ];
+    for (uri, want) in cases {
+        let body = network_html(&s.app, &uri).await;
+        let src = data_src(&body);
+        assert_eq!(src, want, "{uri}");
+        // 渡す URL は、API が受ける。
+        let (status, answer) = s.app.get(&src).await;
+        assert_eq!(status, StatusCode::OK, "{src}: {answer}");
+    }
+    // form には今の値が残る。
+    let body = network_html(&s.app, "/graph/network?label=tpm.key:t-99").await;
+    assert!(body.contains("value=\"tpm.key:t-99\""), "{body}");
+}
+
+#[tokio::test]
+async fn 関係の網の引数の誤りは_引数の名を書いた_400_の画面() {
+    let s = sample().await;
+    for (uri, name) in [
+        ("/graph/network?colour=red", "colour"),
+        ("/graph/network?from=きのう", "from"),
+        ("/graph/network?to=きのう", "to"),
+        ("/graph/network?label=nocolon", "label"),
+        ("/graph/network?label=a:b&label=c:d", "label"),
+    ] {
+        let (status, headers, body) = page(&s.app, uri).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{uri}: {body}");
+        assert_html(uri, &headers, &body);
+        assert!(body.contains(name), "{uri}: {name} を書かない\n{body}");
+    }
+}
+
+#[tokio::test]
+async fn 関係の網も利用者の字を_html_で逃がす() {
+    let s = sample().await;
+    let uri = "/graph/network?label=tpm.key:%3Cscript%3Ealert(1)%3C/script%3E";
+    // 生の字は無く（network_html() が <script を見る）、逃がしを戻すと、form の欄に元の字がある。
+    let body = network_html(&s.app, uri).await;
+    assert!(
+        unescape(&body).contains("<script>alert(1)</script>"),
+        "{body}"
+    );
+    assert_eq!(
+        data_src(&body),
+        "/v1/graph?label=tpm.key:%3Cscript%3Ealert%281%29%3C%2Fscript%3E"
+    );
+}
+
+/// script の file を引き、本文と header を返す（`application/javascript` で、長く持たせてよいことを見る）。
+async fn script(app: &App, uri: &str) -> Vec<u8> {
+    let (status, headers, bytes) = app.raw("GET", uri, None).await;
+    assert_eq!(status, StatusCode::OK, "{uri}");
+    let get = |name| {
+        headers
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or_default()
+    };
+    assert!(
+        get(header::CONTENT_TYPE).starts_with("application/javascript"),
+        "{uri}: {headers:?}"
+    );
+    assert_eq!(
+        get(header::CACHE_CONTROL),
+        "public, max-age=31536000, immutable",
+        "{uri}"
+    );
+    assert_eq!(get(header::X_CONTENT_TYPE_OPTIONS), "nosniff", "{uri}");
+    assert!(!bytes.is_empty(), "{uri}");
+    bytes
+}
+
+#[tokio::test]
+async fn 関係の網の_script_は_castlist_が_application_javascript_で配る() {
+    let s = sample().await;
+    let body = network_html(&s.app, "/graph/network").await;
+    let ours = body
+        .split_once("<script src=\"/static/network.js")
+        .and_then(|(_, rest)| rest.split_once('"'))
+        .map(|(query, _)| format!("/static/network.js{query}"))
+        .expect("network.js");
+    let js = String::from_utf8(script(&s.app, &ours).await).expect("UTF-8");
+    // data は画面の data-src（相関図の API）から引き、押した点はプロフィールへ。
+    for want in ["dataset.src", "/actors/", "cytoscape("] {
+        assert!(js.contains(want), "network.js に {want} が無い");
+    }
+    script(&s.app, CYTOSCAPE).await;
+}
+
+#[tokio::test]
+async fn 取り込んだ_cytoscape_は_sources_md_に書いた_sha256_と同じ物を配る() {
+    use sha2::{Digest, Sha256};
+    let s = sample().await;
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/static/vendor/SOURCES.md");
+    let sources = tokio::fs::read_to_string(path)
+        .await
+        .unwrap_or_else(|e| panic!("{path}: {e}"));
+    let field = |name: &str| {
+        sources
+            .lines()
+            .find_map(|l| l.strip_prefix(&format!("| {name} | `")))
+            .and_then(|rest| rest.strip_suffix("` |"))
+            .unwrap_or_else(|| panic!("SOURCES.md に {name} が無い"))
+            .to_owned()
+    };
+    assert_eq!(format!("/{}", field("file")), CYTOSCAPE);
+    let bytes = script(&s.app, CYTOSCAPE).await;
+    let got: String = Sha256::digest(&bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    assert_eq!(got, field("sha256"));
+}

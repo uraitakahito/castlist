@@ -28,6 +28,14 @@ jobs:
       - run: ci/check-sql.sh
       # 見張りが、そういう SQL を本当に当てるか（当てなければ落とす）。
       - run: "! ci/check-sql.sh ci/testdata/bad-sql.rs"
+      # 取り込んだ外の JavaScript（static/vendor/）が、npm に出ている物と同じか（static/vendor/SOURCES.md）。
+      - run: ci/check-vendor.sh
+      # 見張りが、書き替えた file を本当に当てるか（当てなければ落とす）。
+      - name: 見張りが、書き替えた写しを当てるか
+        run: |
+          cp static/vendor/cytoscape-3.35.0.min.js "$RUNNER_TEMP/bad.js"
+          echo '//' >>"$RUNNER_TEMP/bad.js"
+          ! ci/check-vendor.sh "$RUNNER_TEMP/bad.js"
   load:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
@@ -36,6 +44,51 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
       # 本物の binary を起こし、50 の客が 10 秒叩く（誤りと 5xx が 0・p99 が 1 秒未満。tests/load.rs）。
       - run: cargo test --locked --release --test load -- --ignored --nocapture
+  e2e:
+    if: github.event_name != 'schedule'
+    # 関係の網（/graph/network。script を使う唯一の画面）を、本物の browser（Chromium）で見る（e2e/ の Playwright の試験）。
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+      - name: 試験が起こすサーバーを作る
+        run: cargo build --locked --bin castlist-server
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          package_json_file: e2e/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: e2e/.node-version
+          cache: pnpm
+          cache-dependency-path: e2e/pnpm-lock.yaml
+      - name: Node の依存を、lock のとおりに入れる
+        working-directory: e2e
+        run: pnpm install --frozen-lockfile
+      - name: Chromium の cache（版は lock の Playwright の版で決まる）
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('e2e/pnpm-lock.yaml') }}
+      - name: Chromium と、それが要る library を入れる
+        working-directory: e2e
+        run: pnpm exec playwright install --with-deps --only-shell chromium
+      - name: 関係の網の試験
+        working-directory: e2e
+        env:
+          # 上の段で作った物を起こす（作り直さない）。
+          CASTLIST_E2E_SERVER: ../target/debug/castlist-server
+        run: pnpm test
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 7
   image:
     if: github.event_name != 'schedule'
     # 動かす Mac と同じ CPU の種類（arm64）で作る。
@@ -62,3 +115,12 @@ jobs:
         with:
           # 弱点と、crate の license（MIT の castlist と一緒に配れる物か）。
           command: check advisories licenses
+      # 画面の browser の試験（e2e/）の Node の依存の弱点。lock だけを見る（入れない）。
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          package_json_file: e2e/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: e2e/.node-version
+      - working-directory: e2e
+        run: pnpm audit
