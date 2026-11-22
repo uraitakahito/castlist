@@ -930,7 +930,7 @@ async fn 書く_4_つの道は_sent_at_と_at_を両方付けると_422_で_at_�
         assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{path}: {answer}");
         let text = answer.to_string();
         assert!(
-            text.contains("sent_at（0.1.x の名 at）は RFC 3339 の時刻"),
+            text.contains("sent_at（0.1.x の名 at） は RFC 3339 の時刻"),
             "{path}: {answer}"
         );
     }

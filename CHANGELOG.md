@@ -7,7 +7,7 @@
 送り手の時刻の名を `at` から `sent_at` にした（PM の答え。`at` だけでは誰の時刻か分からないため）。API（`/v1/`）と移行の SQL が替わる。
 
 - 移行: `0003_sent_at.sql` が、`actors`・`bindings`・`links`・`events`・`settings` の列 `at` を `sent_at` にする（列の名を替えるだけで、行は書き替えない）。**当てた後は 0.1.x では開けない。前の版へ戻すなら、上げる前に取った写しから戻す。**
-- API: 書く 4 つの道（`POST /v1/actors`・`PUT /v1/events/{id}`・`PUT /v1/links/{id}`・`PUT /v1/settings/{id}`）の本文は `sent_at`。移る間は 0.1.x の名 `at` も受ける（両方を付ければ 422）。答えの行は、どれも `sent_at`（`at` の鍵は出ない）。同じ id を前の名と新しい名で送り直しても、同じ物として 200。
+- API: 書く 4 つの道（`POST /v1/actors`・`PUT /v1/events/{id}`・`PUT /v1/links/{id}`・`PUT /v1/settings/{id}`）の本文は `sent_at`。移る間は 0.1.x の名 `at` も受ける（両方を付ければ 422）。答えの行は、どれも `sent_at`（送り手の時刻の `at` の鍵は出ない。`?at=` の答えだけは、頭の `at` に問いの時点を返す）。`at` が読めない時の字は「sent_at（0.1.x の名 at） は RFC 3339 の時刻」。同じ id を前の名と新しい名で送り直しても、同じ物として 200。
 - API: 問い合わせの `?at=`（`GET /v1/actors?binding=…&at=`・`GET /v1/actors/{id}/settings?at=`）の名は替えない。castlist の時計（`received_at`）での時点だと docs に書いた。
 - docs: DB の「列」の章（列の型・NULL・既定・決まり・中身の形）を足し、移行した DB と合うかを試験が見る。送り手の時刻を何の時刻か説明した。
 - 送り手（tpm）は、castlist を上げた後で `sent_at` を送るように替える（それまでは `at` のままで通る）。
