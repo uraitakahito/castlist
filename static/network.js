@@ -120,9 +120,10 @@
   /** 名前にマウスを重ねた時の説明（名前・種類・model · effort・状態）。 */
   function describe(node) {
     const d = node.data();
-    const kind = d.kind === 'human' ? '人' : 'AI';
+    // 種類の印は人にだけ付ける（アクターはほとんど AI なので、AI には付けない）。
+    const kind = d.kind === 'human' ? '（人）' : '';
     const setting = d.model === NONE ? 'model の記録なし' : `${d.model} · ${d.effort}`;
-    return `${d.name}（${kind}）\n${setting}\n${d.present ? '稼働中' : '停止'}`;
+    return `${d.name}${kind}\n${setting}\n${d.present ? '稼働中' : '停止'}`;
   }
 
   /** 日本時間の字（2026-11-23 09:00:00）。 */

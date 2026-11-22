@@ -243,8 +243,9 @@ fn quick_links(
         .collect()
 }
 
+/// 種類の印。人（Product Manager）にだけ「人」を付け、AI には付けない（アクターはほとんど AI なので。Product Manager の頼み）。
 fn kind_name(kind: &str) -> &'static str {
-    if kind == "human" { "人" } else { "AI" }
+    if kind == "human" { "人" } else { "" }
 }
 
 /// アクターを指す link（名と種類）。
@@ -775,6 +776,7 @@ fn tree_svg(graph: &db::Graph) -> Option<TreeSvg> {
         .map(|n| {
             let kind = kind_name(&n.actor.kind);
             let detail = match &n.current_settings {
+                Some(s) if kind.is_empty() => format!("{} · {}", short_model(&s.model), s.effort),
                 Some(s) => format!("{kind} · {} · {}", short_model(&s.model), s.effort),
                 None => kind.to_owned(),
             };
@@ -1099,7 +1101,12 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
             timeline::Lane {
                 human: n.actor.kind == "human",
                 order: millis(order).unwrap_or(i64::MAX),
-                label_width: name_width(&n.actor.name) + 6 + text_width(kind, SUB_PX),
+                label_width: name_width(&n.actor.name)
+                    + if kind.is_empty() {
+                        0
+                    } else {
+                        6 + text_width(kind, SUB_PX)
+                    },
                 ..timeline::Lane::default()
             }
         })

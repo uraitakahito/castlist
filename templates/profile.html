@@ -2,7 +2,7 @@
 {% import "macros.html" as m %}
 {% block title %}{{ me.name }}{% endblock %}
 {% block main %}
-<h1>{{ me.name }} <span class="kind">{{ me.kind }}</span></h1>
+<h1>{{ me.name }}{% if !me.kind.is_empty() %} <span class="kind">{{ me.kind }}</span>{% endif %}</h1>
 <dl class="facts">
 <dt>id</dt><dd><code>{{ id }}</code></dd>
 <dt>発行元（issuer）</dt><dd><code>{{ issuer }}</code></dd>
@@ -52,7 +52,7 @@
 <h2>起動した人</h2>
 {% if chain.is_empty() %}<p class="empty">ありません（起点）。</p>{% else %}
 <ol class="chain">
-{% for (link, verb) in chain %}<li><a href="{{ link.href }}">{{ link.name }}</a> <span class="muted">{{ link.kind }}・{{ verb }}</span></li>
+{% for (link, verb) in chain %}<li><a href="{{ link.href }}">{{ link.name }}</a> <span class="muted">{% if !link.kind.is_empty() %}{{ link.kind }}・{% endif %}{{ verb }}</span></li>
 {% endfor %}<li><strong>{{ me.name }}</strong></li>
 </ol>
 {% endif %}
@@ -62,7 +62,7 @@
 <h2>起動したアクター</h2>
 {% if children.is_empty() %}<p class="empty">ありません。</p>{% else %}
 <ul class="links">
-{% for link in children %}<li><a href="{{ link.href }}">{{ link.name }}</a> <span class="muted">{{ link.kind }}</span></li>
+{% for link in children %}<li><a href="{{ link.href }}">{{ link.name }}</a>{% if !link.kind.is_empty() %} <span class="muted">{{ link.kind }}</span>{% endif %}</li>
 {% endfor %}
 </ul>
 {% endif %}

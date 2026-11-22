@@ -346,9 +346,12 @@ async fn 一覧の行は_名_種類_状態_最後の出来事_ラベル_model_�
     let s = sample().await;
     let body = html(&s.app, "/").await;
     let se1 = row(&body, s.id("se.1"));
+    assert!(
+        !se1.contains("AI"),
+        "AI のアクターに「AI」の印を出さない\n{se1}"
+    );
     for want in [
         ">se.1<",
-        "AI",
         "停止",
         "交代",
         KEY,
@@ -458,15 +461,11 @@ async fn プロフィールは_名_種類_id_issuer_ラベル_今の状態を出
     let s = sample().await;
     let id = s.id("se.1");
     let body = html(&s.app, &format!("/actors/{id}")).await;
-    for want in [
-        "se.1",
-        "AI",
-        id,
-        "tpm",
-        KEY,
-        "software-engineer",
-        "castlist",
-    ] {
+    assert!(
+        !body.contains(">AI<"),
+        "プロフィールに「AI」の印を出さない\n{body}"
+    );
+    for want in ["se.1", id, "tpm", KEY, "software-engineer", "castlist"] {
         assert!(body.contains(want), "{want} が無い\n{body}");
     }
     let state = section(&body, "state");
@@ -687,7 +686,8 @@ async fn 系図の箱は_名_種類と短い_model_と_effort_状態と出来事
     let body = html(&s.app, "/graph/tree").await;
     let svg = svg(&body);
     let se1 = tree_node(svg, s.id("se.1"));
-    for want in [">se.1<", "AI", "opus-5-5 · high", "停止", "交代"] {
+    assert!(!se1.contains("AI"), "系図の箱に「AI」の印を出さない\n{se1}");
+    for want in [">se.1<", "opus-5-5 · high", "停止", "交代"] {
         assert!(se1.contains(want), "se.1 の箱に {want} が無い\n{se1}");
     }
     assert!(!se1.contains("claude-"), "claude- を落とす\n{se1}");
@@ -849,7 +849,7 @@ async fn タイムラインは_アクターごとに_1_行で_人を上に初め
     assert!(pm.contains(">pm.1<") && pm.contains(">人<"), "{pm}");
     assert!(pm.contains("class=\"lane human\""), "{pm}");
     let se1 = lane(svg, s.id("se.1"));
-    assert!(se1.contains(">se.1<") && se1.contains(">AI<"), "{se1}");
+    assert!(se1.contains(">se.1<") && !se1.contains("AI"), "{se1}");
     // 目盛り（時刻の字）がある。
     assert!(svg.contains("class=\"tick\""), "{svg}");
 }
@@ -1854,4 +1854,38 @@ async fn 日時の欄の読めない値は_引数の名を書いた_400_の画�
         assert_html(uri, &headers, &body);
         assert!(body.contains(name), "{uri}: {name} を書かない\n{body}");
     }
+}
+
+#[tokio::test]
+async fn どの画面も_種類の印は人だけに付け_ai_とは書かない() {
+    let s = sample().await;
+    let id = s.id("se.1");
+    let mut pages = Vec::new();
+    for path in [
+        "/".to_owned(),
+        format!("/actors/{id}"),
+        "/graph/tree".to_owned(),
+        "/graph/timeline".to_owned(),
+    ] {
+        pages.push((path.clone(), html(&s.app, &path).await));
+    }
+    pages.push((
+        "/graph/network".to_owned(),
+        network_html(&s.app, "/graph/network").await,
+    ));
+    for (path, body) in &pages {
+        assert!(!body.contains(">AI<"), "{path} に「AI」の印がある\n{body}");
+        assert!(
+            !body.contains("AI</option>"),
+            "{path} の絞りに「AI」がある\n{body}"
+        );
+    }
+    // 人（Product Manager）には、今と同じく「人」の印が付く。
+    let list = &pages[0].1;
+    assert!(row(list, s.id("pm.1")).contains("人"), "{list}");
+    // 種類の絞りは「人」を探す道として残す（すべて・人）。
+    assert!(list.contains("<option value=\"human\""), "{list}");
+    // 前の URL の kind=ai は、今と同じく AI のアクターだけに絞る。
+    let ai = html(&s.app, "/?kind=ai").await;
+    assert!(ai.contains(">se.1<") && !ai.contains(">pm.1<"), "{ai}");
 }

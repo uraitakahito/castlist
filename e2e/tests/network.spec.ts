@@ -155,6 +155,23 @@ test('点を押すと、そのアクターのプロフィールへ行く', async
   await expect(page.locator('h1')).toContainText('se.2');
 });
 
+test('点に重ねた時の説明は、人にだけ種類（人）を付け、AI とは書かない', async ({ page }) => {
+  const g = await graph(page);
+  const se1 = byName(g, 'se.1');
+  const pm1 = byName(g, 'pm.1');
+  await open(page);
+  const title = (id: string) =>
+    page.evaluate((nodeId) => {
+      const cy = (window as unknown as { castlistNetwork: any }).castlistNetwork;
+      cy.getElementById(nodeId).emit('mouseover');
+      return cy.container().title as string;
+    }, id);
+  const ai = await title(se1.id);
+  expect(ai.split('\n')[0]).toBe('se.1');
+  expect(ai).not.toContain('AI');
+  expect((await title(pm1.id)).split('\n')[0]).toBe('pm.1（人）');
+});
+
 test('model と effort の絞りは、合わない点とその線を隠し、外すと戻す', async ({ page }) => {
   await open(page);
   // 出てくる model（短い名）と effort が選べる。

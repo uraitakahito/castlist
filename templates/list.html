@@ -18,7 +18,6 @@
 </select></label>
 <label>種類 <select name="kind">
 <option value="">すべて</option>
-<option value="ai"{% if form.kind == "ai" %} selected{% endif %}>AI</option>
 <option value="human"{% if form.kind == "human" %} selected{% endif %}>人</option>
 </select></label>
 <label>model <input name="model" value="{{ form.model }}" placeholder="claude-opus-5-5"></label>
