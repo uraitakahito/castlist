@@ -125,7 +125,7 @@
     return `${d.name}（${kind}）\n${setting}\n${d.present ? '稼働中' : '停止'}`;
   }
 
-  /** 日本の時刻の字（2026-11-23 09:00:00）。 */
+  /** 日本時間の字（2026-11-23 09:00:00）。 */
   function local(iso) {
     const t = new Date(iso);
     if (Number.isNaN(t.getTime())) return iso;
