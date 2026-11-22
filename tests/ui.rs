@@ -163,7 +163,7 @@ async fn sample() -> Sample {
     )
     .await;
     tick().await;
-    // 同じ鍵の登録し直しで、workspace が替わった（付随する id の履歴）。
+    // 同じ鍵の登録し直しで、workspace が替わった（外部の id の履歴）。
     reg(
         "se.1",
         seat("se", "s-se1", KEY, "software-engineer", "workspace:7"),
@@ -342,14 +342,14 @@ async fn 一覧は_条件が無ければ_この_7_日に居た者を新しい順
 }
 
 #[tokio::test]
-async fn 一覧の行は_名_種類_居るか_最後の出来事_ラベル_model_と_effort_時刻を出す() {
+async fn 一覧の行は_名_種類_状態_最後の出来事_ラベル_model_と_effort_時刻を出す() {
     let s = sample().await;
     let body = html(&s.app, "/").await;
     let se1 = row(&body, s.id("se.1"));
     for want in [
         ">se.1<",
         "AI",
-        "いない",
+        "停止",
         "交代",
         KEY,
         "software-engineer",
@@ -360,7 +360,7 @@ async fn 一覧の行は_名_種類_居るか_最後の出来事_ラベル_model
         assert!(se1.contains(want), "se.1 の行に {want} が無い\n{se1}");
     }
     let pm = row(&body, s.id("pm.1"));
-    for want in [">pm.1<", "人", "いる", "登場", "product-manager"] {
+    for want in [">pm.1<", "人", "稼働中", "登場", "product-manager"] {
         assert!(pm.contains(want), "pm.1 の行に {want} が無い\n{pm}");
     }
     let other = row(&body, s.id("other.1"));
@@ -454,7 +454,7 @@ async fn 一覧の引数の誤りは_引数の名を書いた_400_の画面() {
 // --- プロフィール ---
 
 #[tokio::test]
-async fn プロフィールは_名_種類_id_issuer_ラベル_今の様子を出す() {
+async fn プロフィールは_名_種類_id_issuer_ラベル_今の状態を出す() {
     let s = sample().await;
     let id = s.id("se.1");
     let body = html(&s.app, &format!("/actors/{id}")).await;
@@ -470,8 +470,8 @@ async fn プロフィールは_名_種類_id_issuer_ラベル_今の様子を出
         assert!(body.contains(want), "{want} が無い\n{body}");
     }
     let state = section(&body, "state");
-    for want in ["いない", "交代", OPUS, "high", "<time datetime=\""] {
-        assert!(state.contains(want), "今の様子に {want} が無い\n{state}");
+    for want in ["停止", "交代", OPUS, "high", "<time datetime=\""] {
+        assert!(state.contains(want), "今の状態に {want} が無い\n{state}");
     }
     let bindings = section(&body, "bindings");
     for want in [
@@ -483,32 +483,32 @@ async fn プロフィールは_名_種類_id_issuer_ラベル_今の様子を出
     ] {
         assert!(
             bindings.contains(want),
-            "付随する id に {want} が無い\n{bindings}"
+            "外部の id に {want} が無い\n{bindings}"
         );
     }
 }
 
 #[tokio::test]
-async fn プロフィールは_起こした人を人の根まで_起こした者_前と後を出す() {
+async fn プロフィールは_起動した人を人の起点まで_起動したアクター_引き継ぎを出す() {
     let s = sample().await;
     let body = html(&s.app, &format!("/actors/{}", s.id("se.2"))).await;
-    // se.2 は se.1 を継いだ。se.1 は tpm.1 が、tpm.1 は人の pm.1 が起こした。
+    // se.2 は se.1 を引き継いだ。se.1 は tpm.1 が、tpm.1 は人の pm.1 が起動した。
     let chain = listed(section(&body, "launched-by"));
     assert_eq!(chain, s.ids_of(&["pm.1", "tpm.1", "se.1"]), "{body}");
     assert_eq!(
         listed(section(&body, "continued")),
         s.ids_of(&["se.1"]),
-        "前"
+        "引き継ぎ元"
     );
-    assert!(section(&body, "continued").contains("前"));
+    assert!(section(&body, "continued").contains("引き継ぎ元"));
 
     let body = html(&s.app, &format!("/actors/{}", s.id("se.1"))).await;
     assert_eq!(
         listed(section(&body, "continued")),
         s.ids_of(&["se.2"]),
-        "後"
+        "引き継ぎ先"
     );
-    assert!(section(&body, "continued").contains("後"));
+    assert!(section(&body, "continued").contains("引き継ぎ先"));
     assert_eq!(
         listed(section(&body, "launched-by")),
         s.ids_of(&["pm.1", "tpm.1"])
@@ -525,7 +525,7 @@ async fn プロフィールは_起こした人を人の根まで_起こした者
 }
 
 #[tokio::test]
-async fn プロフィールの_model_と_effort_の履歴は_頼んだ物と違う見た行に印を付ける() {
+async fn プロフィールの_model_と_effort_の履歴は_指定と違う実際の行に食い違いの印を付ける() {
     let s = sample().await;
     let body = html(&s.app, &format!("/actors/{}", s.id("se.1"))).await;
     let settings = section(&body, "settings");
@@ -534,7 +534,7 @@ async fn プロフィールの_model_と_effort_の履歴は_頼んだ物と違�
         3,
         "見出しと 3 行\n{settings}"
     );
-    for want in ["頼んだ", "見た", OPUS, SONNET, "high", "<time datetime=\""] {
+    for want in ["指定", "実際", OPUS, SONNET, "high", "<time datetime=\""] {
         assert!(settings.contains(want), "{want} が無い\n{settings}");
     }
     // sonnet を見た行だけが、頼んだ opus と違う。
@@ -551,7 +551,7 @@ async fn プロフィールの_model_と_effort_の履歴は_頼んだ物と違�
 }
 
 #[tokio::test]
-async fn プロフィールの出来事は_日本語の名と訳と送り手の時刻と_ずれの印を出す() {
+async fn プロフィールの出来事は_日本語の名と理由と送り手の時刻と_時刻ずれの印を出す() {
     let s = sample().await;
     let body = html(&s.app, &format!("/actors/{}", s.id("se.1"))).await;
     let events = section(&body, "events");
@@ -634,7 +634,7 @@ async fn 利用者の字は_html_で逃がす() {
     }
 }
 
-// --- 系図（相関図 A） ---
+// --- 系図（図 A） ---
 
 /// 系図の SVG（`<svg` 〜 `</svg>`）。
 fn svg(body: &str) -> &str {
@@ -682,18 +682,18 @@ async fn 系図は_点ごとに_1_つの_link_と_起こした線と継いだ線
 }
 
 #[tokio::test]
-async fn 系図の箱は_名_種類と短い_model_と_effort_居るかと出来事を出す() {
+async fn 系図の箱は_名_種類と短い_model_と_effort_状態と出来事を出す() {
     let s = sample().await;
     let body = html(&s.app, "/graph/tree").await;
     let svg = svg(&body);
     let se1 = tree_node(svg, s.id("se.1"));
-    for want in [">se.1<", "AI", "opus-5-5 · high", "いない", "交代"] {
+    for want in [">se.1<", "AI", "opus-5-5 · high", "停止", "交代"] {
         assert!(se1.contains(want), "se.1 の箱に {want} が無い\n{se1}");
     }
     assert!(!se1.contains("claude-"), "claude- を落とす\n{se1}");
     assert!(se1.contains("class=\"node ai\""), "{se1}");
     let pm = tree_node(svg, s.id("pm.1"));
-    for want in [">pm.1<", "人", "いる", "登場", "class=\"node human\""] {
+    for want in [">pm.1<", "人", "稼働中", "登場", "class=\"node human\""] {
         assert!(pm.contains(want), "pm.1 の箱に {want} が無い\n{pm}");
     }
     let other = tree_node(svg, s.id("other.1"));
@@ -701,7 +701,7 @@ async fn 系図の箱は_名_種類と短い_model_と_effort_居るかと出来
 }
 
 #[tokio::test]
-async fn 系図の絞りは_相関図の_api_と同じ引数で狭める() {
+async fn 系図の絞りは_図の_api_と同じ引数で狭める() {
     let s = sample().await;
     let cases: Vec<(String, Vec<&str>, usize, usize)> = vec![
         // Key で絞った組と、そこから出る線の一歩先（人の根 pm.1）。
@@ -753,7 +753,7 @@ async fn 系図に当たる者が無ければ_そう書き_svg_を出さない()
     let s = sample().await;
     let body = html(&s.app, &format!("/graph/tree?from={}", s.end)).await;
     assert!(!body.contains("<svg"), "{body}");
-    assert!(body.contains("当たるアクターはいない"), "{body}");
+    assert!(body.contains("条件に合うアクターはいません"), "{body}");
 }
 
 #[tokio::test]
@@ -800,9 +800,9 @@ async fn 系図も利用者の字を_html_で逃がす() {
     );
 }
 
-// --- 時間の帯（相関図 B） ---
+// --- タイムライン（図 B） ---
 
-/// 時間の帯の、そのアクターの行（`<g class="lane …">` 〜 `</g>`）。
+/// タイムラインの、そのアクターの行（`<g class="lane …">` 〜 `</g>`）。
 fn lane<'a>(svg: &'a str, id: &str) -> &'a str {
     let at = svg
         .find(&format!("href=\"/actors/{id}\""))
@@ -821,7 +821,7 @@ fn segs(lane: &str) -> Vec<&str> {
 }
 
 #[tokio::test]
-async fn 一覧と系図から時間の帯へ行け_時間の帯から系図と一覧へ戻れる() {
+async fn 一覧と系図からタイムラインへ行け_タイムラインから系図と一覧へ戻れる() {
     let s = sample().await;
     for uri in ["/", "/graph/tree"] {
         let body = html(&s.app, uri).await;
@@ -833,7 +833,8 @@ async fn 一覧と系図から時間の帯へ行け_時間の帯から系図と�
 }
 
 #[tokio::test]
-async fn 時間の帯は_アクターごとに_1_行で_人を上に初めの登場の順に並べ_名はプロフィールへの_link() {
+async fn タイムラインは_アクターごとに_1_行で_人を上に初めの登場の順に並べ_名はプロフィールへの_link()
+ {
     let s = sample().await;
     let body = html(&s.app, "/graph/timeline").await;
     let svg = svg(&body);
@@ -854,7 +855,7 @@ async fn 時間の帯は_アクターごとに_1_行で_人を上に初めの登
 }
 
 #[tokio::test]
-async fn 時間の帯は_model_と_effort_の替わり目で区切り_model_ごとの色の_class_を付ける() {
+async fn タイムラインは_model_と_effort_の替わり目で区切り_model_ごとの色の_class_を付ける() {
     let s = sample().await;
     let body = html(&s.app, "/graph/timeline").await;
     let svg = svg(&body);
@@ -879,7 +880,7 @@ async fn 時間の帯は_model_と_effort_の替わり目で区切り_model_ご�
 }
 
 #[tokio::test]
-async fn 時間の帯の区切りは_送り手の時刻でなく_受けた順() {
+async fn タイムラインの区切りは_送り手の時刻でなく_受けた順() {
     let s = sample().await;
     let x = s
         .app
@@ -915,7 +916,7 @@ async fn 時間の帯の区切りは_送り手の時刻でなく_受けた順() 
 }
 
 #[tokio::test]
-async fn 時間の帯の凡例は_model_と線と出来事の印を出す() {
+async fn タイムラインの凡例は_model_と線と出来事の印を出す() {
     let s = sample().await;
     let body = html(&s.app, "/graph/timeline").await;
     let legend = section(&body, "legend");
@@ -938,7 +939,7 @@ async fn 時間の帯の凡例は_model_と線と出来事の印を出す() {
 }
 
 #[tokio::test]
-async fn 時間の帯は_起こした線と継いだ線の矢印と_出来事の印と_居る者の開いた端を描く() {
+async fn タイムラインは_起こした線と継いだ線の矢印と_出来事の印と_居る者の開いた端を描く() {
     let s = sample().await;
     let body = html(&s.app, "/graph/timeline").await;
     let svg = svg(&body);
@@ -966,7 +967,7 @@ async fn 時間の帯は_起こした線と継いだ線の矢印と_出来事の
 }
 
 #[tokio::test]
-async fn 時間の帯の絞りは_相関図の_api_と同じ引数で狭める() {
+async fn タイムラインの絞りは_図の_api_と同じ引数で狭める() {
     let s = sample().await;
     let cases: Vec<(String, Vec<&str>)> = vec![
         (
@@ -994,15 +995,15 @@ async fn 時間の帯の絞りは_相関図の_api_と同じ引数で狭める()
 }
 
 #[tokio::test]
-async fn 時間の帯に当たる者が無ければ_そう書き_svg_を出さない() {
+async fn タイムラインに当たる者が無ければ_そう書き_svg_を出さない() {
     let s = sample().await;
     let body = html(&s.app, &format!("/graph/timeline?from={}", s.end)).await;
     assert!(!body.contains("<svg"), "{body}");
-    assert!(body.contains("当たるアクターはいない"), "{body}");
+    assert!(body.contains("条件に合うアクターはいません"), "{body}");
 }
 
 #[tokio::test]
-async fn 時間の帯の引数の誤りは_引数の名を書いた_400_の画面() {
+async fn タイムラインの引数の誤りは_引数の名を書いた_400_の画面() {
     let s = sample().await;
     for (uri, name) in [
         ("/graph/timeline?colour=red", "colour"),
@@ -1019,7 +1020,7 @@ async fn 時間の帯の引数の誤りは_引数の名を書いた_400_の画�
 }
 
 #[tokio::test]
-async fn 時間の帯も利用者の字を_html_で逃がす() {
+async fn タイムラインも利用者の字を_html_で逃がす() {
     let s = sample().await;
     let x = s
         .app
@@ -1050,12 +1051,12 @@ async fn 時間の帯も利用者の字を_html_で逃がす() {
     );
 }
 
-// --- 関係の網（相関図 C） ---
+// --- 相関図（図 C） ---
 
 /// 取り込んだ cytoscape の path（static/vendor/SOURCES.md の file と同じ）。
 const CYTOSCAPE: &str = "/static/vendor/cytoscape-3.35.0.min.js";
 
-/// 関係の網の画面: 200 の HTML で CSP が付き、script は castlist が配る 2 つの file だけ（中身の無い `<script src>`）で、
+/// 相関図の画面: 200 の HTML で CSP が付き、script は castlist が配る 2 つの file だけ（中身の無い `<script src>`）で、
 /// inline の script と style が無く、castlist の CSS を読むことを見る。
 async fn network_html(app: &App, uri: &str) -> String {
     let (status, headers, body) = page(app, uri).await;
@@ -1084,7 +1085,7 @@ async fn network_html(app: &App, uri: &str) -> String {
     body
 }
 
-/// 関係の網が絵を描く場所（`id="network"` の要素）の、data を引く URL（`data-src`。HTML の逃がしを戻す）。
+/// 相関図が絵を描く場所（`id="network"` の要素）の、data を引く URL（`data-src`。HTML の逃がしを戻す）。
 fn data_src(body: &str) -> String {
     let at = body
         .find("id=\"network\"")
@@ -1098,7 +1099,7 @@ fn data_src(body: &str) -> String {
 }
 
 #[tokio::test]
-async fn 一覧と系図と時間の帯から関係の網へ行け_関係の網から三つへ戻れる() {
+async fn 一覧と系図とタイムラインから相関図へ行け_相関図から三つへ戻れる() {
     let s = sample().await;
     for uri in ["/", "/graph/tree", "/graph/timeline"] {
         let body = html(&s.app, uri).await;
@@ -1115,7 +1116,7 @@ async fn 一覧と系図と時間の帯から関係の網へ行け_関係の網�
 }
 
 #[tokio::test]
-async fn 関係の網は_castlist_が配る_script_だけを読み_inline_の_script_と_style_が無い() {
+async fn 相関図は_castlist_が配る_script_だけを読み_inline_の_script_と_style_が無い() {
     let s = sample().await;
     let body = network_html(&s.app, "/graph/network").await;
     // 凡例（model の色・人の形・線の形）と、model と effort の絞り。
@@ -1130,7 +1131,7 @@ async fn 関係の網は_castlist_が配る_script_だけを読み_inline_の_sc
 }
 
 #[tokio::test]
-async fn 関係の網は_script_を切った_browser_に系図と時間の帯を勧める() {
+async fn 相関図は_script_を切った_browser_に系図とタイムラインを勧める() {
     let s = sample().await;
     let body = network_html(&s.app, "/graph/network?label=tpm.key:t-23zs").await;
     let noscript = body
@@ -1138,7 +1139,7 @@ async fn 関係の網は_script_を切った_browser_に系図と時間の帯を
         .and_then(|(_, rest)| rest.split_once("</noscript>"))
         .map(|(inner, _)| inner)
         .unwrap_or_else(|| panic!("noscript が無い\n{body}"));
-    // 同じ絞りのまま、系図と時間の帯へ。
+    // 同じ絞りのまま、系図とタイムラインへ。
     for want in [
         "href=\"/graph/tree?label=tpm.key:t-23zs\"",
         "href=\"/graph/timeline?label=tpm.key:t-23zs\"",
@@ -1149,7 +1150,7 @@ async fn 関係の網は_script_を切った_browser_に系図と時間の帯を
 }
 
 #[tokio::test]
-async fn 関係の網は_絞りを相関図の_api_へそのまま渡す() {
+async fn 相関図は_絞りを図の_api_へそのまま渡す() {
     let s = sample().await;
     let cases = [
         ("/graph/network".to_owned(), "/v1/graph".to_owned()),
@@ -1179,7 +1180,7 @@ async fn 関係の網は_絞りを相関図の_api_へそのまま渡す() {
 }
 
 #[tokio::test]
-async fn 関係の網の引数の誤りは_引数の名を書いた_400_の画面() {
+async fn 相関図の引数の誤りは_引数の名を書いた_400_の画面() {
     let s = sample().await;
     for (uri, name) in [
         ("/graph/network?colour=red", "colour"),
@@ -1196,7 +1197,7 @@ async fn 関係の網の引数の誤りは_引数の名を書いた_400_の画�
 }
 
 #[tokio::test]
-async fn 関係の網も利用者の字を_html_で逃がす() {
+async fn 相関図も利用者の字を_html_で逃がす() {
     let s = sample().await;
     let uri = "/graph/network?label=tpm.key:%3Cscript%3Ealert(1)%3C/script%3E";
     // 生の字は無く（network_html() が <script を見る）、逃がしを戻すと、form の欄に元の字がある。
@@ -1236,7 +1237,7 @@ async fn script(app: &App, uri: &str) -> Vec<u8> {
 }
 
 #[tokio::test]
-async fn 関係の網の_script_は_castlist_が_application_javascript_で配る() {
+async fn 相関図の_script_は_castlist_が_application_javascript_で配る() {
     let s = sample().await;
     let body = network_html(&s.app, "/graph/network").await;
     let ours = body
@@ -1245,7 +1246,7 @@ async fn 関係の網の_script_は_castlist_が_application_javascript_で配�
         .map(|(query, _)| format!("/static/network.js{query}"))
         .expect("network.js");
     let js = String::from_utf8(script(&s.app, &ours).await).expect("UTF-8");
-    // data は画面の data-src（相関図の API）から引き、押した点はプロフィールへ。
+    // data は画面の data-src（図の API）から引き、押した点はプロフィールへ。
     for want in ["dataset.src", "/actors/", "cytoscape("] {
         assert!(js.contains(want), "network.js に {want} が無い");
     }
@@ -1290,7 +1291,7 @@ async fn どの画面も_鍵と値の組を_ラベルと呼び_札とは書か�
     ] {
         pages.push((path.clone(), html(&s.app, &path).await));
     }
-    // 関係の網は castlist が配る script を読むので、それを許す道で読む。
+    // 相関図は castlist が配る script を読むので、それを許す道で読む。
     pages.push((
         "/graph/network".to_owned(),
         network_html(&s.app, "/graph/network").await,
@@ -1298,5 +1299,240 @@ async fn どの画面も_鍵と値の組を_ラベルと呼び_札とは書か�
     for (path, body) in pages {
         assert!(body.contains("ラベル"), "{path} に「ラベル」が無い\n{body}");
         assert!(!body.contains('札'), "{path} に「札」がある\n{body}");
+    }
+}
+
+// --- 画面の字（Product Manager の答えた字の一覧: 状態は「稼働中・停止」、図は系図・タイムライン・相関図、説明は「です・ます」） ---
+
+/// どの画面にも出る、下の字。
+const FOOTER: &str = "時刻は日本時間（UTC+9）で、castlist が受け取った時刻です。時刻にマウスを重ねると ISO 8601 の形で表示します。";
+
+/// 前の字。どの画面にも出さない（出来事の名と、利用者の字は当たらない形にしてある）。
+const OLD: &[&str] = &[
+    "居るか",
+    "居た",
+    ">いる<",
+    ">いない<",
+    "時間の帯",
+    "関係の網",
+    "時計のずれた行",
+    "絞る",
+    "絞りを緩める",
+    "どれも",
+    "当たるアクター",
+    "答えた時",
+    "受けた時",
+    "日本の時刻",
+    "起こした",
+    "（継がせた者）",
+    "（継いだ者）",
+    "頼んだ",
+    "見た行",
+    "名を押す",
+    "頁",
+    "出し手",
+    "今の様子",
+    "付随する id",
+    "前と後",
+    "訳（reason）",
+    "元（source）",
+    "外す",
+    "の窓",
+];
+
+fn assert_words(path: &str, body: &str, want: &[&str]) {
+    for w in want.iter().chain([&FOOTER]) {
+        assert!(body.contains(w), "{path} に「{w}」が無い\n{body}");
+    }
+    for old in OLD {
+        assert!(
+            !body.contains(old),
+            "{path} に前の字「{old}」がある\n{body}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn 一覧は_状態を稼働中と停止で書き_絞り込みの欄と説明を決めた字で書く() {
+    let s = sample().await;
+    let body = html(&s.app, "/").await;
+    assert_words(
+        "/",
+        &body,
+        &[
+            "<a href=\"/graph/tree\">系図</a> ・ <a href=\"/graph/timeline\">タイムライン</a> ・ <a href=\"/graph/network\">相関図</a>",
+            "<legend>絞り込み（すべての条件に合うアクターを表示します。空の欄は使いません）</legend>",
+            "状態 <select name=\"active\">",
+            "<option value=\"\">すべて</option>",
+            ">稼働中</option>",
+            ">停止</option>",
+            "稼働した期間（から）",
+            "（まで）",
+            "時刻ずれあり",
+            ">絞り込む</button>",
+            ">条件を消す</a>",
+            "条件が無いので、この 7 日に稼働したアクター（登場の記録があるアクター）を新しい順に表示しています。登場の記録が無いアクターは、ラベルなどで絞り込むと表示されます。",
+            "<th>名前</th><th>種類</th><th>状態</th><th>課題の Key・役割</th><th>model · effort</th><th>最初の登場</th><th>最後の退場</th>",
+            ">稼働中</span>",
+            ">停止</span>",
+            ">時刻ずれ</span>",
+            "表示した時刻:",
+        ],
+    );
+    let body = html(&s.app, &format!("/?label=tpm.key:{KEY}&limit=1")).await;
+    assert!(body.contains(">次のページ</a>"), "{body}");
+    let body = html(&s.app, "/?label=tpm.key:t-none").await;
+    assert!(body.contains("条件に合うアクターはいません。"), "{body}");
+    for old in OLD {
+        assert!(!body.contains(old), "前の字「{old}」がある\n{body}");
+    }
+}
+
+#[tokio::test]
+async fn プロフィールは_欄と節を決めた字で書く() {
+    let s = sample().await;
+    let path = format!("/actors/{}", s.id("se.1"));
+    let body = html(&s.app, &path).await;
+    assert_words(
+        &path,
+        &body,
+        &[
+            "<dt>発行元（issuer）</dt>",
+            "<dt>登録した時刻</dt>",
+            "<h2>今の状態</h2>",
+            "<dt>状態</dt>",
+            ">停止</span>",
+            "<dt>最初の登場</dt>",
+            "<h2>外部の id</h2>",
+            "<th>受け取った時刻</th>",
+            "<h2>起動した人</h2>",
+            "<h2>起動したアクター</h2>",
+            "<h2>引き継ぎ</h2>",
+            "<dt>引き継ぎ元</dt>",
+            "<dt>引き継ぎ先</dt>",
+            "<th>指定・実際</th>",
+            ">指定</td>",
+            ">実際</td>",
+            ">食い違い</span>",
+            "食い違い: 実際の値のうち、その前に最後に指定した値と model か effort が違う物です。",
+            "<th>理由（reason）</th>",
+            "<th>きっかけ（source）</th>",
+            "<th>送り手の時刻</th>",
+            "起動した",
+        ],
+    );
+    // se.2 は送り手の時計がずれている。印は「時刻ずれ」。
+    let path = format!("/actors/{}", s.id("se.2"));
+    let body = html(&s.app, &path).await;
+    assert_words(
+        &path,
+        &body,
+        &[">時刻ずれ</span>", ">稼働中</span>", "引き継がせた"],
+    );
+    // 人の根は、起動した人がいない。設定の記録も無い。
+    let path = format!("/actors/{}", s.id("pm.1"));
+    let body = html(&s.app, &path).await;
+    assert_words(&path, &body, &["ありません（起点）。", "ありません。"]);
+}
+
+#[tokio::test]
+async fn 系図は_見出しと行き来と絞り込みと凡例を決めた字で書く() {
+    let s = sample().await;
+    let body = html(&s.app, "/graph/tree").await;
+    assert_words(
+        "/graph/tree",
+        &body,
+        &[
+            "<title>系図 ・ castlist</title>",
+            "<a href=\"/\">一覧へ</a> ・ <a href=\"/graph/timeline\">タイムラインへ</a> ・ <a href=\"/graph/network\">相関図へ</a>",
+            "<legend>絞り込み（条件に合うアクターと、その 1 本先の線の相手を表示します。空の欄は使いません）</legend>",
+            "登録した期間（から）",
+            "（まで）",
+            ">絞り込む</button>",
+            ">条件を消す</a>",
+            ">稼働中</tspan>",
+            ">停止</tspan>",
+            "実線: 起動した（上が起動したアクター）",
+            "点線: 引き継いだ（/clear の交代・fork の分身。引き継ぎ元の右に置きます）",
+            "名前を押すとプロフィールを表示します。5 のアクター。",
+            "表示した時刻:",
+        ],
+    );
+    let body = html(&s.app, &format!("/graph/tree?from={}", s.end)).await;
+    assert_words(
+        "/graph/tree（空）",
+        &body,
+        &["条件に合うアクターはいません。条件を減らすか、"],
+    );
+}
+
+#[tokio::test]
+async fn タイムラインは_見出しと行き来と説明と凡例を決めた字で書く() {
+    let s = sample().await;
+    let body = html(&s.app, "/graph/timeline").await;
+    assert_words(
+        "/graph/timeline",
+        &body,
+        &[
+            "<title>タイムライン ・ castlist</title>",
+            "<h1>タイムライン <span class=\"kind\"><a href=\"/\">一覧へ</a> ・ <a href=\"/graph/tree\">系図へ</a> ・ <a href=\"/graph/network\">相関図へ</a>",
+            "<legend>絞り込み（系図と同じ条件です。期間を付けると、横の時刻もその期間にします）</legend>",
+            "登録した期間（から）",
+            "横は castlist が受け取った時刻（日本時間）です。行は 1 つのアクターで、人を上に、ほかは最初の登場の順に並べます。帯は稼働していた期間で、model と effort が替わった所で区切ります。帯にマウスを重ねると、値と時刻を表示します。名前を押すとプロフィールを表示します。",
+            "右端が尖った帯: まだ稼働中（か、表示する期間の外へ続く）",
+            "実線: 起動した（起動した時刻から、起動されたアクターの帯の始まりへ）",
+            "点線: 引き継いだ（引き継ぎ元の帯の終わりから、引き継ぎ先の帯の始まりへ）",
+            "<title>今（表示した時刻）</title>",
+            "aria-label=\"タイムライン\"",
+            "（指定）",
+            "（実際・指定と違う）",
+        ],
+    );
+    let body = html(&s.app, &format!("/graph/timeline?from={}", s.end)).await;
+    assert_words(
+        "/graph/timeline（空）",
+        &body,
+        &["条件に合うアクターはいません。条件を減らすか、"],
+    );
+}
+
+#[tokio::test]
+async fn 相関図は_見出しと行き来と説明と凡例と_script_を切った時の字を決めた字で書く() {
+    let s = sample().await;
+    let body = network_html(&s.app, "/graph/network").await;
+    assert_words(
+        "/graph/network",
+        &body,
+        &[
+            "<title>相関図 ・ castlist</title>",
+            "<h1>相関図 <span class=\"kind\"><a href=\"/\">一覧へ</a> ・ <a href=\"/graph/tree\">系図へ</a> ・ <a href=\"/graph/timeline\">タイムラインへ</a>",
+            "<legend>表示する点を選ぶ（このページの中だけで、合わない点とその線を隠します）</legend>",
+            "<option value=\"\">すべて</option>",
+            "点は 1 つのアクターで、名前を下に書きます。色は最新の model、形は種類です。薄い点は停止したアクターです。点を押すとプロフィールを、名前にマウスを重ねると model · effort と状態を表示します。点はドラッグで動かせます（元の並びに戻すには、ページを読み直します）。",
+            "角のある形: 人",
+            "実線の矢印: 起動した",
+            "点線の矢印: 引き継いだ（/clear の交代・fork の分身）",
+            "この画面は JavaScript で描きます。JavaScript を切っている時は、同じ条件の",
+            "タイムライン</a>をお使いください（どちらも JavaScript を使いません）。",
+            "aria-label=\"相関図\"",
+        ],
+    );
+    let ours = body
+        .split_once("<script src=\"/static/network.js")
+        .and_then(|(_, rest)| rest.split_once('"'))
+        .map(|(query, _)| format!("/static/network.js{query}"))
+        .expect("network.js");
+    let js = String::from_utf8(script(&s.app, &ours).await).expect("UTF-8");
+    for want in ["'稼働中'", "'停止'", "条件に合うアクターはいません"] {
+        assert!(js.contains(want), "network.js に {want} が無い");
+    }
+    for old in [
+        "'いる'",
+        "'いない'",
+        "当たるアクター",
+        "関係の網",
+        "時間の帯",
+    ] {
+        assert!(!js.contains(old), "network.js に前の字 {old} がある");
     }
 }

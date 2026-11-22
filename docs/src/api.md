@@ -63,7 +63,7 @@
 
 ## `PUT /v1/links/{id}` 線
 
-誰が誰を起こしたか（`launched`）・誰の後を継いだか（`continued`）。
+誰が誰を起動したか（`launched`）・誰から引き継いだか（`continued`）。
 
 ```json
 { "issuer": "tpm", "type": "launched", "from": "tpm.person:pm", "to": "claude.session:5f0c2a8e-…", "at": "2026-11-22T13:00:00+09:00" }
@@ -73,7 +73,7 @@
 { "id": "l-1", "type": "launched", "from": "019a…（PM）", "to": "019a…（se.1）", "at": "…", "received_at": "…", "clock_skew": false }
 ```
 
-- 201・200・409・422 は出来事と同じ。ほかに、1 つのアクターが `launched` で起こされるのは 1 度だけで、2 度目は 409。`from` と `to` が同じアクターなら 422。
+- 201・200・409・422 は出来事と同じ。ほかに、1 つのアクターが `launched` で起動されるのは 1 度だけで、2 度目は 409。`from` と `to` が同じアクターなら 422。
 
 ## `PUT /v1/settings/{id}` model と effort
 
@@ -85,7 +85,7 @@
 { "id": "t-1", "actor_id": "019a…", "model": "claude-opus-5-5", "effort": "high", "source": "observed", "at": "…", "received_at": "…", "clock_skew": false }
 ```
 
-- `source` は `requested`（頼んだ）か `observed`（見た）。
+- `source` は `requested`（指定）か `observed`（実際）。
 - 知らない model・effort の名も断らず、初めて来た時に一覧に足す。断るのは、形の違う名（空・65 字以上・英小文字と数字と `-` `.` の外の字）だけ（422）。
 - 201: 新しく足した。200: 同じ id で同じ本文が既にある、またはそのアクターの最新と同じ model と effort（行を足さず、最新の物を返す）。409: 同じ id で本文が違う。
 
@@ -121,7 +121,7 @@
 }
 ```
 
-`state.present` は、居る・居ないを替える出来事の最新（seq で）が `entered`・`reentered`・`forked` なら `true`、`cleared`・`exited`・`closed` なら `false`（まだ無ければ `false`・`presence` は `null`）。無いアクターは 404。
+`state.present` は、状態（稼働中・停止）を替える出来事の最新（seq で）が `entered`・`reentered`・`forked` なら `true`、`cleared`・`exited`・`closed` なら `false`（まだ無ければ `false`・`presence` は `null`）。無いアクターは 404。
 
 ## 監査の検索
 
@@ -134,9 +134,9 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 - 窓の両端は含む（`from ≤ received_at ≤ to`）。前の答えの `as_of` を `from` に渡せば、その後に来た物を取りこぼさない（同じミリ秒の物は、前の答えと重なりうる）。
 - 答えの行には、`at`・`received_at`・`clock_skew` を、どれも付ける。
 
-### 頁
+### ページ
 
-- `limit` は 1 頁の数（既定 100・1000 まで）。
+- `limit` は 1 ページの数（既定 100・1000 まで）。
 - 答えの `next` を、次の要求の `after` にそのまま渡す（中は読まない）。終わりでは `next` が `null`。
 - 並べる値と `seq` の続きから読む（keyset）ので、辿る間に行が足されても、元からあった行に穴も重なりも出ない（足された行は、並べ方によって後ろに出るか、もう過ぎた所に入って出ない）。
 - 別の検索の `next`、`sort`・`order` を替えた時の `next` は 400。
@@ -162,9 +162,9 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 }
 ```
 
-- `first_entered_at`: 初めの登場（`entered`・`reentered`・`forked` のどれか）の受けた時刻。`state.entered_at`（`entered` だけ）とは違う。
+- `first_entered_at`: 最初の登場（`entered`・`reentered`・`forked` のどれか）の受けた時刻。`state.entered_at`（`entered` だけ）とは違う。
 - `last_exited_at`・`last_exit_type`: 最後の退場（`cleared`・`exited`・`closed`）の受けた時刻と種類。
-- `present`: 今居るか（`GET /v1/actors/{id}` の `state.present` と同じ決め方）。
+- `present`: 今稼働中か（`GET /v1/actors/{id}` の `state.present` と同じ決め方）。
 - `model`・`effort`: 最新（seq で）の名。
 - `url`: アクターのプロフィールの画面の path（[画面](ui.md)）。
 
@@ -177,15 +177,15 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 | `label=鍵:値` | そのラベルを持つ。何度でも付けられ、どれも持つ者だけ |
 | `binding=種類:値` | その付随する id を、`at` の時（無ければ今）に最後に受けたアクター（1 つまで）。workspace のように使い回される物を、時刻で引き分ける |
 | `at` | `binding` の時刻。`binding` 無しでは 400 |
-| `active_from`・`active_to` | 居た間が窓に掛かる。居た間は、初めの登場から最後の退場まで。最新の居る・居ないの出来事が退場でなければ、今まで居る。登場の無いアクターは入らない |
+| `active_from`・`active_to` | 稼働した期間が窓に掛かる。稼働した期間は、最初の登場から最後の退場まで。最新の稼働・停止の出来事が退場でなければ、今まで稼働中。登場の無いアクターは入らない |
 | `kind` | `ai` か `human` |
 | `model`・`effort` | その名の settings の行を、1 つでも持つ（今の物でなくてよい） |
-| `active` | `true` で今居る者、`false` で今居ない者 |
-| `launched_by=<アクターの id>` | その者が起こした（`launched`） |
+| `active` | `true` で今稼働中のアクター、`false` で今停止しているアクター |
+| `launched_by=<アクターの id>` | そのアクターが起動した（`launched`） |
 | `skewed=true` | 送り手の時計がずれた行（アクター・出来事・model と effort のどれか）を持つ |
-| `sort` | `entered`（初めの登場・既定）か `exited`（最後の退場）。まだ無い者は、昇順で先・降順で後 |
+| `sort` | `entered`（最初の登場・既定）か `exited`（最後の退場）。まだ無い者は、昇順で先・降順で後 |
 | `order` | `asc`（既定）か `desc` |
-| `limit`・`after` | 頁 |
+| `limit`・`after` | ページ |
 
 索引で引ける条件（`label`・`binding`・`active_from`・`active_to`・`active=true`・`model`・`effort`・`launched_by`・`skewed` のどれか）を 1 つ以上付ける。無ければ 400（アクターの表を端から読むことになるので）。
 
@@ -195,22 +195,22 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 
 Auditor の使い方:
 
-- t-23zs の席のアクター（/clear で継いだ者も。継いだ者も同じラベルで登録される）: `?label=tpm.key:t-23zs`
-- t-23zs の席のアクターで、11:00〜12:00 に居た者: `?label=tpm.key:t-23zs&active_from=2026-11-22T11:00:00%2B09:00&active_to=2026-11-22T12:00:00%2B09:00`（`+` は `%2B` に）
-- t-23zs の software-engineer で、その時間に居た者: 上に `&label=tpm.role:software-engineer` を足す
-- workspace:3 に、11:30 に居たのは誰か: `?binding=cmux.workspace.ref:workspace:3&at=2026-11-22T11:30:00%2B09:00`
-- tpm.1 が起こした者: `?launched_by=<tpm.1 の id>`
+- t-23zs の席のアクター（/clear で引き継いだアクターも。引き継いだアクターも同じラベルで登録される）: `?label=tpm.key:t-23zs`
+- t-23zs の席のアクターで、11:00〜12:00 に稼働したアクター: `?label=tpm.key:t-23zs&active_from=2026-11-22T11:00:00%2B09:00&active_to=2026-11-22T12:00:00%2B09:00`（`+` は `%2B` に）
+- t-23zs の software-engineer で、その時間に稼働したアクター: 上に `&label=tpm.role:software-engineer` を足す
+- workspace:3 を、11:30 に使っていたのは誰か: `?binding=cmux.workspace.ref:workspace:3&at=2026-11-22T11:30:00%2B09:00`
+- tpm.1 が起動したアクター: `?launched_by=<tpm.1 の id>`
 - sonnet で動いたことのある者・effort max を使ったことのある者: `?model=claude-sonnet-5`・`?effort=max`
 - 退かないまま残っている者: `?label=tpm.key:t-23zs&active=true`
 - 退き方（`last_exit_type`）を、最後に退いた順に: `?label=tpm.key:t-23zs&sort=exited&order=desc`
 - 送り手の時計がずれた行を持つ者: `?label=tpm.key:t-23zs&skewed=true`
 - 前の答えの後に動いた者: `?label=tpm.key:t-23zs&active_from=<前の答えの as_of>`
 
-### `GET /v1/actors/{id}/lineage` 誰が起こしたか・誰を起こしたか
+### `GET /v1/actors/{id}/lineage` 誰が起動したか・誰を起動したか
 
 | 引数 | 中身 |
 |---|---|
-| `direction` | `up`（起こした側へ）・`down`（起こされた側へ）・`both`（既定） |
+| `direction` | `up`（起動した側へ）・`down`（起動された側へ）・`both`（既定） |
 | `depth` | 辿る段（1〜20）。無ければ、上は根まで（20 段まで）・下は 1 段 |
 | `type` | `launched` か `continued` だけを辿る（無ければ両方） |
 
@@ -224,8 +224,8 @@ Auditor の使い方:
 }
 ```
 
-- se.3 を起こしたのは誰か（/clear の継ぎを越えて、人の PM まで）: `/v1/actors/<se.3 の id>/lineage?direction=up`
-- tpm.1 が起こした者と、その先の継ぎ: `/v1/actors/<tpm.1 の id>/lineage?direction=down&depth=2`
+- se.3 を起動したのは誰か（/clear の引き継ぎを越えて、人の PM まで）: `/v1/actors/<se.3 の id>/lineage?direction=up`
+- tpm.1 が起動したアクターと、その先の引き継ぎ: `/v1/actors/<tpm.1 の id>/lineage?direction=down&depth=2`
 - 無いアクターは 404。
 
 ### `GET /v1/actors/{id}/settings` X の時刻 T の model と effort
@@ -254,16 +254,16 @@ Auditor の使い方:
 | `model`・`effort` | その名の行 |
 | `source` | `requested` か `observed` |
 | `from`・`to` | 受けた時刻の窓 |
-| `mismatch=true` | 見た行（`observed`）のうち、同じアクターのその前の最新の頼んだ行（`requested`）と、model か effort が違う物。頼んだ行がまだ無ければ入らない |
+| `mismatch=true` | 実際の行（`observed`）のうち、同じアクターのその前に最後に指定した行（`requested`）と、model か effort が違う物。指定した行がまだ無ければ入らない |
 | `skewed=true` | 送り手の時計がずれた行 |
-| `limit`・`after` | 頁（受けた順） |
+| `limit`・`after` | ページ（受けた順） |
 
 ```json
 { "as_of": "…", "settings": [{ "id": "t-1", "actor_id": "019a…", "actor_name": "se.2", "model": "claude-sonnet-5", "…": "…" }], "next": null }
 ```
 
-- 頼んだ物と違う model・effort で動いていた所: `?mismatch=true`
-- 11:00 から後に見た model: `?source=observed&from=2026-11-22T11:00:00%2B09:00`
+- 指定と違う model・effort で動いていた所: `?mismatch=true`
+- 11:00 から後に実際に動いた model: `?source=observed&from=2026-11-22T11:00:00%2B09:00`
 
 ### `GET /v1/events` 出来事を、アクターをまたいで
 
@@ -274,7 +274,7 @@ Auditor の使い方:
 | `from`・`to` | 受けた時刻の窓 |
 | `reason`・`source` | `detail` の決まった欄（`detail.reason`・`detail.source`）が、その値。ほかの欄では探せない（全文の検索はしない） |
 | `skewed=true` | 送り手の時計がずれた行 |
-| `limit`・`after` | 頁（受けた順） |
+| `limit`・`after` | ページ（受けた順） |
 
 ```json
 { "as_of": "…", "events": [{ "id": "e-1", "actor_id": "019a…", "actor_name": "devops.1", "type": "model_unreadable", "detail": { "reason": "timeout" }, "at": "…", "received_at": "…", "clock_skew": false }], "next": null }
@@ -285,7 +285,10 @@ Auditor の使い方:
 - /clear で入った者の登場: `?type=entered&source=clear`
 - 前の答えの後に起きた物: `?from=<前の答えの as_of>`
 
-## `GET /v1/graph` 相関図
+## `GET /v1/graph` 図の点と線
+
+画面の 3 つの図（系図・タイムライン・相関図。[画面](ui.md)）が使う、アクターの点と線。
+
 
 `?label=鍵:値&from=時刻&to=時刻`（どれも無くてよい。どれも 1 つだけ）。ラベルと、登録の受けた時刻の窓で、アクターを絞る。知らない引数・読めない時刻・形の違う `label` は 400（訳に引数の名）。絞った組に触れる線と、その線の向こうの端のアクター（一歩だけ）も含める（人の根が切れないように）。
 

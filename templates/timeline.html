@@ -1,44 +1,44 @@
 {% extends "base.html" %}
 {% import "macros.html" as m %}
-{% block title %}時間の帯{% endblock %}
+{% block title %}タイムライン{% endblock %}
 {% block main %}
-<h1>時間の帯 <span class="kind"><a href="/">一覧へ</a> ・ <a href="/graph/tree">系図へ</a> ・ <a href="/graph/network">関係の網へ</a></span></h1>
+<h1>タイムライン <span class="kind"><a href="/">一覧へ</a> ・ <a href="/graph/tree">系図へ</a> ・ <a href="/graph/network">相関図へ</a></span></h1>
 <form class="filters" method="get" action="/graph/timeline">
 <fieldset>
-<legend>絞る（系図と同じ。空の欄は付けないのと同じ。窓を付ければ、横の時刻もその窓にする）</legend>
+<legend>絞り込み（系図と同じ条件です。期間を付けると、横の時刻もその期間にします）</legend>
 <div class="fields">
 <label>ラベル <input name="label" value="{{ form.label }}" placeholder="tpm.key:t-23zs"></label>
-<label>登録の窓の初め <input name="from" value="{{ form.from }}" placeholder="2026-11-22T11:00:00+09:00"></label>
-<label>終わり <input name="to" value="{{ form.to }}" placeholder="2026-11-22T12:00:00+09:00"></label>
+<label>登録した期間（から） <input name="from" value="{{ form.from }}" placeholder="2026-11-22T11:00:00+09:00"></label>
+<label>（まで） <input name="to" value="{{ form.to }}" placeholder="2026-11-22T12:00:00+09:00"></label>
 </div>
-<div class="actions"><button type="submit">絞る</button> <a href="/graph/timeline">外す</a></div>
+<div class="actions"><button type="submit">絞り込む</button> <a href="/graph/timeline">条件を消す</a></div>
 </fieldset>
 </form>
 {% if let Some(svg) = svg %}
 <section id="legend" class="legend">
-<p>横は castlist が受けた時刻（日本の時刻）。行は 1 つのアクター（人を上に、ほかは初めの登場の順）。帯は居た間で、model と effort が替わった所で切る。帯に指を置くと、値と時刻が出る。名を押すとプロフィールへ。{{ count }} のアクター。</p>
+<p>横は castlist が受け取った時刻（日本時間）です。行は 1 つのアクターで、人を上に、ほかは最初の登場の順に並べます。帯は稼働していた期間で、model と effort が替わった所で区切ります。帯にマウスを重ねると、値と時刻を表示します。名前を押すとプロフィールを表示します。{{ count }} のアクター。</p>
 <ul class="keys">
 {% for (model, class) in legend %}<li><span class="swatch {{ class }}"></span>{{ model }}</li>
 {% endfor %}<li><span class="swatch m-none"></span>記録なし</li>
-<li><span class="key launched"></span>実線: 起こした（起こした時刻から、起こされた者の帯の初めへ）</li>
-<li><span class="key continued"></span>点線: 継いだ（前の帯の終わりから、後の帯の初めへ）</li>
+<li><span class="key launched"></span>実線: 起動した（起動した時刻から、起動されたアクターの帯の始まりへ）</li>
+<li><span class="key continued"></span>点線: 引き継いだ（引き継ぎ元の帯の終わりから、引き継ぎ先の帯の始まりへ）</li>
 <li><span class="tick-key compacted"></span>要約</li>
 <li><span class="tick-key reported_in"></span>名乗り</li>
 <li><span class="tick-key model_unreadable"></span>model 不明</li>
-<li><span class="open-key"></span>右の端が尖る: まだ居る（か、窓の外へ続く）</li>
+<li><span class="open-key"></span>右端が尖った帯: まだ稼働中（か、表示する期間の外へ続く）</li>
 </ul>
 </section>
 <div class="scroll tree-wrap">
-<svg class="timeline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {{ svg.width }} {{ svg.height }}" width="{{ svg.width }}" height="{{ svg.height }}" role="img" aria-label="時間の帯">
+<svg class="timeline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {{ svg.width }} {{ svg.height }}" width="{{ svg.width }}" height="{{ svg.height }}" role="img" aria-label="タイムライン">
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path class="arrow" d="M0,0L10,5L0,10z"/></marker></defs>
-<g class="axis">{% for t in svg.ticks %}<line class="grid" x1="{{ t.x }}" y1="{{ svg.grid_y0 }}" x2="{{ t.x }}" y2="{{ svg.grid_y1 }}"/><text class="tick" x="{{ t.x }}" y="{{ svg.tick_y }}" text-anchor="middle">{{ t.label }}</text>{% endfor %}{% if let Some(x) = svg.now %}<line class="now" x1="{{ x }}" y1="{{ svg.grid_y0 }}" x2="{{ x }}" y2="{{ svg.grid_y1 }}"><title>今（答えた時）</title></line>{% endif %}</g>
+<g class="axis">{% for t in svg.ticks %}<line class="grid" x1="{{ t.x }}" y1="{{ svg.grid_y0 }}" x2="{{ t.x }}" y2="{{ svg.grid_y1 }}"/><text class="tick" x="{{ t.x }}" y="{{ svg.tick_y }}" text-anchor="middle">{{ t.label }}</text>{% endfor %}{% if let Some(x) = svg.now %}<line class="now" x1="{{ x }}" y1="{{ svg.grid_y0 }}" x2="{{ x }}" y2="{{ svg.grid_y1 }}"><title>今（表示した時刻）</title></line>{% endif %}</g>
 <g class="rows">{% for l in svg.lanes %}{% if loop.index0 % 2 == 1 %}<rect class="row-bg" x="0" y="{{ l.y }}" width="{{ svg.width }}" height="{{ svg.row_h }}"/>{% endif %}{% endfor %}</g>
 {% for a in svg.arrows %}<path class="{{ a.class }}" d="{{ a.d }}" marker-end="url(#arrow)"/>
 {% endfor %}{% for l in svg.lanes %}<g class="lane {% if l.human %}human{% else %}ai{% endif %}"><a href="{{ l.href }}"><text class="name" x="16" y="{{ l.text_y }}">{{ l.name }}</text></a><text class="sub" x="{{ l.kind_x }}" y="{{ l.text_y }}">{{ l.kind }}</text>{% for s in l.segs %}<rect class="{{ s.class }}" x="{{ s.x }}" y="{{ s.y }}" width="{{ s.w }}" height="{{ s.h }}"><title>{{ s.title }}</title></rect>{% if let Some(d) = s.open_end %}<path class="open-end" d="{{ d }}"/>{% endif %}{% if let Some(d) = s.open_start %}<path class="open-start" d="{{ d }}"/>{% endif %}{% endfor %}{% for k in l.marks %}<line class="mark {{ k.kind }}" x1="{{ k.x }}" y1="{{ k.y0 }}" x2="{{ k.x }}" y2="{{ k.y1 }}"><title>{{ k.title }}</title></line>{% endfor %}{% for s in l.segs %}{% if let Some((x, y, text)) = s.label %}<text class="seg-label" x="{{ x }}" y="{{ y }}">{{ text }}</text>{% endif %}{% endfor %}</g>
 {% endfor %}</svg>
 </div>
 {% else %}
-<p class="empty">当たるアクターはいない。絞りを緩めるか、<a href="/graph/timeline">外す</a>。</p>
+<p class="empty">条件に合うアクターはいません。条件を減らすか、<a href="/graph/timeline">条件を消して</a>ください。</p>
 {% endif %}
 {% endblock %}
-{% block foot %} 答えた時: {% call m::time(as_of) %}{% endcall %}{% endblock %}
+{% block foot %} 表示した時刻: {% call m::time(as_of) %}{% endcall %}{% endblock %}

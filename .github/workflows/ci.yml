@@ -33,6 +33,8 @@ jobs:
       # 見張りが、そういう字を本当に当てるか（当てなければ落とす）。
       - run: "! ci/check-wording.sh ci/testdata/bad-wording.md"
       - run: "! ci/check-wording.sh ci/testdata/bad-label.md"
+      # 前の画面の字（居るか・時間の帯・関係の網・時計のずれた行など）も当てるか。
+      - run: "! ci/check-wording.sh ci/testdata/bad-words.md"
       # release の workflow が使う、tag と版の突き合わせ（ci/check-release-version.sh）の試験。
       - run: ci/test-check-release-version.sh
       # 取り込んだ外の JavaScript（static/vendor/）が、npm に出ている物と同じか（static/vendor/SOURCES.md）。
@@ -53,7 +55,7 @@ jobs:
       - run: cargo test --locked --release --test load -- --ignored --nocapture
   e2e:
     if: github.event_name != 'schedule'
-    # 関係の網（/graph/network。script を使う唯一の画面）を、本物の browser（Chromium）で見る（e2e/ の Playwright の試験）。
+    # 相関図（/graph/network。script を使う唯一の画面）を、本物の browser（Chromium）で見る（e2e/ の Playwright の試験）。
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -82,7 +84,7 @@ jobs:
       - name: Chromium と、それが要る library を入れる
         working-directory: e2e
         run: pnpm exec playwright install --with-deps --only-shell chromium
-      - name: 関係の網の試験
+      - name: 相関図の試験
         working-directory: e2e
         env:
           # 上の段で作った物を起こす（作り直さない）。

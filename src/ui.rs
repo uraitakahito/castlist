@@ -1,8 +1,8 @@
-//! 画面: アクターの一覧（`/`）とプロフィール（`/actors/{id}`）と系図（`/graph/tree`）と時間の帯（`/graph/timeline`）と
-//! 関係の網（`/graph/network`）と、それが読む CSS（`/static/site.css`）と script（`/static/network.js` と、取り込んだ cytoscape）。
+//! 画面: アクターの一覧（`/`）とプロフィール（`/actors/{id}`）と系図（`/graph/tree`）とタイムライン（`/graph/timeline`）と
+//! 相関図（`/graph/network`）と、それが読む CSS（`/static/site.css`）と script（`/static/network.js` と、取り込んだ cytoscape）。
 //!
 //! - サーバーが HTML を組んで返す（askama。`templates/`）。字はみな HTML として逃がす。
-//!   script を使うのは関係の網だけで、castlist が配る file だけを読む（inline の script は無い）。
+//!   script を使うのは相関図だけで、castlist が配る file だけを読む（inline の script は無い）。
 //! - CSP（[`crate::CSP`]）が inline の script と style を断るので、style は castlist が配る CSS の file だけ。
 //! - 一覧の絞りは、監査の検索の API（`GET /v1/actors`）と同じ引数を URL に置く（[`search::actor_query`] で読む）。
 //! - 時刻は、castlist が受けた時刻（UTC）を日本の時刻（[`OFFSET`]）で出し、ISO の字を `<time datetime>` と `title` に置く。
@@ -62,13 +62,13 @@ pub fn event_name(kind: &str) -> &str {
 
 const SITE_CSS: &str = include_str!("../static/site.css");
 
-/// 関係の網（`/graph/network`）が使う cytoscape（npm の物をそのまま取り込んだ。static/vendor/SOURCES.md）。
+/// 相関図（`/graph/network`）が使う cytoscape（npm の物をそのまま取り込んだ。static/vendor/SOURCES.md）。
 const CYTOSCAPE_JS: &str = include_str!("../static/vendor/cytoscape-3.35.0.min.js");
 
 /// cytoscape の path。版が名に入るので、中身が替われば path も替わる。
 pub const CYTOSCAPE_PATH: &str = "/static/vendor/cytoscape-3.35.0.min.js";
 
-/// 関係の網を描く、castlist の script。
+/// 相関図を描く、castlist の script。
 const NETWORK_JS: &str = include_str!("../static/network.js");
 
 /// 中身の写しの頭を `?v=` に付けた path。中身が替われば browser は読み直す（長く持たせてよい）。
@@ -99,12 +99,12 @@ pub async fn site_css() -> Response {
     asset("text/css; charset=utf-8", SITE_CSS)
 }
 
-/// `GET /static/vendor/cytoscape-3.35.0.min.js`: 関係の網が使う cytoscape。
+/// `GET /static/vendor/cytoscape-3.35.0.min.js`: 相関図が使う cytoscape。
 pub async fn cytoscape_js() -> Response {
     asset("application/javascript; charset=utf-8", CYTOSCAPE_JS)
 }
 
-/// `GET /static/network.js`: 関係の網を描く script。
+/// `GET /static/network.js`: 相関図を描く script。
 pub async fn network_js() -> Response {
     asset("application/javascript; charset=utf-8", NETWORK_JS)
 }
@@ -158,7 +158,7 @@ fn actor_link(id: &str, nodes: &BTreeMap<&str, &ActorItem>) -> ActorLink {
     }
 }
 
-/// 一覧の行と、プロフィールの「今の様子」に出す物。
+/// 一覧の行と、プロフィールの「今の状態」に出す物。
 struct Row {
     href: String,
     name: String,
@@ -291,7 +291,7 @@ struct SettingRow {
     model: String,
     effort: String,
     source: &'static str,
-    /// 見た行が、その前の最新の頼んだ物と違う。
+    /// 実際の行（observed）が、その前に最後に指定した物（requested）と違う（画面の「食い違い」）。
     mismatch: bool,
     skewed: bool,
 }
@@ -310,9 +310,9 @@ struct EventRow {
 
 fn source_name(source: &str) -> &'static str {
     if source == "requested" {
-        "頼んだ"
+        "指定"
     } else {
-        "見た"
+        "実際"
     }
 }
 
@@ -328,8 +328,8 @@ fn render(status: StatusCode, page: &impl Template) -> Response {
     match page.render() {
         Ok(html) => (status, Html(html)).into_response(),
         Err(e) => {
-            eprintln!("画面を組めない: {e}");
-            (StatusCode::INTERNAL_SERVER_ERROR, "画面を組めない").into_response()
+            eprintln!("画面を表示できません: {e}");
+            (StatusCode::INTERNAL_SERVER_ERROR, "画面を表示できません").into_response()
         }
     }
 }
@@ -531,7 +531,7 @@ async fn profile_page(db: Db, id: &str) -> Result<Option<ProfilePage>, ApiError>
     }))
 }
 
-/// `GET /graph/tree?label=…&from=…&to=…`: 系図（相関図 A）。引数は `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
+/// `GET /graph/tree?label=…&from=…&to=…`: 系図（図 A）。引数は `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
 /// 並べる計算と HTML を組むのは、tokio の糸を塞がないよう spawn_blocking の糸で行う。
 pub async fn tree(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Response {
     match tree_page(db, q).await {
@@ -560,10 +560,10 @@ async fn tree_page(db: Db, q: Result<Query<Pairs>, QueryRejection>) -> Result<Re
     })
     .await
     .map_err(|e| {
-        eprintln!("系図を組めない: {e}");
+        eprintln!("系図を表示できません: {e}");
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
-            "系図を組めない".to_owned(),
+            "系図を表示できません".to_owned(),
         )
     })
 }
@@ -626,7 +626,7 @@ struct TreeBox {
     /// 2 行目: 種類と、最新の model · effort（`claude-` を落とす）。
     detail: String,
     present: bool,
-    /// 3 行目の、居るかの後の出来事の名（無ければ空）。
+    /// 3 行目の、状態の後の出来事の名（無ければ空）。
     presence: String,
 }
 
@@ -664,9 +664,9 @@ fn tree_svg(graph: &db::Graph) -> Option<TreeSvg> {
             };
             let state = n.state.as_ref();
             let present = if state.is_some_and(|s| s.present) {
-                "いる"
+                "稼働中"
             } else {
-                "いない"
+                "停止"
             };
             let presence = state
                 .and_then(|s| s.presence.as_deref())
@@ -762,7 +762,7 @@ fn short_model(model: &str) -> &str {
     model.strip_prefix("claude-").unwrap_or(model)
 }
 
-/// `GET /graph/network?label=…&from=…&to=…`: 関係の網（相関図 C）。引数は系図と同じ（空の値は付けなかったのと同じ）。
+/// `GET /graph/network?label=…&from=…&to=…`: 相関図（図 C）。引数は系図と同じ（空の値は付けなかったのと同じ）。
 /// script を使う唯一の画面。HTML は枠だけで、点と線は `static/network.js` が `GET /v1/graph` から引いて描く。
 /// ここでは引数を確かめ（誤りは 400 の画面）、同じ引数を付けた API の URL を `data-src` に置く。
 pub async fn network(q: Result<Query<Pairs>, QueryRejection>) -> Response {
@@ -776,7 +776,7 @@ fn network_page(q: Result<Query<Pairs>, QueryRejection>) -> Result<NetworkPage, 
     let mut pairs = search::pairs(q)?;
     pairs.retain(|(_, v)| !v.is_empty());
     let form = TreeForm::new(&pairs);
-    // 確かめた引数を、そのままの順で API と系図と時間の帯の URL に付ける。
+    // 確かめた引数を、そのままの順で API と系図とタイムラインの URL に付ける。
     let query = match query(&pairs) {
         q if q.is_empty() => q,
         q => format!("?{q}"),
@@ -802,12 +802,12 @@ struct NetworkPage {
     form: TreeForm,
     /// network.js が点と線を引く URL（同じ絞りの `GET /v1/graph`）。
     data_src: String,
-    /// script を切った browser に勧める、同じ絞りの系図と時間の帯。
+    /// script を切った browser に勧める、同じ絞りの系図とタイムライン。
     tree: String,
     timeline: String,
 }
 
-/// `GET /graph/timeline?label=…&from=…&to=…`: 時間の帯（相関図 B）。引数は系図と同じ（空の値は付けなかったのと同じ）。
+/// `GET /graph/timeline?label=…&from=…&to=…`: タイムライン（図 B）。引数は系図と同じ（空の値は付けなかったのと同じ）。
 /// `from`・`to` を付ければ、横の時刻もその窓にする（無ければ記録の初めから終わりまで）。
 /// 並べる計算と HTML を組むのは、spawn_blocking の糸で行う。
 pub async fn timeline(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Response {
@@ -848,10 +848,10 @@ async fn timeline_page(
     })
     .await
     .map_err(|e| {
-        eprintln!("時間の帯を組めない: {e}");
+        eprintln!("タイムラインを表示できません: {e}");
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
-            "時間の帯を組めない".to_owned(),
+            "タイムラインを表示できません".to_owned(),
         )
     })
 }
@@ -885,7 +885,7 @@ struct TimelineSvg {
     arrows: Vec<TreeLine>,
 }
 
-/// 時間の帯の行 1 つ。
+/// タイムラインの行 1 つ。
 struct LaneView {
     href: String,
     name: String,
@@ -946,7 +946,7 @@ fn millis(iso: &str) -> Option<i64> {
     i64::try_from(t.unix_timestamp_nanos() / 1_000_000).ok()
 }
 
-/// 時間の帯の SVG に置く物。点が無ければ None。
+/// タイムラインの SVG に置く物。点が無ければ None。
 fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<TimelineSvg> {
     let nodes = &data.graph.nodes;
     if nodes.is_empty() {
@@ -996,7 +996,7 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
         let (Some(&i), Some(t)) = (index.get(s.actor_id.as_str()), millis(&s.received_at)) else {
             continue;
         };
-        // 見た行が、その前の最新の頼んだ行と違うか（プロフィールの印と同じ決め方）。
+        // 見た行が、その前の最新の頼んだ行と違うか（プロフィールの「食い違い」と同じ決め方）。
         let pair = (s.model.as_str(), s.effort.as_str());
         let mismatch = s.source == "observed" && requested.get(&i).is_some_and(|r| *r != pair);
         if s.source == "requested" {
@@ -1071,11 +1071,7 @@ fn timeline_svg(data: &db::Timeline, window: timeline::Window) -> Option<Timelin
                     "{}（{}{}）",
                     change.label,
                     source_name(&setting.source),
-                    if mismatch {
-                        "・頼んだ物と違う"
-                    } else {
-                        ""
-                    }
+                    if mismatch { "・指定と違う" } else { "" }
                 ),
             ),
             None => (
@@ -1184,9 +1180,9 @@ fn chain(
             break;
         }
         let verb = if edge.kind == "launched" {
-            "起こした"
+            "起動した"
         } else {
-            "継がせた"
+            "引き継がせた"
         };
         out.push((actor_link(from, nodes), verb));
         if nodes.get(from).is_some_and(|n| n.kind == "human") {

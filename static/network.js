@@ -1,4 +1,4 @@
-// 関係の網（/graph/network。相関図 C）を描く。castlist が /static/network.js で配る（CSP の script-src 'self'）。
+// 相関図（/graph/network。図 C）を描く。castlist が /static/network.js で配る（CSP の script-src 'self'）。
 // - 点と線は、#network の data-src（同じ絞りの GET /v1/graph。connect-src 'self'）から引く。
 // - 描くのは cytoscape（static/vendor/。canvas に描くので、inline の style は要らない）。
 // - 色は site.css の色（--m-opus など）を読む。明るい色と暗い色が替われば、描き直す。
@@ -25,7 +25,7 @@
   /** model と effort の絞りの「記録なし」の値。 */
   const NONE = '-';
 
-  /** model の名から、色の class（時間の帯と同じ決め方。記録が無ければ m-none）。 */
+  /** model の名から、色の class（タイムラインと同じ決め方。記録が無ければ m-none）。 */
   function family(model) {
     if (!model) return 'm-none';
     const found = ['opus', 'sonnet', 'haiku'].find((f) => model.includes(f));
@@ -72,7 +72,7 @@
       },
       ...families,
       { selector: 'node[kind = "human"]', style: { shape: 'round-rectangle', width: 34, height: 28, 'border-width': 3, 'border-color': p.on } },
-      // 今いない者は、塗りを薄く（名は薄くしない）。
+      // 停止したアクターは、塗りを薄く（名前は薄くしない）。
       { selector: 'node.absent', style: { 'background-opacity': 0.4 } },
       {
         selector: 'edge',
@@ -117,15 +117,15 @@
     return [...nodes, ...edges];
   }
 
-  /** 字に重ねた時の説明（名・種類・model · effort・居るか）。 */
+  /** 名前にマウスを重ねた時の説明（名前・種類・model · effort・状態）。 */
   function describe(node) {
     const d = node.data();
     const kind = d.kind === 'human' ? '人' : 'AI';
     const setting = d.model === NONE ? 'model の記録なし' : `${d.model} · ${d.effort}`;
-    return `${d.name}（${kind}）\n${setting}\n${d.present ? 'いる' : 'いない'}`;
+    return `${d.name}（${kind}）\n${setting}\n${d.present ? '稼働中' : '停止'}`;
   }
 
-  /** 日本の時刻の字（2026-11-23 09:00:00）。 */
+  /** 日本時間の字（2026-11-23 09:00:00）。 */
   function local(iso) {
     const t = new Date(iso);
     if (Number.isNaN(t.getTime())) return iso;
@@ -167,7 +167,7 @@
     // 試験と調べ物のため（browser の console から見られる）。
     window.castlistNetwork = cy;
 
-    const total = `${cy.nodes().length} のアクター・${cy.edges().length} の線（${local(graph.as_of)} に答えた）`;
+    const total = `${cy.nodes().length} のアクター・${cy.edges().length} の線（${local(graph.as_of)} の時点）`;
     // 見えている数は、絞りの class で数える（:visible は、次に描くまで前の様子を返す）。
     const update = () => {
       const shown = cy.nodes().not('.hidden');
@@ -180,7 +180,7 @@
 
     if (cy.nodes().length === 0) {
       container.hidden = true;
-      say('当たるアクターはいない。絞りを緩めるか、外す。');
+      say('条件に合うアクターはいません。条件を減らすか、条件を消してください。');
     } else {
       cy.layout({
         name: 'cose',
@@ -248,6 +248,6 @@
     .catch((e) => {
       container.hidden = true;
       container.dataset.state = 'error';
-      say(`相関図を引けない: ${e.message}`);
+      say(`相関図を表示できません: ${e.message}`);
     });
 })();

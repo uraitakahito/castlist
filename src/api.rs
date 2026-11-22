@@ -454,10 +454,10 @@ pub async fn actor(State(db): State<Db>, Path(id): Path<String>) -> Answer {
     }
 }
 
-/// 相関図の引数の名（`GET /v1/graph` と、画面の `GET /graph/tree`）。どれも 1 つだけ。
+/// 図の引数の名（`GET /v1/graph` と、画面の `GET /graph/tree`）。どれも 1 つだけ。
 pub(crate) const GRAPH_PARAMS: &[&str] = &["label", "from", "to"];
 
-/// 相関図の絞り: ラベル（鍵・値）と、登録の受けた時刻の窓。
+/// 図の絞り: ラベル（鍵・値）と、登録の受けた時刻の窓。
 pub(crate) struct GraphQuery {
     pub(crate) label: Option<(String, String)>,
     pub(crate) from: String,
@@ -482,14 +482,14 @@ impl GraphQuery {
         Ok(db.graph(label, &self.from, &self.to).await?)
     }
 
-    /// 時間の帯（`GET /graph/timeline`）: 同じ組と、その点の出来事と model と effort の全部。
+    /// タイムライン（`GET /graph/timeline`）: 同じ組と、その点の出来事と model と effort の全部。
     pub(crate) async fn timeline(&self, db: &Db) -> Result<db::Timeline, ApiError> {
         let label = self.label.as_ref().map(|(k, v)| (k.as_str(), v.as_str()));
         Ok(db.timeline(label, &self.from, &self.to).await?)
     }
 }
 
-/// `GET /v1/graph?label=key:value&from=…&to=…`: 相関図（点と線）。
+/// `GET /v1/graph?label=key:value&from=…&to=…`: 図の点と線。
 /// 引数の誤りは、監査の検索と同じく 400（訳に引数の名）。
 pub async fn graph(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Answer {
     let p = Params::parse(q, GRAPH_PARAMS, &[])?;

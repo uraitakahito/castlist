@@ -1,4 +1,4 @@
-// 関係の網（/graph/network。相関図 C）を、本物の browser で見る。見本の記録は seed.setup.ts が置く。
+// 相関図（/graph/network。図 C）を、本物の browser で見る。見本の記録は seed.setup.ts が置く。
 // どの試験も、console の誤り・page の誤り・CSP の違反が 1 つも無いことを、終わりに見る。
 import { expect, test, type Page } from '@playwright/test';
 
@@ -6,7 +6,7 @@ type Node = { id: string; name: string; kind: string; current_settings: { model:
 type Edge = { id: string; type: string; from: string; to: string };
 type Graph = { nodes: Node[]; edges: Edge[] };
 
-/** 相関図の API の答え（browser の外から引く）。 */
+/** 図の API の答え（browser の外から引く）。 */
 async function graph(page: Page, query = ''): Promise<Graph> {
   const response = await page.request.get(`/v1/graph${query}`);
   expect(response.ok()).toBeTruthy();
@@ -42,7 +42,7 @@ async function watch(page: Page): Promise<() => Promise<string[]>> {
   };
 }
 
-/** 関係の網を開き、描き終わるまで待つ。 */
+/** 相関図を開き、描き終わるまで待つ。 */
 async function open(page: Page, path = '/graph/network'): Promise<void> {
   await page.goto(path);
   await expect(page.locator('#network')).toHaveAttribute('data-state', 'ready');
@@ -158,8 +158,8 @@ test('点を押すと、そのアクターのプロフィールへ行く', async
 test('model と effort の絞りは、合わない点とその線を隠し、外すと戻す', async ({ page }) => {
   await open(page);
   // 出てくる model（短い名）と effort が選べる。
-  await expect(page.locator('#f-model option')).toHaveText(['どれも', 'haiku-5', 'opus-5-5', 'sonnet-5', '記録なし']);
-  await expect(page.locator('#f-effort option')).toHaveText(['どれも', 'high', 'low', '記録なし']);
+  await expect(page.locator('#f-model option')).toHaveText(['すべて', 'haiku-5', 'opus-5-5', 'sonnet-5', '記録なし']);
+  await expect(page.locator('#f-effort option')).toHaveText(['すべて', 'high', 'low', '記録なし']);
 
   await page.selectOption('#f-model', 'haiku-5');
   expect(await counts(page)).toMatchObject({ nodes: 5, edges: 4, visibleNodes: 1, visibleEdges: 0 });
@@ -183,7 +183,7 @@ test('model と effort の絞りは、合わない点とその線を隠し、外
   expect(await counts(page)).toMatchObject({ visibleNodes: 5, visibleEdges: 4 });
 });
 
-test('ラベルと窓の絞りは、相関図の API に渡し、その答えだけを描く', async ({ page }) => {
+test('ラベルと窓の絞りは、図の API に渡し、その答えだけを描く', async ({ page }) => {
   const g = await graph(page, '?label=tpm.key:t-99');
   // other.1 と、線の向こうの端の tpm.1（一歩だけ）。
   expect(g.nodes.map((n) => n.name).sort()).toEqual(['other.1', 'tpm.1']);
@@ -192,10 +192,10 @@ test('ラベルと窓の絞りは、相関図の API に渡し、その答えだ
   await expect(page.locator('input[name="label"]')).toHaveValue('tpm.key:t-99');
 });
 
-test('当たるアクターがいなければ、そう書く', async ({ page }) => {
+test('条件に合うアクターがいなければ、そう書く', async ({ page }) => {
   await open(page, '/graph/network?from=9000-01-01T00:00:00Z');
   expect(await counts(page)).toMatchObject({ nodes: 0, edges: 0 });
-  await expect(page.locator('#network-status')).toContainText('当たるアクターはいない');
+  await expect(page.locator('#network-status')).toContainText('条件に合うアクターはいません');
 });
 
 test('見張りは、CSP の違反を本当に当てる', async ({ page }) => {
@@ -214,7 +214,7 @@ test('見張りは、CSP の違反を本当に当てる', async ({ page }) => {
 test.describe('JavaScript を切った browser', () => {
   test.use({ javaScriptEnabled: false });
 
-  test('系図と時間の帯を使うよう書き、絞りの欄は出さない', async ({ page }) => {
+  test('系図とタイムラインを使うよう書き、絞りの欄は出さない', async ({ page }) => {
     await page.goto('/graph/network?label=tpm.key:t-23zs');
     const note = page.locator('.noscript');
     await expect(note).toBeVisible();

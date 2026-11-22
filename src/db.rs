@@ -18,7 +18,7 @@ use time::format_description::well_known::Rfc3339;
 
 /// 書く接続を待つ長さ。過ぎれば「混んでいる」で返す。
 pub const WRITE_WAIT: Duration = Duration::from_secs(2);
-/// 重い読み（相関図・時間の帯）だけが使う、読むだけの接続の本数。軽い読みの 4 本とは別にして、重い読みが
+/// 重い読み（図の点と線・タイムライン）だけが使う、読むだけの接続の本数。軽い読みの 4 本とは別にして、重い読みが
 /// 引き当てなどの軽い読みの接続を取らないようにする。
 pub const HEAVY_READS: u32 = 2;
 /// 出し手の時刻と castlist の時計が、これより離れていれば clock_skew を立てる。
@@ -57,12 +57,12 @@ const BINDING_AT: &str = "select a.id, a.name, a.kind from actors a where a.id =
        order by b.received_at desc, b.seq desc limit 1)";
 const LABEL: &str = "select a.id, a.name, a.kind from labels l join actors a on a.id = l.actor_id
      where l.key = ?1 and l.value = ?2 order by a.seq";
-/// 相関図: ラベルと時刻の窓で絞ったアクター。
+/// 図の点と線: ラベルと時刻の窓で絞ったアクター。
 const GRAPH_LABEL: &str = "select a.id from labels l join actors a on a.id = l.actor_id
      where l.key = ?1 and l.value = ?2 and a.received_at >= ?3 and a.received_at <= ?4 order by a.seq";
 const GRAPH_WINDOW: &str =
     "select id from actors where received_at >= ?1 and received_at <= ?2 order by seq";
-/// 相関図: アクターの組（JSON の配列）に触れる線と、その組の中身。
+/// 図の点と線: アクターの組（JSON の配列）に触れる線と、その組の中身。
 const GRAPH_LINKS: &str =
     "select seq, id, type, from_actor, to_actor, at, received_at, clock_skew from links
      where from_actor in (select value from json_each(?1))
@@ -77,7 +77,7 @@ const GRAPH_STATE: &str =
      where actor_id in (select value from json_each(?1))";
 const GRAPH_SETTINGS: &str = "select actor_id, model, effort, source, at, received_at
      from actor_current_settings where actor_id in (select value from json_each(?1))";
-/// 時間の帯: アクターの組の、出来事と model と effort の全部（seq の順）。
+/// タイムライン: アクターの組の、出来事と model と effort の全部（seq の順）。
 const TIMELINE_EVENTS: &str = "select actor_id, type, received_at from events
      where actor_id in (select value from json_each(?1)) order by seq";
 const TIMELINE_SETTINGS: &str = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.at, s.received_at, s.clock_skew
@@ -256,7 +256,7 @@ pub struct ActorDetail {
     pub state: State,
 }
 
-/// 相関図の点。
+/// 図の点。
 #[derive(Debug, Serialize)]
 pub struct Node {
     #[serde(flatten)]
@@ -271,7 +271,7 @@ pub struct Graph {
     pub edges: Vec<Link>,
 }
 
-/// 時間の帯の出来事（帯と印に要る物だけ）。
+/// タイムラインの出来事（帯と印に要る物だけ）。
 #[derive(Debug, FromRow)]
 pub struct Moment {
     pub actor_id: String,
@@ -280,7 +280,7 @@ pub struct Moment {
     pub received_at: String,
 }
 
-/// 時間の帯: 相関図の点と線と、点の出来事と model と effort の全部（どれも seq の順）。
+/// タイムライン: 図の点と線と、点の出来事と model と effort の全部（どれも seq の順）。
 #[derive(Debug)]
 pub struct Timeline {
     pub graph: Graph,
@@ -838,7 +838,7 @@ async fn insert_binding(
     Ok(())
 }
 
-/// 相関図の組を引く（読みの transaction の中で）。点と線と、点の id の組（JSON の配列の字）を返す。
+/// 図の組を引く（読みの transaction の中で）。点と線と、点の id の組（JSON の配列の字）を返す。
 async fn graph_in(
     tx: &mut Transaction<'_, Sqlite>,
     label: Option<(&str, &str)>,
@@ -1040,7 +1040,7 @@ impl Db {
             .await
     }
 
-    /// 相関図。ラベル（無ければ全部）と、登録の時刻の窓で絞る。絞った組から出る線の先のアクターも、一歩だけ含める。
+    /// 図の点と線。ラベル（無ければ全部）と、登録の時刻の窓で絞る。絞った組から出る線の先のアクターも、一歩だけ含める。
     pub async fn graph(
         &self,
         label: Option<(&str, &str)>,
@@ -1053,7 +1053,7 @@ impl Db {
         Ok(graph)
     }
 
-    /// 時間の帯: 相関図と同じ組（[`Db::graph`]）と、その点の出来事と model と effort の全部。1 つの読みの中で引く。
+    /// タイムライン: 図の点と線と同じ組（[`Db::graph`]）と、その点の出来事と model と effort の全部。1 つの読みの中で引く。
     pub async fn timeline(
         &self,
         label: Option<(&str, &str)>,
