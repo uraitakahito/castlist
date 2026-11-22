@@ -1276,3 +1276,20 @@ async fn 取り込んだ_cytoscape_は_sources_md_に書いた_sha256_と同じ�
         .collect();
     assert_eq!(got, field("sha256"));
 }
+
+#[tokio::test]
+async fn どの画面も_鍵と値の組を_ラベルと呼び_札とは書かない() {
+    let s = sample().await;
+    let id = s.id("se.1");
+    for path in [
+        "/".to_owned(),
+        format!("/actors/{id}"),
+        "/graph/tree".to_owned(),
+        "/graph/timeline".to_owned(),
+        "/graph/network".to_owned(),
+    ] {
+        let body = html(&s.app, &path).await;
+        assert!(body.contains("ラベル"), "{path} に「ラベル」が無い\n{body}");
+        assert!(!body.contains('札'), "{path} に「札」がある\n{body}");
+    }
+}
