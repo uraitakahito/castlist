@@ -31,5 +31,5 @@ image は外に出す物なので、入ってよい物を決めてあり、CI（
 - build に秘密は要らない。`Containerfile` に `ARG` を書かず、`--build-arg`・`--secret` を使わない。label は、release の workflow が `--label` で付ける 3 つだけ。
 - 出どころの記録（provenance・SBOM）は付けない。付ける時は、中身を見てから。
 - release の workflow は、確かめる job（書き込みの権限が無い）と、置く job（`packages: write`・`contents: write`）に分かれている。置く job は、確かめた image の file を受け取り、checksum を見てから、そのまま置く。
-- 本物の DB やその写しを、この repo にも CI にも置かない（`.gitignore` と `.dockerignore` が `*.db` を外す）。
+- 本物の DB やそのバックアップを、この repo にも CI にも置かない（`.gitignore` と `.dockerignore` が `*.db` を外す）。
 - 決まりを変える時（file を足す・通す字を足す）は、PR で見える形で上の file を直す。
