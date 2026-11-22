@@ -28,10 +28,10 @@ castlist は、`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin
 ## 初めて起こす
 
 ```sh
-container image pull ghcr.io/uraitakahito/castlist:v0.1.2
-container image inspect ghcr.io/uraitakahito/castlist:v0.1.2 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
+container image pull ghcr.io/uraitakahito/castlist:v0.1.3
+container image inspect ghcr.io/uraitakahito/castlist:v0.1.3 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
 container volume create castlist-data
-container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v0.1.2
+container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v0.1.3
 ```
 
 - digest の見方: `container image list` に出る digest は、Apple Container が付ける別の値。release の digest は、`container image inspect` の `variants` の中の `digest` に出る。
