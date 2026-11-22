@@ -1470,13 +1470,15 @@ async fn 系図は_見出しと行き来と絞り込みと凡例を決めた字�
 async fn タイムラインは_見出しと行き来と説明と凡例を決めた字で書く() {
     let s = sample().await;
     let body = html(&s.app, "/graph/timeline").await;
+    // 絞り込みの枠の見出しは「絞り込み」だけ（括弧書きは要らない。Product Manager の頼み）。
+    assert!(!body.contains("系図と同じ条件です"), "{body}");
     assert_words(
         "/graph/timeline",
         &body,
         &[
             "<title>タイムライン ・ castlist</title>",
             "<h1>タイムライン <span class=\"kind\"><a href=\"/\">一覧へ</a> ・ <a href=\"/graph/tree\">系図へ</a> ・ <a href=\"/graph/network\">相関図へ</a>",
-            "<legend>絞り込み（系図と同じ条件です。期間を付けると、横の時刻もその期間にします）</legend>",
+            "<legend>絞り込み</legend>",
             "登録した期間（から）",
             "横は castlist が受け取った時刻（日本時間）です。行は 1 つのアクターで、人を上に、ほかは最初の登場の順に並べます。帯は稼働していた期間で、model と effort が替わった所で区切ります。帯にマウスを重ねると、値と時刻を表示します。名前を押すとプロフィールを表示します。",
             "右端が尖った帯: まだ稼働中（か、表示する期間の外へ続く）",
