@@ -33,6 +33,94 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 
 外のキーは `create table` の中に書き、消す・替える時は断る（`on delete restrict on update restrict`）。連れて消す（cascade）・空にする（set null）は使わない。どの表も `strict`。
 
+<figure>
+<svg viewBox="0 0 760 400" width="100%" role="img" aria-label="castlist の表と外のキーの ER 図" style="max-width:760px">
+<defs><marker id="er-fk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:var(--icons)"/></marker></defs>
+<g font-size="13" style="fill:var(--fg)">
+<g style="stroke:var(--icons);stroke-width:1.5;fill:none">
+<line data-fk="labels.actor_id->actors.id" x1="210" y1="44" x2="278" y2="160" marker-end="url(#er-fk)"/>
+<line data-fk="bindings.actor_id->actors.id" x1="210" y1="164" x2="278" y2="190" marker-end="url(#er-fk)"/>
+<line data-fk="events.actor_id->actors.id" x1="210" y1="304" x2="278" y2="250" marker-end="url(#er-fk)"/>
+<line data-fk="links.from_actor->actors.id" x1="550" y1="62" x2="482" y2="160" marker-end="url(#er-fk)"/>
+<line data-fk="links.to_actor->actors.id" x1="550" y1="80" x2="482" y2="176" marker-end="url(#er-fk)"/>
+<line data-fk="settings.actor_id->actors.id" x1="550" y1="184" x2="482" y2="214" marker-end="url(#er-fk)"/>
+<line data-fk="settings.model_id->models.id" x1="590" y1="262" x2="530" y2="318" marker-end="url(#er-fk)"/>
+<line data-fk="settings.effort_id->efforts.id" x1="680" y1="262" x2="680" y2="318" marker-end="url(#er-fk)"/>
+</g>
+<g data-table="actors">
+<rect x="280" y="140" width="200" height="120" rx="6" style="fill:var(--bg);stroke:var(--links);stroke-width:2"/>
+<rect x="280" y="140" width="200" height="24" rx="6" style="fill:var(--table-header-bg);stroke:var(--links);stroke-width:2"/>
+<text x="290" y="157" font-weight="bold">actors（アクター）</text>
+<text x="290" y="182">id　主キー</text>
+<text x="290" y="200">issuer・name</text>
+<text x="290" y="218">kind</text>
+<text x="290" y="236">sent_at</text>
+<text x="290" y="254">received_at</text>
+</g>
+<g data-table="labels">
+<rect x="10" y="20" width="200" height="66" rx="6" style="fill:var(--bg);stroke:var(--table-border-color);stroke-width:2"/>
+<rect x="10" y="20" width="200" height="24" rx="6" style="fill:var(--table-header-bg);stroke:var(--table-border-color);stroke-width:2"/>
+<text x="20" y="37" font-weight="bold">labels（ラベル）</text>
+<text x="20" y="62">actor_id　外のキー</text>
+<text x="20" y="80">key・value</text>
+</g>
+<g data-table="bindings">
+<rect x="10" y="140" width="200" height="102" rx="6" style="fill:var(--bg);stroke:var(--table-border-color);stroke-width:2"/>
+<rect x="10" y="140" width="200" height="24" rx="6" style="fill:var(--table-header-bg);stroke:var(--table-border-color);stroke-width:2"/>
+<text x="20" y="157" font-weight="bold">bindings（付随する id）</text>
+<text x="20" y="182">actor_id　外のキー</text>
+<text x="20" y="200">type・value</text>
+<text x="20" y="218">is_key</text>
+<text x="20" y="236">sent_at</text>
+</g>
+<g data-table="events">
+<rect x="10" y="280" width="200" height="102" rx="6" style="fill:var(--bg);stroke:var(--table-border-color);stroke-width:2"/>
+<rect x="10" y="280" width="200" height="24" rx="6" style="fill:var(--table-header-bg);stroke:var(--table-border-color);stroke-width:2"/>
+<text x="20" y="297" font-weight="bold">events（出来事）</text>
+<text x="20" y="322">actor_id　外のキー</text>
+<text x="20" y="340">id・type</text>
+<text x="20" y="358">detail（JSON）</text>
+<text x="20" y="376">sent_at</text>
+</g>
+<g data-table="links">
+<rect x="550" y="20" width="200" height="102" rx="6" style="fill:var(--bg);stroke:var(--table-border-color);stroke-width:2"/>
+<rect x="550" y="20" width="200" height="24" rx="6" style="fill:var(--table-header-bg);stroke:var(--table-border-color);stroke-width:2"/>
+<text x="560" y="37" font-weight="bold">links（線）</text>
+<text x="560" y="62">from_actor　外のキー</text>
+<text x="560" y="80">to_actor　外のキー</text>
+<text x="560" y="98">id・type</text>
+<text x="560" y="116">sent_at</text>
+</g>
+<g data-table="settings">
+<rect x="550" y="160" width="200" height="102" rx="6" style="fill:var(--bg);stroke:var(--table-border-color);stroke-width:2"/>
+<rect x="550" y="160" width="200" height="24" rx="6" style="fill:var(--table-header-bg);stroke:var(--table-border-color);stroke-width:2"/>
+<text x="560" y="177" font-weight="bold">settings（model と effort）</text>
+<text x="560" y="202">actor_id　外のキー</text>
+<text x="560" y="220">model_id　外のキー</text>
+<text x="560" y="238">effort_id　外のキー</text>
+<text x="560" y="256">sent_at</text>
+</g>
+<g data-table="models">
+<rect x="440" y="320" width="150" height="66" rx="6" style="fill:var(--bg);stroke:var(--table-border-color);stroke-width:2"/>
+<rect x="440" y="320" width="150" height="24" rx="6" style="fill:var(--table-header-bg);stroke:var(--table-border-color);stroke-width:2"/>
+<text x="450" y="337" font-weight="bold">models</text>
+<text x="450" y="362">id　主キー</text>
+<text x="450" y="380">name</text>
+</g>
+<g data-table="efforts">
+<rect x="605" y="320" width="150" height="66" rx="6" style="fill:var(--bg);stroke:var(--table-border-color);stroke-width:2"/>
+<rect x="605" y="320" width="150" height="24" rx="6" style="fill:var(--table-header-bg);stroke:var(--table-border-color);stroke-width:2"/>
+<text x="615" y="337" font-weight="bold">efforts</text>
+<text x="615" y="362">id　主キー</text>
+<text x="615" y="380">name</text>
+</g>
+</g>
+</svg>
+<figcaption>表と外のキー（矢印の先が指される表）。どの表もアクター（<code>actors</code>）を指し、<code>settings</code> は <code>models</code> と <code>efforts</code> も指す。<code>links</code> は起こした側（<code>from_actor</code>）と起こされた側（<code>to_actor</code>）の 2 本。主な列だけを描き、列の全部は下の「列」の章。</figcaption>
+</figure>
+
+図の箱（`data-table`）と線（`data-fk`）が、移行した DB の表と外のキーと合うかは、試験（`tests/db.rs` の `docs_の_er_図の表と外のキーは_移行した_db_と合う`）が見る。表や外のキーを替える移行を足したら、図も直す。
+
 | 表 | 中身 | 外のキー・決まり |
 |---|---|---|
 | `actors` | アクター。`id`（UUID v7・castlist が出す）・`issuer`・`kind`（`ai`・`human`）・`prefix`・`n`・`name`（`<prefix>.<n>`） | `unique(issuer, name)`・`unique(issuer, prefix, n)`。`n` は同じ出し手と接頭辞のアクターの数 ＋ 1（書く transaction の中で数える。数を持つ行は作らない） |

@@ -387,3 +387,57 @@ async fn 前の版の_db_を開くと_送り手の時刻の列は_sent_at_にな
     db.close().await;
     remove_db(&path);
 }
+
+/// db.md の ER 図（SVG）の印: 箱の `data-table="<表>"` と、線の `data-fk="<表>.<列>-><表>.<列>"`。
+fn documented_er() -> (Vec<String>, Vec<String>) {
+    let doc = include_str!("../docs/src/db.md");
+    let pick = |attr: &str| -> Vec<String> {
+        let key = format!("{attr}=\"");
+        let mut found: Vec<String> = doc
+            .split(key.as_str())
+            .skip(1)
+            .map(|rest| rest.split('"').next().unwrap().to_owned())
+            .collect();
+        found.sort();
+        found
+    };
+    (pick("data-table"), pick("data-fk"))
+}
+
+#[tokio::test]
+async fn docs_の_er_図の表と外のキーは_移行した_db_と合う() {
+    let path = temp_db("er");
+    let db = Db::open(&path).await.unwrap();
+    let tables: Vec<String> = sqlx::query_scalar(
+        "select name from sqlite_schema where type = 'table'
+         and name not like 'sqlite_%' and name != '_sqlx_migrations' order by name",
+    )
+    .fetch_all(db.read())
+    .await
+    .unwrap();
+    let mut fks: Vec<String> = Vec::new();
+    for name in &tables {
+        let rows: Vec<(String, String, String)> =
+            sqlx::query_as(r#"select "from", "table", "to" from pragma_foreign_key_list(?1)"#)
+                .bind(name)
+                .fetch_all(db.read())
+                .await
+                .unwrap();
+        fks.extend(
+            rows.into_iter()
+                .map(|(from, table, to)| format!("{name}.{from}->{table}.{to}")),
+        );
+    }
+    fks.sort();
+    let (doc_tables, doc_fks) = documented_er();
+    assert_eq!(
+        doc_tables, tables,
+        "db.md の ER 図の箱と、DB の表が合わない"
+    );
+    assert_eq!(
+        doc_fks, fks,
+        "db.md の ER 図の線と、DB の外のキーが合わない"
+    );
+    drop(db);
+    remove_db(&path);
+}
