@@ -1,6 +1,6 @@
 # DB
 
-SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表は `migrations/0001_init.sql` にあり、移行の SQL は binary に埋め込む。
+SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表は `migrations/0001_init.sql` に、監査の検索の索引は `migrations/0002_search.sql` にあり、移行の SQL は binary に埋め込む。移行は足すだけで、前の file は替えない。
 
 ## 接続
 
@@ -57,7 +57,16 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 
 `events(actor_id, type, seq)`・`events(type, received_at)`・`settings(actor_id, seq)`・`settings(model_id, received_at)`・`settings(effort_id, received_at)`・`bindings(actor_id, type, seq)`・`bindings(type, value, received_at)`・`links(to_actor, type)`・`links(from_actor, type, seq)`・`labels(key, value, actor_id)`・`actors(received_at, id)`。
 
-引き当てと見る SQL（`src/db.rs` の `LOOKUPS`）は、試験が `EXPLAIN QUERY PLAN` で、大きな表を端から読まないことを見る（`tests/db.rs`）。
+`0002_search.sql`（監査の検索のため）:
+
+| 索引 | 使う所 |
+|---|---|
+| `actors(clock_skew)`・`events(clock_skew)`・`settings(clock_skew)` | `skewed=true`（時計のずれた行を持つアクター・出来事・model と effort）。後ろに seq が付くので、受けた順にも引ける |
+| `events(received_at)`・`settings(received_at)` | `from`・`to` の窓だけで引く出来事と model と effort（「T から後に起きた物」） |
+
+ほかの検索の条件は、0001 の索引で引く: 札（`labels(key, value, actor_id)`）・時刻での付随する id（`bindings(type, value, received_at)`）・居た間の窓（`events(type, received_at)`）・アクターごとの初めの登場と最後の退場（`events(actor_id, type, seq)`）・起こした者と線の上下（`links(from_actor, type, seq)`・`links(to_actor, type)`）・model と effort の名（`settings(model_id, received_at)`・`settings(effort_id, received_at)`）・その時の model と effort（`settings(actor_id, seq)`）。
+
+引き当てと見る SQL（`src/db.rs` の `LOOKUPS`）と、検索の SQL（`src/search.rs` の `plans()`。条件ごとと、全部を重ねた物）は、試験が `EXPLAIN QUERY PLAN` で、大きな表を端から読まないことを見る（`tests/db.rs`・`tests/search.rs`）。
 
 ## 写し
 

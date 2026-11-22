@@ -33,6 +33,15 @@ fn invalid(message: impl Into<String>) -> ApiError {
     ApiError(StatusCode::UNPROCESSABLE_ENTITY, message.into())
 }
 
+/// 問い合わせの引数の誤り（400）。訳には、誤った引数の名を入れる。
+pub(crate) fn bad_request(message: impl Into<String>) -> ApiError {
+    ApiError(StatusCode::BAD_REQUEST, message.into())
+}
+
+pub(crate) fn not_found() -> ApiError {
+    ApiError(StatusCode::NOT_FOUND, "そのアクターは無い".to_owned())
+}
+
 impl From<sqlx::Error> for ApiError {
     fn from(e: sqlx::Error) -> Self {
         WriteError::from(e).into()
@@ -56,7 +65,7 @@ impl From<WriteError> for ApiError {
     }
 }
 
-type Answer = Result<Response, ApiError>;
+pub(crate) type Answer = Result<Response, ApiError>;
 
 // --- 形を見る ---
 
@@ -75,7 +84,7 @@ fn is_prefix(s: &str) -> bool {
 }
 
 /// 値: 空でなく、制御文字の無い、256 字までの字。
-fn is_value(s: &str) -> bool {
+pub(crate) fn is_value(s: &str) -> bool {
     !s.is_empty() && s.chars().count() <= 256 && !s.chars().any(char::is_control)
 }
 
@@ -455,41 +464,8 @@ pub async fn actor(State(db): State<Db>, Path(id): Path<String>) -> Answer {
             value["as_of"] = json!(as_of);
             Ok(Json(value).into_response())
         }
-        None => Err(ApiError(
-            StatusCode::NOT_FOUND,
-            "そのアクターは無い".to_owned(),
-        )),
+        None => Err(not_found()),
     }
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ActorsQuery {
-    binding: Option<String>,
-    at: Option<String>,
-    label: Option<String>,
-}
-
-/// `GET /v1/actors?binding=type:value&at=…` か `?label=key:value`。
-pub async fn actors(State(db): State<Db>, q: Result<Query<ActorsQuery>, QueryRejection>) -> Answer {
-    let q = query(q)?;
-    let as_of = db::now();
-    let actors = match (&q.binding, &q.label) {
-        (Some(binding), None) => {
-            let r = parse_ref(binding)?;
-            let at = match &q.at {
-                Some(at) => db::stamp(parse_at(at, "at")?),
-                None => as_of.clone(),
-            };
-            db.actor_at(&r, &at).await?.into_iter().collect()
-        }
-        (None, Some(label)) => {
-            let (key, value) = parse_label(label)?;
-            db.actors_with_label(&key, &value).await?
-        }
-        _ => return Err(invalid("binding か label の、どちらか 1 つを付ける")),
-    };
-    Ok(Json(json!({ "as_of": as_of, "actors": actors })).into_response())
 }
 
 #[derive(Deserialize)]

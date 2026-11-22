@@ -1,5 +1,5 @@
 //! アクターの台帳のサーバー。Claude Code の session 1 つ（起動 1 回）ごとに、本当の id と名を出し、
-//! 登場・退場と、誰が誰を起こしたかを足すだけの記録で持つ（[`db`]・[`api`]）。
+//! 登場・退場と、誰が誰を起こしたかを足すだけの記録で持つ（[`db`]・[`api`]）。監査の検索は [`search`]。
 //!
 //! この Mac の中からの要求だけを受ける（[`guard`]）。画面の応答には、外の script と inline の script を
 //! 断る Content-Security-Policy を付ける（[`stamp`]）。
@@ -30,14 +30,14 @@ pub fn router(db: db::Db) -> Router {
     Router::new()
         .route("/healthz", get(healthz))
         .route("/", get(index))
-        .route("/v1/actors", post(api::register).get(api::actors))
+        .route("/v1/actors", post(api::register).get(search::actors))
         .route("/v1/actors/{id}", get(api::actor))
-        .route("/v1/actors/{id}/lineage", get(search::todo))
-        .route("/v1/actors/{id}/settings", get(search::todo))
-        .route("/v1/events", get(search::todo))
+        .route("/v1/actors/{id}/lineage", get(search::lineage))
+        .route("/v1/actors/{id}/settings", get(search::actor_settings))
+        .route("/v1/events", get(search::events))
         .route("/v1/events/{id}", put(api::put_event))
         .route("/v1/links/{id}", put(api::put_link))
-        .route("/v1/settings", get(search::todo))
+        .route("/v1/settings", get(search::settings))
         .route("/v1/settings/{id}", put(api::put_setting))
         .route("/v1/resolve", post(api::resolve))
         .route("/v1/graph", get(api::graph))
