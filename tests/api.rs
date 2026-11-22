@@ -690,8 +690,9 @@ async fn 付随する_id_と時刻で_その時のアクターを引く() {
         .map(|a| a["name"].as_str().unwrap())
         .collect();
     assert_eq!(names, ["se.1", "se.2"]);
+    // 問い合わせの引数の誤りは 400（監査の検索と同じ。docs/src/api.md）。
     let (status, _) = app.get("/v1/actors?at=きのう&binding=a:b").await;
-    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
