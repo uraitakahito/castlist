@@ -699,7 +699,7 @@ fn short_model(model: &str) -> &str {
     model.strip_prefix("claude-").unwrap_or(model)
 }
 
-/// `GET /graph/network?label=…&from=…&to=…`: 相関図（図 C）。引数は `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
+/// `GET /graph/network?label=…&from=…&to=…`: 相関図。引数は `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
 /// script を使う唯一の画面。HTML は枠だけで、点と線は `static/network.js` が `GET /v1/graph` から引いて描く。
 /// ここでは引数を確かめ（誤りは 400 の画面）、同じ引数を付けた API の URL を `data-src` に置く。
 pub async fn network(q: Result<Query<Pairs>, QueryRejection>) -> Response {
@@ -751,7 +751,7 @@ struct NetworkPage {
     timeline: String,
 }
 
-/// `GET /graph/timeline?label=…&from=…&to=…`: タイムライン（図 B）。引数は `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
+/// `GET /graph/timeline?label=…&from=…&to=…`: タイムライン。引数は `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
 /// `from`・`to` を付ければ、横の時刻もその窓にする（無ければ記録の初めから終わりまで）。
 /// 並べる計算と HTML を組むのは、spawn_blocking の糸で行う。
 pub async fn timeline(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Response {

@@ -13,6 +13,7 @@ Apple Container（`container` CLI）で、release の image を動かす。host�
 | container | `castlist.box`（`127.0.0.1:8802` → 中の 8080。メモリは Apple Container の下限の 200 MiB、CPU は 1） |
 | URL | host の browser と tpm からは `http://127.0.0.1:8802/`（[画面](ui.md)。[API](api.md) は `/v1/`）。同じ network の container（置き場の pagetray など）からは `http://castlist.box:8080/` |
 | DB | 名前つきの volume `castlist-data`（中の `/data/castlist.db`）。host の folder は mount しない |
+| 記録 | 同じ volume の `/data/logs/`（0.3.0 から。合わせて 4 MiB と 64 KiB まで）。下の「落ちた後に調べる」 |
 | 設定 | 環境変数 `CASTLIST_DB`（既定 `/data/castlist.db`）・`CASTLIST_LISTEN`（既定 `0.0.0.0:8080`）。image の既定のままでよい |
 
 ## container の名と、届く所
@@ -28,10 +29,10 @@ castlist は、`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin
 ## 初めて起こす
 
 ```sh
-container image pull ghcr.io/uraitakahito/castlist:v0.2.0
-container image inspect ghcr.io/uraitakahito/castlist:v0.2.0 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
+container image pull ghcr.io/uraitakahito/castlist:v0.3.0
+container image inspect ghcr.io/uraitakahito/castlist:v0.3.0 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
 container volume create castlist-data
-container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v0.2.0
+container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v0.3.0
 ```
 
 - digest の見方: `container image list` に出る digest は、Apple Container が付ける別の値。release の digest は、`container image inspect` の `variants` の中の `digest` に出る。
@@ -56,8 +57,41 @@ container start castlist.box
 1. `container list` で `castlist.box` が `running`。
 2. `curl -s http://127.0.0.1:8802/healthz` が `{"status":"ok","version":"<version>","now":"…"}` を返す（`version` が起こした版）。
 3. `lsof -nP -iTCP:8802 -sTCP:LISTEN` が `127.0.0.1:8802` だけを出す（`*:` で始まる行があれば LAN に開いている）。
-4. `container logs castlist.box` の頭に `castlist <version> listen=0.0.0.0:8080 db=/data/castlist.db` が出ている。
+4. `container logs castlist.box` の頭の 2 行が、前回の終わり方（`previous: …`。下の「落ちた後に調べる」）と、`castlist <version> listen=0.0.0.0:8080 db=/data/castlist.db` で終わる行（0.3.0 から、どの行も頭に時刻と `INFO` などの重さが付く）。
 5. browser で `http://127.0.0.1:8802/` を開き、一覧が出る。
+
+## 落ちた後に調べる
+
+0.3.0 から、castlist は自分の終わり方と、時刻つきの記録を volume の `/data/logs/` に残す。`container logs` は container を起こし直すと頭から書き直されるが、こちらは起こし直しても、版を上げても残る。
+
+| file | 中身 | 上限 |
+|---|---|---|
+| `server.log`・`server.log.1`〜`server.log.3` | 時刻（UTC）つきの行。`container logs` に出る行と、問い合わせごとの 1 行（method・path・status・かかった時間） | 1 つ 1 MiB、合わせて 4 MiB。超える前に回し、一番古い物を消す |
+| `runs.log` | 終わり方の印。起きた・止める合図を受けた・閉じ終えた・panic・誤りで終わった、を 1 行ずつ | 64 KiB。超える前に、古い半分を落とす |
+| `alive` | 生きている印の時刻。30 秒ごとに上書きする | 数十 byte |
+
+読むのは `curl -s http://127.0.0.1:8802/v1/logs`（止めなくてよい。印と記録を、古い順の字で返す。[API](api.md) の `GET /v1/logs`）。これは AI の担当も打てる。
+
+castlist が起きない時は、止めたまま、volume を別の container に付けて読む（volume は、動いている container と同時には付けられない）:
+
+```sh
+container run --rm -v castlist-data:/data docker.io/library/rust:1.100.0-alpine sh -c 'cat /data/logs/runs.log; tail -n 200 /data/logs/server.log'
+```
+
+起きるたびに、前回の終わり方を 1 行で出す（`container logs castlist.box` の頭と、`server.log`）。
+
+| 行 | 前回に起きたこと | 次に見る所 |
+|---|---|---|
+| `previous: none (first start)` | 印が無い。初めて起きた | — |
+| `previous: stopped cleanly (…)` | 止める合図を受けて、走っていた問い合わせを終え、閉じ終えた | 誰が止めたかは、castlist からは見えない。host の側の記録を見る |
+| `previous: got a stop signal but did not finish (…)` | 止める合図は受けたが、閉じ終える前に切られた | 同じ |
+| `previous: panicked (…)` | castlist の中の誤り。行に、場所（file と行の番号）と文が入る | その場所と、`server.log` のその時刻の前の行 |
+| `previous: failed (…)` | 起きられずに終わった（DB を開けない・移行に落ちた・待ち受けられない）。行に訳が入る | 行の訳 |
+| `previous: no stop mark (…; last alive …)` | 合図も来ず、何も書けずに終わった（SIGKILL・メモリ不足・VM ごと切られた）。`last alive` は最後に生きていた時刻で、落ちたのはその後の 30 秒の内 | `server.log` のその時刻の前の行と、host の側の記録 |
+
+- 4 MiB に入るのは、問い合わせの行でおよそ 2 万行。
+- 記録を書けない時（volume が満ちた、など）も castlist は動く。行は捨て、`container logs` には、書けなくなった時と戻った時に 1 行ずつ出る。
+- 「DB の写しを取る」の写しに、記録は入らない。
 
 ## DB の写しを取る
 
