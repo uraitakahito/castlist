@@ -52,11 +52,21 @@ jobs:
   load:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        n: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
       # 本物の binary を起こし、50 の客が 10 秒叩く（誤りと 5xx が 0・p99 が 1 秒未満。tests/load.rs）。
-      - run: cargo test --locked --release --test load -- --ignored --nocapture
+      - run: |
+          set +e
+          cargo test --locked --release --test load -- --ignored --nocapture 2>&1 | tee load.log
+          st=$?
+          echo "DIAG lines: $(grep -c DIAG load.log)"
+          grep DIAG load.log | head -120
+          exit $st
   e2e:
     if: github.event_name != 'schedule'
     # 相関図（/graph/network。script を使う唯一の画面）を、本物の browser（Chromium）で見る（e2e/ の Playwright の試験）。

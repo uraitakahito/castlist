@@ -585,7 +585,7 @@ impl Db {
     /// アクターを登録する。鍵の付随する id が既にあれば、そのアクターを返す（created = false）。
     /// その時は、変わった鍵でない付随する id と、変わった頼んだ model と effort だけを足す。
     pub async fn register(&self, new: &NewActor<'_>) -> Result<(ActorRef, bool), WriteError> {
-        let mut tx = self.write.begin().await?;
+        let diag_t0 = std::time::Instant::now(); let mut tx = self.write.begin().await.inspect_err(|_| eprintln!("DIAG busy after {:?} wal={}", diag_t0.elapsed(), wal_len(&self.path)))?; let diag_acq = diag_t0.elapsed();
         let received = received_at(&mut tx).await?;
         let skew = i64::from(skewed(new.at_time, &received));
         let (key, rest) = new
@@ -672,13 +672,13 @@ impl Db {
                 .await?;
             }
         }
-        tx.commit().await?;
+        let diag_c0 = std::time::Instant::now(); tx.commit().await?; diag(diag_t0, diag_acq, diag_c0, &self.path);
         Ok((actor, created))
     }
 
     /// 出来事を足す。同じ id で同じ中身なら Same、違えば Conflict。
     pub async fn put_event(&self, id: &str, new: &NewEvent<'_>) -> Result<Put<Event>, WriteError> {
-        let mut tx = self.write.begin().await?;
+        let diag_t0 = std::time::Instant::now(); let mut tx = self.write.begin().await.inspect_err(|_| eprintln!("DIAG busy after {:?} wal={}", diag_t0.elapsed(), wal_len(&self.path)))?; let diag_acq = diag_t0.elapsed();
         let select = "select id, actor_id, type, detail, at, received_at, clock_skew from events where id = ?1";
         if let Some(hash) =
             body_hash(&mut tx, "select body_hash from events where id = ?1", id).await?
@@ -702,13 +702,13 @@ impl Db {
         .execute(&mut *tx)
         .await?;
         let event = sqlx::query_as(select).bind(id).fetch_one(&mut *tx).await?;
-        tx.commit().await?;
+        let diag_c0 = std::time::Instant::now(); tx.commit().await?; diag(diag_t0, diag_acq, diag_c0, &self.path);
         Ok(Put::Created(event))
     }
 
     /// 線を足す。起こされる（launched）のは、1 つのアクターに 1 度だけ。
     pub async fn put_link(&self, id: &str, new: &NewLink<'_>) -> Result<Put<Link>, WriteError> {
-        let mut tx = self.write.begin().await?;
+        let diag_t0 = std::time::Instant::now(); let mut tx = self.write.begin().await.inspect_err(|_| eprintln!("DIAG busy after {:?} wal={}", diag_t0.elapsed(), wal_len(&self.path)))?; let diag_acq = diag_t0.elapsed();
         let select = "select seq, id, type, from_actor, to_actor, at, received_at, clock_skew from links where id = ?1";
         if let Some(hash) =
             body_hash(&mut tx, "select body_hash from links where id = ?1", id).await?
@@ -746,7 +746,7 @@ impl Db {
             other => other?,
         };
         let link = sqlx::query_as(select).bind(id).fetch_one(&mut *tx).await?;
-        tx.commit().await?;
+        let diag_c0 = std::time::Instant::now(); tx.commit().await?; diag(diag_t0, diag_acq, diag_c0, &self.path);
         Ok(Put::Created(link))
     }
 
@@ -756,7 +756,7 @@ impl Db {
         id: &str,
         new: &NewSetting<'_>,
     ) -> Result<Put<Setting>, WriteError> {
-        let mut tx = self.write.begin().await?;
+        let diag_t0 = std::time::Instant::now(); let mut tx = self.write.begin().await.inspect_err(|_| eprintln!("DIAG busy after {:?} wal={}", diag_t0.elapsed(), wal_len(&self.path)))?; let diag_acq = diag_t0.elapsed();
         let select = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.at, s.received_at, s.clock_skew
              from settings s join models m on m.id = s.model_id join efforts f on f.id = s.effort_id
              where s.id = ?1";
@@ -789,7 +789,7 @@ impl Db {
             .bind(&actor.id)
             .fetch_one(&mut *tx)
             .await?;
-            tx.commit().await?;
+            let diag_c0 = std::time::Instant::now(); tx.commit().await?; diag(diag_t0, diag_acq, diag_c0, &self.path);
             return Ok(Put::Same(latest));
         }
         sqlx::query(
@@ -808,7 +808,7 @@ impl Db {
         .execute(&mut *tx)
         .await?;
         let setting = sqlx::query_as(select).bind(id).fetch_one(&mut *tx).await?;
-        tx.commit().await?;
+        let diag_c0 = std::time::Instant::now(); tx.commit().await?; diag(diag_t0, diag_acq, diag_c0, &self.path);
         Ok(Put::Created(setting))
     }
 }
@@ -1095,5 +1095,25 @@ impl Db {
             .execute(&self.read)
             .await?;
         Ok(out)
+    }
+}
+
+
+fn wal_len(path: &Path) -> u64 {
+    let mut p = path.as_os_str().to_owned();
+    p.push("-wal");
+    std::fs::metadata(p).map(|m| m.len()).unwrap_or(0)
+}
+
+/// 診断（merge しない）: 遅い書く transaction の内訳。
+fn diag(t0: std::time::Instant, acq: Duration, c0: std::time::Instant, path: &Path) {
+    let total = t0.elapsed();
+    if total > Duration::from_millis(150) {
+        eprintln!(
+            "DIAG slow write total={total:?} acquire={acq:?} body={:?} commit={:?} wal={}",
+            c0.duration_since(t0) - acq,
+            c0.elapsed(),
+            wal_len(path)
+        );
     }
 }
