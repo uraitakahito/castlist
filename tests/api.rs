@@ -905,15 +905,113 @@ async fn 移る間は_古い名_at_も受け_同じ_id_の送り直しは_どち
 }
 
 #[tokio::test]
-async fn sent_at_と_at_を両方付けると_422() {
+async fn 書く_4_つの道は_sent_at_と_at_を両方付けると_422_で_at_が読めなくても_422() {
     let app = App::start().await;
     three(&app).await;
-    let mut body = event(SE1, "entered", &at(0));
-    body["at"] = body["sent_at"].clone();
-    let (status, answer) = app.put("/v1/events/b-1", &body).await;
-    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{answer}");
-    let mut body = ai("se", "s-9");
-    body["at"] = body["sent_at"].clone();
-    let (status, answer) = app.post("/v1/actors", &body).await;
-    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{answer}");
+    for (path, body) in [
+        ("/v1/actors", ai("se", "s-9")),
+        ("/v1/events/b-1", event(SE1, "entered", &at(0))),
+        ("/v1/links/b-2", link("launched", PM, SE1)),
+        (
+            "/v1/settings/b-3",
+            setting(SE1, "claude-opus-5-5", "high", &at(0)),
+        ),
+    ] {
+        let method = if path == "/v1/actors" { "POST" } else { "PUT" };
+        let mut both = body.clone();
+        both["at"] = both["sent_at"].clone();
+        let (status, answer) = app.call(method, path, Some(&both)).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{path}: {answer}");
+        // 移る間の送り手は at で送る。読めない時の字は、送った名 at も指す。
+        let mut old = body.clone();
+        old.as_object_mut().unwrap().remove("sent_at");
+        old["at"] = json!("きのう");
+        let (status, answer) = app.call(method, path, Some(&old)).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{path}: {answer}");
+        let text = answer.to_string();
+        assert!(
+            text.contains("sent_at（0.1.x の名 at）は RFC 3339 の時刻"),
+            "{path}: {answer}"
+        );
+    }
+}
+
+/// 0.1.3 の castlist が、下の本文（送り手の時刻の名は at）で DB に入れた本文の写し（body_hash）。
+/// v0.1.3 の tag の試験で、同じ本文を PUT して DB から読んだ値（0.2.0 で手で作らない）。
+const V013_HASHES: [(&str, &str); 3] = [
+    (
+        "events",
+        "01a219acb1f8304fa333ad65982caaa6276a1ac2903c98d6667ecf19be2acaaf",
+    ),
+    (
+        "links",
+        "0f75eada811ff0d8f2ec1af823eb5ba1918929a0745fc2125df7fa0115f6d5d9",
+    ),
+    (
+        "settings",
+        "561b9c80aab0c3618398f7c684ea2047c50eb3308d2f9c620ef157402b54739b",
+    ),
+];
+
+#[tokio::test]
+async fn 本文の写しは_0_1_x_が作った値と同じで_前の版で受けた物を_sent_at_で送り直しても_409_にならない()
+ {
+    let t = "2026-11-22T13:00:00.000+09:00";
+    let bodies = [
+        (
+            "/v1/events/h-1",
+            json!({ "issuer": "tpm", "by": SE1, "type": "entered", "detail": {"k": "v"}, "sent_at": t }),
+        ),
+        (
+            "/v1/links/h-2",
+            json!({ "issuer": "tpm", "type": "launched", "from": PM, "to": SE1, "sent_at": t }),
+        ),
+        (
+            "/v1/settings/h-3",
+            json!({ "issuer": "tpm", "by": SE1, "model": "claude-opus-5-5", "effort": "high", "source": "observed", "sent_at": t }),
+        ),
+    ];
+    // 新しい名でも古い名でも、写しは 0.1.3 が作った値と同じ。
+    for name in ["sent_at", "at"] {
+        let app = App::start().await;
+        three(&app).await;
+        for ((path, body), (table, want)) in bodies.iter().zip(V013_HASHES) {
+            let mut body = body.clone();
+            if name == "at" {
+                let sent = body.as_object_mut().unwrap().remove("sent_at").unwrap();
+                body["at"] = sent;
+            }
+            let (status, answer) = app.put(path, &body).await;
+            assert_eq!(status, StatusCode::CREATED, "{name} {path}: {answer}");
+            let id = path.rsplit('/').next().unwrap();
+            let got: String = app
+                .scalar(&format!("select body_hash from {table} where id = '{id}'"))
+                .await;
+            assert_eq!(got, want, "{name} {path}: 0.1.3 の写しと違う");
+        }
+    }
+}
+
+#[tokio::test]
+async fn 時点の問い_at_の答えは_頭の_at_に問いの時点を返し_行には_at_の鍵が無い() {
+    let app = App::start().await;
+    let (se1, _, _) = three(&app).await;
+    let id = se1["id"].as_str().unwrap();
+    let (status, answer) = app
+        .put(
+            "/v1/settings/p-1",
+            &setting(SE1, "claude-opus-5-5", "high", &at(0)),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{answer}");
+    let when = at(60).replace('+', "%2B");
+    let (status, answer) = app
+        .get(&format!("/v1/actors/{id}/settings?at={when}"))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{answer}");
+    assert!(answer["at"].is_string(), "{answer}");
+    assert!(answer["setting"]["sent_at"].is_string(), "{answer}");
+    let mut rest = answer.clone();
+    rest.as_object_mut().unwrap().remove("at");
+    assert_no_at("settings?at=", &rest);
 }
