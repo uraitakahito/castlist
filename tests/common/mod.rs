@@ -1,5 +1,8 @@
 //! 受け入れの試験の道具: binary を空いた port で起こし、生の HTTP/1.1 で叩く。
+//! 道筋を直に呼ぶ道具は [`app`]。
 #![allow(clippy::disallowed_methods, dead_code)]
+
+pub mod app;
 
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -10,6 +13,8 @@ use std::time::{Duration, Instant};
 pub struct Server {
     child: Child,
     pub port: u16,
+    /// 一時の DB。落とす時に消す。
+    pub db: std::path::PathBuf,
 }
 
 /// 1 つの答え。
@@ -37,8 +42,10 @@ impl Server {
             .and_then(|l| l.local_addr())
             .expect("空いた port")
             .port();
+        let db = app::temp_db("server");
         let mut child = Command::new(env!("CARGO_BIN_EXE_castlist-server"))
             .env("CASTLIST_LISTEN", format!("127.0.0.1:{port}"))
+            .env("CASTLIST_DB", &db)
             .stdout(Stdio::null())
             .spawn()
             .expect("castlist-server を起こす");
@@ -53,7 +60,7 @@ impl Server {
             );
             std::thread::sleep(Duration::from_millis(20));
         }
-        Self { child, port }
+        Self { child, port, db }
     }
 
     /// 生の要求を送り、答えを読む（要求は Connection: close にする）。
@@ -103,5 +110,6 @@ impl Drop for Server {
     fn drop(&mut self) {
         let _ = self.child.kill();
         let _ = self.child.wait();
+        app::remove_db(&self.db);
     }
 }

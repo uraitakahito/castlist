@@ -4,11 +4,14 @@
 //! この Mac の中からの要求だけを受ける（[`guard`]）。画面の応答には、外の script と inline の script を
 //! 断る Content-Security-Policy を付ける（[`stamp`]）。
 
+pub mod api;
+pub mod db;
+
 use axum::extract::Request;
 use axum::http::{HeaderValue, Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{Html, IntoResponse, Response};
-use axum::routing::get;
+use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use serde_json::json;
 use time::OffsetDateTime;
@@ -18,10 +21,19 @@ use time::format_description::well_known::Rfc3339;
 pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 
 /// 問い合わせの道。
-pub fn router() -> Router {
+pub fn router(db: db::Db) -> Router {
     Router::new()
         .route("/healthz", get(healthz))
         .route("/", get(index))
+        .route("/v1/actors", post(api::not_yet).get(api::not_yet))
+        .route("/v1/actors/{id}", get(api::not_yet))
+        .route("/v1/events/{id}", put(api::not_yet))
+        .route("/v1/links/{id}", put(api::not_yet))
+        .route("/v1/settings/{id}", put(api::not_yet))
+        .route("/v1/resolve", post(api::not_yet))
+        .route("/v1/graph", get(api::not_yet))
+        .route("/v1/backup", get(api::not_yet))
+        .with_state(db)
         .layer(middleware::from_fn(guard))
         // 一番外に置く。guard が断った答えにも付く。
         .layer(middleware::from_fn(stamp))
@@ -93,6 +105,6 @@ async fn stamp(request: Request, next: Next) -> Response {
 }
 
 /// 誤りの答え（`{"error":"…"}`）。
-fn error(status: StatusCode, message: &str) -> Response {
+pub(crate) fn error(status: StatusCode, message: &str) -> Response {
     (status, Json(json!({ "error": message }))).into_response()
 }
