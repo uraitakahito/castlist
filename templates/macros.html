@@ -2,7 +2,7 @@
 
 {% macro maybe_time(t) %}{% if let Some(t) = t %}{% call time(t) %}{% endcall %}{% else %}<span class="none">—</span>{% endif %}{% endmacro %}
 
-{% macro quick(links) %}<p class="quick">期間をすぐ選ぶ（今の条件のまま、期間だけを替えます）: {% for (name, href) in links %}{% if !loop.first %} ・ {% endif %}<a href="{{ href }}">{{ name }}</a>{% endfor %}</p>{% endmacro %}
+{% macro quick(links) %}<p class="quick">期間（今の条件のまま、期間だけを替えます）: {% for (name, href) in links %}{% if !loop.first %} ・ {% endif %}<a href="{{ href }}">{{ name }}</a>{% endfor %}</p>{% endmacro %}
 
 {% macro skew() %}<span class="skew" title="送り手の時計が、castlist の時計と 5 分より離れています">時刻ずれ</span>{% endmacro %}
 
