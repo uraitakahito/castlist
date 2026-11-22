@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
-      # 本物の binary を起こし、50 の客が 10 秒叩く（誤りと 5xx が 0・p99 が 200 ms 未満。tests/load.rs）。
+      # 本物の binary を起こし、50 の客が 10 秒叩く（誤りと 5xx が 0・p99 が 1 秒未満。tests/load.rs）。
       - run: cargo test --locked --release --test load -- --ignored --nocapture
   image:
     if: github.event_name != 'schedule'
