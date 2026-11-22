@@ -47,7 +47,10 @@ impl Server {
             if let Some(status) = child.try_wait().expect("try_wait") {
                 panic!("castlist-server が起きる前に終わった: {status}");
             }
-            assert!(started.elapsed() < Duration::from_secs(10), "10 秒で受けられるようにならない");
+            assert!(
+                started.elapsed() < Duration::from_secs(10),
+                "10 秒で受けられるようにならない"
+            );
             std::thread::sleep(Duration::from_millis(20));
         }
         Self { child, port }
@@ -56,7 +59,9 @@ impl Server {
     /// 生の要求を送り、答えを読む（要求は Connection: close にする）。
     pub fn send(&self, raw: &str) -> Answer {
         let mut stream = TcpStream::connect(("127.0.0.1", self.port)).expect("connect");
-        stream.set_read_timeout(Some(Duration::from_secs(10))).expect("timeout");
+        stream
+            .set_read_timeout(Some(Duration::from_secs(10)))
+            .expect("timeout");
         stream.write_all(raw.as_bytes()).expect("write");
         let mut bytes = Vec::new();
         stream.read_to_end(&mut bytes).expect("read");
@@ -67,11 +72,17 @@ impl Server {
             .nth(1)
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
-        Answer { status, head: head.to_owned(), body: body.to_owned() }
+        Answer {
+            status,
+            head: head.to_owned(),
+            body: body.to_owned(),
+        }
     }
 
     pub fn get(&self, path: &str) -> Answer {
-        self.send(&format!("GET {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n"))
+        self.send(&format!(
+            "GET {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n"
+        ))
     }
 
     /// 止める合図（SIGTERM）を送る。

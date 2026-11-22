@@ -1,0 +1,16 @@
+# castlist
+
+AI と人の「アクター」の台帳のサーバー。
+
+- Claude Code の session 1 つ（起動 1 回）を、1 つのアクターとする。`/clear` と fork で新しいアクターに替わり、resume では同じアクターが続く。人（Product Manager）も 1 つのアクター。
+- 本当の id と名は castlist だけが出す。Claude Code の session の id や cmux の workspace は、それに「付随する id」。
+- 登場・退場と、誰が誰を起こしたかを、足すだけの記録（書き替えも消しもしない）で残す。
+- 相関図（系図・時間の帯・関係の網）と、監査のための検索を持つ。
+
+今は作っている途中で、`/healthz` だけが答える。
+
+## 守り
+
+- この Mac の中からの要求だけを受ける。`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403。
+- 画面の応答には Content-Security-Policy を付け、castlist 自身が配る script と style だけを許す（inline の script も断る）。
+- container を起こす・止める・data の volume を消すのは Product Manager だけ（repo の設定の `infra.castlist` は `pm-only`）。

@@ -1,0 +1,14 @@
+# castlist の本（mdBook）。作るのは `mdbook build docs`（CI の docs.yml も同じ）。
+[book]
+title = "castlist"
+description = "AI と人のアクターの台帳のサーバー"
+language = "ja"
+src = "src"
+
+[build]
+build-dir = "book"
+
+[output.html]
+git-repository-url = "https://github.com/uraitakahito/castlist"
+edit-url-template = "https://github.com/uraitakahito/castlist/edit/main/docs/{path}"
+site-url = "/castlist/"

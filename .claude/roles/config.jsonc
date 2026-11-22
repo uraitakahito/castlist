@@ -1,0 +1,22 @@
+// この repo（とその上の folder）で、roster の tpm の担当を起こしたときの設定。書いていない欄は既定のまま。
+{
+  "infra": {
+    // アクターの台帳（castlist の container と、DB を置く volume）。起こす・止める・volume を消すのは
+    // Product Manager だけ（「AI向けのprofileサーバーの起動と停止は私だけができるものとします。」
+    // 「profileサーバーのdataのvolume削除も私だけとします」）。どの担当も打てない（pm-only）。
+    // Product Manager が自分の terminal で直に打つ。担当は、打ってほしい 1 行を確認のページに書いて tpm ask pm で送る。
+    "castlist": {
+      "guard": "pm-only",
+      "match": [
+        "--name castlist",
+        "container start castlist",
+        "container stop castlist",
+        "container kill castlist",
+        "container delete castlist",
+        "container rm castlist",
+        "container volume delete castlist-data",
+        "container volume rm castlist-data",
+      ],
+    },
+  },
+}

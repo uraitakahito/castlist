@@ -1,0 +1,52 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # 弱点の知らせは commit と関わりなく出るので、週に 1 度も流す（月曜 00:00 UTC）。
+    - cron: "0 0 * * 1"
+permissions:
+  contents: read
+env:
+  # 秘密の走査の道具。版と、release の checksums.txt の値（linux_arm64）を一緒に上げる。
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080
+# action は commit の SHA で固定する（tag は後から中身が替わりうる）。
+jobs:
+  test:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+      - run: cargo fmt --all --check
+      # 塞ぐ呼び出し（clippy.toml の disallowed-methods）と、鍵を握ったままの await も、ここで落ちる。
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+  image:
+    if: github.event_name != 'schedule'
+    # 動かす Mac と同じ CPU の種類（arm64）で作る。
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # 出どころの記録（provenance・SBOM）は付けない。付ける時は、中身を見てから。
+      - run: docker build --provenance=false --sbom=false -t castlist:ci -f Containerfile .
+      - name: gitleaks を入れる（版と checksum を固定）
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          sudo tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C /usr/local/bin gitleaks
+      - name: image に、入ってよい物だけが入っているか（中身の一覧・設定・秘密の走査）
+        run: ci/check-image.sh castlist:ci
+      - name: 空の image の中で起き、答え、断るべき物を断り、止めて起こし直せるか
+        run: ci/smoke-image.sh castlist:ci
+  advisories:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: EmbarkStudios/cargo-deny-action@17aeb3c839e42274e2b8adf721c8c65edfdc74dd # v2.1.3
+        with:
+          # 弱点と、crate の license（MIT の castlist と一緒に配れる物か）。
+          command: check advisories licenses
