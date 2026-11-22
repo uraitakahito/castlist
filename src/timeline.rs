@@ -6,7 +6,8 @@
 //! - 帯は、居る出来事（[`Presence::In`]）から居ない出来事（[`Presence::Out`]）まで。退いた後にまた来れば、帯は別になる。
 //!   居るままなら、窓の右の端（窓が無ければ今）まで描き、端を開いた形にする。
 //! - 帯は、model と effort の替わり目（与えた順 = seq の順）で区切る。同じ値が続く物は区切らない。
-//! - 帯の字は、帯の幅に収まる時だけ書く（はみ出さない）。
+//! - 帯の字は、帯の幅に収まる時だけ書く（はみ出さない）。矢印の線が帯を通る所は避け、線の横の空いた所に書く
+//!   （空いた所に収まらなければ書かない）。
 //! - 同じ入力からは、いつも同じ答え。
 
 use crate::tree::text_width;
@@ -27,6 +28,8 @@ pub const END_ROOM: u32 = 10;
 /// 帯の字の大きさ（px。site.css の `.timeline .seg-label` と同じ）と、帯の中の左右の余白。
 pub const LABEL_PX: u32 = 11;
 pub const LABEL_PAD: u32 = 4;
+/// 帯の字と、そこを通る矢印の線の間に空ける幅（線の太さと、字の縁取りの分）。
+pub const LINE_ROOM: u32 = 3;
 /// 時刻の窓の短さの下限（ミリ秒）。データがこれより短ければ、右に延ばす。
 pub const MIN_SPAN_MS: i64 = 60_000;
 /// 目盛りの間の狭さの下限（px。字が重ならないように）。
@@ -106,8 +109,8 @@ pub struct Segment {
     pub open_start: bool,
     /// 居るまま（か、窓の右の端で切った）。
     pub open_end: bool,
-    /// 帯の字を書けるか（幅に収まるか）。
-    pub labelled: bool,
+    /// 帯の字を書く左の端（字の分の余白の内側）。書けなければ None（幅に収まらないか、線を避けると収まらない）。
+    pub label_x: Option<u32>,
 }
 
 /// 矢印。`links` の添字と、元の点・先の点と、SVG の path の `d`。
@@ -212,9 +215,6 @@ pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
                 let pe = parts.get(k + 1).map_or(ce, |p| p.0);
                 let x0 = x(ps);
                 let w = (x(pe) - x0).max(1);
-                let labelled = change.is_some_and(|c| {
-                    text_width(&lane.changes[c].label, LABEL_PX) + LABEL_PAD * 2 <= w
-                });
                 segments.push(Segment {
                     lane: li,
                     change,
@@ -226,7 +226,7 @@ pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
                     h: BAND_H,
                     open_start: open_start && k == 0,
                     open_end: open_end && k + 1 == parts.len(),
-                    labelled,
+                    label_x: None,
                 });
             }
         }
@@ -243,7 +243,7 @@ pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
         }
     }
 
-    let arrows = links
+    let arrows: Vec<Arrow> = links
         .iter()
         .enumerate()
         .filter(|(_, l)| l.from < n && l.to < n && l.from != l.to)
@@ -297,6 +297,13 @@ pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
         })
         .collect();
 
+    for s in &mut segments {
+        if let Some(c) = s.change {
+            let need = text_width(&lanes[s.lane].changes[c].label, LABEL_PX) + LABEL_PAD * 2;
+            s.label_x = room(s, &arrows, need).map(|x| x + LABEL_PAD);
+        }
+    }
+
     let rank_rows = u32::try_from(n).unwrap_or(u32::MAX / ROW_H);
     Layout {
         width: plot_x + PLOT_W + RIGHT_ROOM,
@@ -312,6 +319,32 @@ pub fn layout(lanes: &[Lane], links: &[Link], window: Window) -> Layout {
         marks,
         ticks: ticks(start, end, plot_x, PLOT_W, window.offset_s),
     }
+}
+
+/// 帯 `s` の中で、矢印の線（[`LINE_ROOM`] の幅を足した）を避けた、幅 `need` の空いた所の左の端（左から探す）。
+/// 線は、元の点から縦に `y1` まで、そこから横に `x1` まで（[`Arrow`] の `d` の形）。帯の縁に触れるだけの線は避けない。
+fn room(s: &Segment, arrows: &[Arrow], need: u32) -> Option<u32> {
+    let (top, bottom) = (s.y, s.y + s.h);
+    let mut blocked: Vec<(u32, u32)> = arrows
+        .iter()
+        .flat_map(|a| {
+            let (ylo, yhi) = (a.y0.min(a.y1), a.y0.max(a.y1));
+            let vertical = (ylo < bottom && top < yhi).then_some((a.x0, a.x0));
+            let horizontal =
+                (top < a.y1 && a.y1 < bottom).then_some((a.x0.min(a.x1), a.x0.max(a.x1)));
+            vertical.into_iter().chain(horizontal)
+        })
+        .map(|(lo, hi)| (lo.saturating_sub(LINE_ROOM), hi + LINE_ROOM))
+        .collect();
+    blocked.sort_unstable();
+    let mut left = s.x;
+    for (lo, hi) in blocked {
+        if lo >= left + need {
+            break;
+        }
+        left = left.max(hi + 1);
+    }
+    (left + need <= s.x + s.w).then_some(left)
 }
 
 /// 時刻の窓。`from`・`to` が無ければ、居た間・印・線の時刻の初めから終わりまで（居るままの者がいれば今まで）。
@@ -486,8 +519,8 @@ pub fn ticks(start: i64, end: i64, plot_x: u32, plot_w: u32, offset_s: i64) -> V
 #[cfg(test)]
 mod tests {
     use super::{
-        BAND_H, Change, Kind, LABEL_PAD, LABEL_PX, Lane, Layout, Link, MIN_TICK_PX, PLOT_W,
-        Presence, ROW_H, Window, layout, ticks,
+        BAND_H, Change, Kind, LABEL_PAD, LABEL_PX, LINE_ROOM, Lane, Layout, Link, MIN_TICK_PX,
+        PLOT_W, Presence, ROW_H, Window, layout, ticks,
     };
     use crate::tree::text_width;
 
@@ -820,13 +853,139 @@ mod tests {
         let l = layout(&[a.clone()], &[], hour());
         let s = segments_of(&l, 0);
         assert_eq!(s.len(), 3);
-        let labelled: Vec<bool> = s.iter().map(|s| s.labelled).collect();
+        let labelled: Vec<bool> = s.iter().map(|s| s.label_x.is_some()).collect();
         assert_eq!(labelled, vec![true, false, true], "{s:?}");
         for seg in &s {
             let label = &a.changes[seg.change.unwrap()].label;
             let need = text_width(label, LABEL_PX) + LABEL_PAD * 2;
-            assert_eq!(seg.labelled, need <= seg.w, "{seg:?} {need}");
+            assert_eq!(seg.label_x.is_some(), need <= seg.w, "{seg:?} {need}");
         }
+    }
+
+    /// どの矢印の線も、帯の字（左の端 `label_x` から字の幅）から [`LINE_ROOM`] より近くを通らない。
+    /// 線は path の `d` のとおり、元の点から縦に `y1` まで、そこから横に `x1` まで。
+    fn assert_clear(l: &Layout, lanes: &[Lane]) {
+        for s in &l.segments {
+            let Some(lx) = s.label_x else { continue };
+            let text = text_width(&lanes[s.lane].changes[s.change.unwrap()].label, LABEL_PX);
+            let (left, right) = (lx.saturating_sub(LINE_ROOM), lx + text + LINE_ROOM);
+            let in_band = |y: u32| s.y < y && y < s.y + s.h;
+            for a in &l.arrows {
+                let (ylo, yhi) = (a.y0.min(a.y1), a.y0.max(a.y1));
+                // 縦の線が帯の高さを通り、字の横の幅に入る。
+                let vertical = ylo < s.y + s.h && s.y < yhi && (left..=right).contains(&a.x0);
+                // 横の線が帯の高さを通り、字の横の幅に重なる。
+                let horizontal = in_band(a.y1) && a.x0.min(a.x1) <= right && left <= a.x0.max(a.x1);
+                assert!(
+                    !vertical && !horizontal,
+                    "線が字に重なる: {a:?} {s:?} 字 {lx}..{}",
+                    lx + text
+                );
+            }
+        }
+    }
+
+    /// 上の行から下の行へ、間の行（字の書ける長い帯）を縦に通る線。
+    fn crossing(kind: Kind, middle: Vec<Change>) -> (Vec<Lane>, [Link; 1]) {
+        let mut mid = lane(T0 + MIN, &[(T0, Presence::In)]);
+        mid.changes = middle;
+        let lanes = vec![
+            lane(
+                T0,
+                &[(T0 + 2 * MIN, Presence::In), (T0 + 4 * MIN, Presence::Out)],
+            ),
+            mid,
+            lane(T0 + 50 * MIN, &[(T0 + 50 * MIN, Presence::In)]),
+        ];
+        let links = [Link {
+            from: 0,
+            to: 2,
+            kind,
+            at: T0 + 4 * MIN,
+        }];
+        (lanes, links)
+    }
+
+    #[test]
+    fn 継いだ点線は_間の行の帯の字に重ならず_字を線の右へずらす() {
+        let (lanes, links) = crossing(Kind::Continued, vec![change(T0, "opus-5-5 · high")]);
+        let l = layout(&lanes, &links, hour());
+        assert_eq!(l.arrows.len(), 1, "{l:?}");
+        let a = &l.arrows[0];
+        assert_eq!(a.x0, expect_x(&l, T0 + 4 * MIN));
+        let s = segments_of(&l, 1);
+        assert_eq!(s.len(), 1, "{s:?}");
+        // 前のままなら、字は帯の左の端から書き、4 分の所の線が字を横切る。
+        let text = text_width("opus-5-5 · high", LABEL_PX);
+        assert!(
+            s[0].x + LABEL_PAD + text > a.x0,
+            "線が字の置き場を通らない形になった"
+        );
+        let lx = s[0].label_x.expect("帯は長いので、字は書く");
+        assert!(lx > a.x0, "字は線の右へずらす: {lx} {a:?}");
+        assert_clear(&l, &lanes);
+    }
+
+    #[test]
+    fn 起こした実線も_間の行の帯の字に重ならない() {
+        let (lanes, links) = crossing(Kind::Launched, vec![change(T0, "opus-5-5 · high")]);
+        let l = layout(&lanes, &links, hour());
+        assert_eq!(l.arrows.len(), 1, "{l:?}");
+        assert!(segments_of(&l, 1)[0].label_x.is_some());
+        assert_clear(&l, &lanes);
+    }
+
+    #[test]
+    fn 線の両側に字の置き場が無ければ_字は書かない() {
+        // 間の行の帯は 0 分から 8 分まで（128 px）で、字は収まるが、4 分の所の線の左右のどちらにも収まらない。
+        let (mut lanes, links) = crossing(Kind::Continued, vec![change(T0, "opus-5-5 · high")]);
+        lanes[1].presence = vec![(T0, Presence::In), (T0 + 8 * MIN, Presence::Out)];
+        let l = layout(&lanes, &links, hour());
+        let s = segments_of(&l, 1);
+        let need = text_width("opus-5-5 · high", LABEL_PX) + LABEL_PAD * 2;
+        assert!(need <= s[0].w, "帯の幅には収まる形: {need} {:?}", s[0]);
+        assert_eq!(s[0].label_x, None, "{:?}", s[0]);
+        assert_clear(&l, &lanes);
+    }
+
+    #[test]
+    fn 線は_どの試験の形でも帯の字に重ならない() {
+        // 替わり目の多い行を、上下の行の線が何本も通る。
+        let mut busy = lane(T0 + MIN, &[(T0, Presence::In)]);
+        // 10 分（160 px）ずつの帯。どれも字は収まる。
+        busy.changes = (0..6)
+            .map(|k| {
+                let label = if k % 2 == 0 {
+                    "opus-5-5 · high"
+                } else {
+                    "sonnet-5 · low"
+                };
+                change(T0 + k * 10 * MIN, label)
+            })
+            .collect();
+        let mut lanes = vec![lane(T0, &[(T0, Presence::In)]), busy];
+        let mut links = Vec::new();
+        for k in 0..6 {
+            lanes.push(lane(
+                T0 + (10 + k) * MIN,
+                &[(T0 + (8 + k * 9) * MIN, Presence::In)],
+            ));
+            links.push(Link {
+                from: 0,
+                to: lanes.len() - 1,
+                kind: if k % 2 == 0 {
+                    Kind::Launched
+                } else {
+                    Kind::Continued
+                },
+                at: T0 + (3 + k * 9) * MIN,
+            });
+        }
+        let l = layout(&lanes, &links, hour());
+        assert_eq!(l.arrows.len(), 6, "{l:?}");
+        let labelled = l.segments.iter().filter(|s| s.label_x.is_some()).count();
+        assert!(labelled >= 3, "字を書く帯が少ない（{labelled}）: {l:?}");
+        assert_clear(&l, &lanes);
     }
 
     /// 目盛りを見る: 数は 2 から 10、間は等しく MIN_TICK_PX 以上、時刻の部分の中。

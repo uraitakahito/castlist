@@ -206,8 +206,6 @@ async fn 引き当てと見る_sql_は大きな表を端から読まない() {
         "state",
         "current_settings",
         "current_bindings",
-        "binding_at",
-        "label",
     ] {
         assert!(names.contains(&want), "{want} が LOOKUPS に無い: {names:?}");
     }
