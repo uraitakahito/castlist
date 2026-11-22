@@ -13,6 +13,8 @@ name = "castlist-server"
 path = "src/main.rs"
 
 [dependencies]
+# 画面の HTML（templates/）。字は既定で HTML として逃がす。
+askama = "0.16.1"
 axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "query", "tokio"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -7,11 +7,12 @@
 pub mod api;
 pub mod db;
 pub mod search;
+pub mod ui;
 
 use axum::extract::Request;
 use axum::http::{HeaderValue, Method, StatusCode, header};
 use axum::middleware::{self, Next};
-use axum::response::{Html, IntoResponse, Response};
+use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use serde_json::json;
@@ -20,7 +21,8 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 /// 画面の応答に付ける Content-Security-Policy。script と style は、castlist 自身が配る file だけを許す。
-pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+/// form は castlist 自身へだけ送れる（一覧の絞りの form は GET で `/` に送る）。
+pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
 /// 1 つの問い合わせにかけてよい長さ。過ぎれば 503 で返す。
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
@@ -29,7 +31,9 @@ pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 pub fn router(db: db::Db) -> Router {
     Router::new()
         .route("/healthz", get(healthz))
-        .route("/", get(index))
+        .route("/", get(ui::list))
+        .route("/actors/{id}", get(ui::profile))
+        .route("/static/site.css", get(ui::site_css))
         .route("/v1/actors", post(api::register).get(search::actors))
         .route("/v1/actors/{id}", get(api::actor))
         .route("/v1/actors/{id}/lineage", get(search::lineage))
@@ -66,14 +70,6 @@ async fn healthz() -> Json<serde_json::Value> {
         .format(&Rfc3339)
         .unwrap_or_default();
     Json(json!({ "status": "ok", "version": env!("CARGO_PKG_VERSION"), "now": now }))
-}
-
-/// 一覧の画面（作っている途中）。
-async fn index() -> Html<&'static str> {
-    Html(
-        "<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\"><title>castlist</title></head>\
-         <body><h1>castlist</h1><p>作っている途中です。</p></body></html>",
-    )
 }
 
 /// この Mac の中からの要求だけを受ける。

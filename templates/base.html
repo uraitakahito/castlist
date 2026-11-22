@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{% block title %}{% endblock %} ・ castlist</title>
+<link rel="stylesheet" href="{{ css }}">
+</head>
+<body>
+<header class="bar">
+<a class="home" href="/">castlist</a>
+<span class="sub">アクターの台帳</span>
+</header>
+<main>
+{% block main %}{% endblock %}
+</main>
+<footer>時刻は日本の時刻（UTC+9）で、castlist が受けた時刻。字に重ねると ISO の時刻が出る。{% block foot %}{% endblock %}</footer>
+</body>
+</html>

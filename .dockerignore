@@ -3,6 +3,8 @@
 *
 !src
 !migrations
+!templates
+!static
 !build.rs
 !.cargo
 !Cargo.toml

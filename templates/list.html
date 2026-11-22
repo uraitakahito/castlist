@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}アクターの一覧{% endblock %}
+{% block main %}
+<h1>アクター</h1>
+<form class="filters" method="get" action="/">
+<fieldset>
+<legend>絞る（どれも AND。空の欄は付けないのと同じ）</legend>
+<div class="fields">
+{% for label in form.labels %}
+<label>札 <input name="label" value="{{ label }}" placeholder="tpm.key:t-23zs"></label>
+{% endfor %}
+<label>札 <input name="label" value="" placeholder="tpm.key:t-23zs"></label>
+<label>居るか <select name="active">
+<option value="">どれも</option>
+<option value="true"{% if form.active == "true" %} selected{% endif %}>いる</option>
+<option value="false"{% if form.active == "false" %} selected{% endif %}>いない</option>
+</select></label>
+<label>種類 <select name="kind">
+<option value="">どれも</option>
+<option value="ai"{% if form.kind == "ai" %} selected{% endif %}>AI</option>
+<option value="human"{% if form.kind == "human" %} selected{% endif %}>人</option>
+</select></label>
+<label>model <input name="model" value="{{ form.model }}" placeholder="claude-opus-5-5"></label>
+<label>effort <input name="effort" value="{{ form.effort }}" placeholder="high"></label>
+<label>居た間の窓の初め <input name="active_from" value="{{ form.active_from }}" placeholder="2026-11-22T11:00:00+09:00"></label>
+<label>終わり <input name="active_to" value="{{ form.active_to }}" placeholder="2026-11-22T12:00:00+09:00"></label>
+<label class="check"><input type="checkbox" name="skewed" value="true"{% if form.skewed %} checked{% endif %}> 時計のずれた行を持つ</label>
+{% for (name, value) in form.hidden %}
+<input type="hidden" name="{{ name }}" value="{{ value }}">
+{% endfor %}
+</div>
+<div class="actions"><button type="submit">絞る</button> <a href="/">外す</a></div>
+</fieldset>
+</form>
+{% if defaulted %}
+<p class="note">絞る条件が無いので、この {{ days }} 日に居た者（登場の記録がある者）を、新しい順に出す。登場の無いアクターは、札などで絞ると出る。</p>
+{% endif %}
+{% if rows.is_empty() %}
+<p class="empty">当たるアクターはいない。</p>
+{% else %}
+<div class="scroll">
+<table class="actors">
+<thead><tr><th>名</th><th>種類</th><th>居るか</th><th>Key・役</th><th>model · effort</th><th>初めの登場</th><th>最後の退場</th><th></th></tr></thead>
+<tbody>
+{% for row in rows %}
+<tr>
+<td><a class="name" href="{{ row.href }}">{{ row.name }}</a></td>
+<td>{{ row.kind }}</td>
+<td>{% call m::presence(row) %}{% endcall %}</td>
+<td>{% if let Some(key) = row.key %}<span class="chip">{{ key }}</span>{% endif %}{% if let Some(role) = row.role %} <span class="chip role">{{ role }}</span>{% endif %}</td>
+<td>{% call m::setting(row) %}{% endcall %}</td>
+<td>{% call m::maybe_time(row.first_entered) %}{% endcall %}</td>
+<td>{% call m::maybe_time(row.last_exited) %}{% endcall %}</td>
+<td>{% if row.skewed %}{% call m::skew() %}{% endcall %}{% endif %}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endif %}
+{% if let Some(next) = next %}
+<p class="more"><a rel="next" href="{{ next }}">次の頁</a></p>
+{% endif %}
+{% endblock %}
+{% block foot %} 答えた時: {% call m::time(as_of) %}{% endcall %}{% endblock %}
