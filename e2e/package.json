@@ -1,7 +1,7 @@
 {
   "name": "castlist-e2e",
   "private": true,
-  "description": "相関図（/graph/network）を、本物の browser で見る試験（Playwright）。image には入らない。",
+  "description": "相関図（/graph/network）と期間の欄を、本物の browser で見る試験（Playwright）。image には入らない。",
   "type": "module",
   "packageManager": "pnpm@11.26.0",
   "engines": {
