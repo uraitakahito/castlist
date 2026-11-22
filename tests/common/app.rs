@@ -28,9 +28,15 @@ pub fn temp_db(tag: &str) -> PathBuf {
 
 /// DB の file と WAL の file と記録を、folder ごと消す。
 pub fn remove_db(path: &Path) {
-    if let Some(dir) = path.parent() {
-        let _ = std::fs::remove_dir_all(dir);
-    }
+    let Some(dir) = path.parent() else { return };
+    // 消すのは temp_db が作った folder だけ（一時の folder の直下の DB を渡されても、一時の folder ごとは消さない）。
+    let name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
+    assert!(
+        name.starts_with("castlist-test-"),
+        "temp_db の folder ではない: {}",
+        dir.display()
+    );
+    let _ = std::fs::remove_dir_all(dir);
 }
 
 pub struct App {

@@ -1062,7 +1062,7 @@ impl Db {
         })
     }
 
-    /// 動かしたまま、DB の揃った写しを 1 つの file に作る（DB の隣に置く。呼んだ側が読み終えたら消す）。
+    /// 動かしたまま、DB の揃ったバックアップを 1 つの file に作る（DB の隣に置く。呼んだ側が読み終えたら消す）。
     /// 読む接続で `vacuum into` する（書く接続を塞がない）。
     pub async fn backup(&self) -> Result<PathBuf, sqlx::Error> {
         static SEQ: AtomicU64 = AtomicU64::new(0);

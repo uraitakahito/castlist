@@ -257,6 +257,6 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 
 引き当てと見る SQL（`src/db.rs` の `LOOKUPS`）と、検索の SQL（`src/search.rs` の `plans()`。条件ごとと、全部を重ねた物）は、試験が `EXPLAIN QUERY PLAN` で、大きな表を端から読まないことを見る（`tests/db.rs`・`tests/search.rs`）。
 
-## 写し
+## バックアップ
 
-`GET /v1/backup` は、読む接続で `VACUUM INTO` を流し、DB の隣の一時の file に揃った写しを作って返す（書く接続を塞がない）。
+`GET /v1/backup` は、読む接続で `VACUUM INTO` を流し、DB の隣の一時の file に揃ったバックアップを作って返す（書く接続を塞がない）。

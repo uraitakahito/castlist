@@ -1,4 +1,4 @@
-//! JSON の API: アクターの登録・出来事・線・model と effort・引き当て・見る・DB の写し。
+//! JSON の API: アクターの登録・出来事・線・model と effort・引き当て・見る・DB のバックアップ。
 //! アクターは、鍵の付随する id（`type:value`）で指す。castlist が本当の id に引き当てる。
 
 use crate::db::{self, Db, NewActor, NewEvent, NewLink, NewSetting, Put, Ref, WriteError};
@@ -510,17 +510,17 @@ pub async fn graph(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>
     Ok(Json(json!({ "as_of": as_of, "nodes": graph.nodes, "edges": graph.edges })).into_response())
 }
 
-/// `GET /v1/backup`: DB の揃った写しを 1 つの file で返す（`curl -o castlist.db <URL>/v1/backup`）。
+/// `GET /v1/backup`: DB の揃ったバックアップを 1 つの file で返す（`curl -o castlist.db <URL>/v1/backup`）。
 pub async fn backup(State(db): State<Db>) -> Answer {
     let path = db.backup().await?;
     let file = tokio::fs::File::open(&path).await;
     // 開いた後は名が要らない。消しても、読み終えるまで中身は残る。
     let _ = tokio::fs::remove_file(&path).await;
     let file = file.map_err(|e| {
-        tracing::error!("写しを開けない: {e}");
+        tracing::error!("バックアップを開けない: {e}");
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
-            "写しを開けない".to_owned(),
+            "バックアップを開けない".to_owned(),
         )
     })?;
     Ok((

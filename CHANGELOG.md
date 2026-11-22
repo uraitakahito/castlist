@@ -14,9 +14,11 @@
 - **log の行の形が変わった**: `container logs` に出るどの行も、頭に時刻（UTC）と重さ（`INFO` など）が付く（`2026-01-02T03:04:05.000000Z  INFO castlist_server: castlist 0.3.0 listen=… db=…`）。行の中の文（`castlist <版> listen=… db=…`・`castlist stopped`）は変わらない。初めの行は、前回の終わり方になった。問い合わせごとの行は `container logs` には出ない（量を増やさないため）。誤りの行は、stderr でなく stdout に出る。止める合図を受けた時に `signal SIGTERM`（か `SIGINT`）の行を出す。
 - 画面: 系図の画面（`/graph/tree`）を消した。前の URL は 404。一覧・タイムライン・相関図の頭の「系図へ」も無い（Product Manager の決めごと: 系図は使わない）。API と移行は替わらない。
 - docs: 図の呼び名から記号（図 B・図 C）を外し、名だけ（タイムライン・相関図）にした。
+- docs と誤りの字: DB の「写し」を「バックアップ」、「写しから戻す」を「バックアップからリストアする」にそろえた（`GET /v1/backup` の誤りの字も）。run.md の見出し「断るのは、機械の外からだけ」を「同じ network の container からは届く」にした。roster の `CASTLIST_VERSION` を上げる段を [release を出す](https://uraitakahito.github.io/castlist/release.html) に書いた。
 - 中: 記録の 1 行を同期で書く `src/runlog.rs` だけ、塞ぐ呼び出しの断り（clippy）を外した（`panic = "abort"` で、落ちる直前の行を残すため）。
 - 試験: 試験ごとに空の folder を作り、その中に DB を置く（記録が DB の隣の `logs/` にできるため）。本物の binary を止め方ごとに起こし直す試験（`tests/runlog.rs`）と、image の smoke での確かめを足した。
 
+## 0.2.0
 
 送り手の時刻の名を `at` から `sent_at` にした（PM の答え。`at` だけでは誰の時刻か分からないため）。API（`/v1/`）と移行の SQL が替わる。
 

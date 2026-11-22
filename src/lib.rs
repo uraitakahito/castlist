@@ -96,7 +96,7 @@ async fn healthz() -> Json<serde_json::Value> {
     Json(json!({ "status": "ok", "version": env!("CARGO_PKG_VERSION"), "now": now }))
 }
 
-/// castlist を動かす機械の中からの要求だけを受ける。
+/// browser で開いたほかのページからの要求を、`Host` と `Origin` で断る（同じ network の container は、`Host: 127.0.0.1` を付ければ通る）。
 /// - `Host` が 127.0.0.1・localhost でなければ断る（外の site が名前を付け替えて届ける要求を防ぐ）。
 /// - 書く要求に `Origin` が付いていれば断る（browser の中のページからは書かせない。tpm と `curl` は付けない）。
 async fn guard(request: Request, next: Next) -> Response {

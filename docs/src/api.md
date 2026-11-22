@@ -1,6 +1,6 @@
 # API
 
-どれも JSON。host（castlist を動かす機械）の外からは届かない。`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403（browser で開いたほかのページからの読み書きを断る物。同じ network の container は `Host: 127.0.0.1` で読み書きできる。[動かす](run.md) の「断るのは、機械の外からだけ」）。
+どれも JSON。host（castlist を動かす機械）の外からは届かない。`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403（browser で開いたほかのページからの読み書きを断る物。同じ network の container は `Host: 127.0.0.1` で読み書きできる。[動かす](run.md) の「同じ network の container からは届く」）。
 
 - アクターは、鍵の付随する id（`種類:値`。例 `claude.session:5f0c…`・`tpm.person:pm`）で指す。本当の id への引き当ては castlist がする。値には `:` があってよい（初めの `:` で分ける）。
 - 時刻は RFC 3339。送り手の時刻（`sent_at`。送り手が送る時に付けた、送り手の時計の時刻）は、そのまま残す。0.1.x の名 `at` も、移る間は受ける（両方を付ければ 422。答えはいつも `sent_at`）。castlist が受けた時刻（`received_at`）は UTC・ミリ秒まで。
@@ -302,11 +302,11 @@ Auditor の使い方:
 
 ## `GET /v1/logs` 残した記録
 
-残した記録（終わり方の印と、時刻つきの行）を、古い順の字で返す（0.3.0 から。`text/plain; charset=utf-8`。多くて 4 MiB と 64 KiB）。`curl -s http://127.0.0.1:8802/v1/logs`。castlist を止めずに、落ちた後の調べに使う。中身の file と行の読み方は [動かす](run.md) の「落ちた後に調べる」。行の形は、この API の決まりに入らない（人が読むための字）。
+残した記録（終わり方の印と、時刻つきの行）を、古い順の字で返す（0.3.0 から。`text/plain; charset=utf-8`。多くて 4 MiB と 64 KiB）。`curl -s http://127.0.0.1:8802/v1/logs`。castlist を止めずに、落ちた後の調べに使う。中身の file と行の読み方は [動かす](run.md) の「落ちた後に調べる」。行の形は、この API の決まりに入らない（人が読むための字）。届く所の守りは、ほかの道と同じ（[動かす](run.md) の「同じ network の container からは届く」）。
 
-## `GET /v1/backup` DB の写し
+## `GET /v1/backup` DB のバックアップ
 
-動かしたまま、揃った写しを 1 つの SQLite の file で返す（`application/vnd.sqlite3`）。`curl -o castlist.db http://127.0.0.1:8802/v1/backup`。写しは DB の隣の一時の file に `VACUUM INTO` で作り、送り始めたら消す。
+動かしたまま、揃ったバックアップを 1 つの SQLite の file で返す（`application/vnd.sqlite3`）。`curl -fsS -o castlist-backup-$(date +%Y%m%d-%H%M).db http://127.0.0.1:8802/v1/backup`。バックアップは DB の隣の一時の file に `VACUUM INTO` で作り、送り始めたら消す。
 
 ## `GET /healthz`
 
