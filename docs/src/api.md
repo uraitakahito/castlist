@@ -1,6 +1,6 @@
 # API
 
-どれも JSON で、この Mac の中からだけ受ける（`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403）。
+どれも JSON で、castlist を動かす機械の中からの要求だけを受ける（`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403）。
 
 - アクターは、鍵の付随する id（`種類:値`。例 `claude.session:5f0c…`・`tpm.person:pm`）で指す。本当の id への引き当ては castlist がする。値には `:` があってよい（初めの `:` で分ける）。
 - 時刻は RFC 3339。送り手の時刻（`at`）は、そのまま残す。castlist が受けた時刻（`received_at`）は UTC・ミリ秒まで。
@@ -303,4 +303,4 @@ Auditor の使い方:
 
 ## `GET /healthz`
 
-`{"status":"ok","version":"…","now":"…"}`。`now` は castlist の今の時刻（tpm が Mac の時計との差を測る）。
+`{"status":"ok","version":"…","now":"…"}`。`now` は castlist の今の時刻（送り手の tpm が、自分の動く機械の時計との差を測る）。
