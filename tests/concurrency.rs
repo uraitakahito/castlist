@@ -251,82 +251,7 @@ async fn 書く鍵を待つ_20_の要求があっても_healthz_は_100_ms_で�
     assert_foreign_keys(&app).await;
 }
 
-/// 系図を組む重い計算は、tokio の糸の外（spawn_blocking）で走る。500 のアクターの系図を並べて組ませている間も、
-/// 引き当て（/v1/resolve）は 100 ms で答える。
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn アクター_500_の系図を組む間も_引き当ては_100_ms_で答える() {
-    let app = App::start().await;
-    let root = app.register(&common::app::human("pm")).await;
-    let root_ref = "tpm.person:pm".to_owned();
-    assert!(root["id"].is_string());
-    for i in 0..500 {
-        app.register(&ai("se", &format!("s-{i}"))).await;
-        // 3 つずつ枝分かれする木（0 は人の根から）。
-        let from = if i == 0 {
-            root_ref.clone()
-        } else {
-            format!("claude.session:s-{}", (i - 1) / 3)
-        };
-        let (status, answer) = app
-            .put(
-                &format!("/v1/links/l-{i}"),
-                &common::app::link("launched", &from, &format!("claude.session:s-{i}")),
-            )
-            .await;
-        assert_eq!(status, StatusCode::CREATED, "{answer}");
-    }
-    let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let renders: Vec<_> = (0..4)
-        .map(|_| {
-            let router = app.app.clone();
-            let stop = stop.clone();
-            tokio::spawn(async move {
-                let mut done = 0;
-                while !stop.load(std::sync::atomic::Ordering::Relaxed) {
-                    let response = router
-                        .clone()
-                        .oneshot(request("GET", "/graph/tree", None))
-                        .await
-                        .unwrap();
-                    assert_eq!(response.status(), StatusCode::OK);
-                    let bytes = http_body_util::BodyExt::collect(response.into_body())
-                        .await
-                        .unwrap()
-                        .to_bytes();
-                    let body = String::from_utf8(bytes.to_vec()).unwrap();
-                    assert_eq!(body.matches("href=\"/actors/").count(), 501);
-                    done += 1;
-                }
-                done
-            })
-        })
-        .collect();
-    tokio::time::sleep(Duration::from_millis(50)).await;
-    let mut slowest = Duration::ZERO;
-    for _ in 0..20 {
-        let started = Instant::now();
-        let (status, answer) = app
-            .post(
-                "/v1/resolve",
-                &json!({ "issuer": "tpm", "refs": ["claude.session:s-1"] }),
-            )
-            .await;
-        let took = started.elapsed();
-        assert_eq!(status, StatusCode::OK, "{answer}");
-        assert!(took < Duration::from_millis(100), "{took:?}");
-        slowest = slowest.max(took);
-        tokio::time::sleep(Duration::from_millis(20)).await;
-    }
-    stop.store(true, std::sync::atomic::Ordering::Relaxed);
-    let mut rendered = 0;
-    for task in renders {
-        rendered += task.await.unwrap();
-    }
-    assert!(rendered > 0, "系図を 1 度も組めていない");
-    println!("一番遅い引き当て: {slowest:?}・組んだ系図: {rendered}");
-}
-
-/// タイムラインを組む重い計算も、tokio の糸の外（spawn_blocking）で走る。500 のアクター（登場と model の替わり目つき）の
+/// タイムラインを組む重い計算は、tokio の糸の外（spawn_blocking）で走る。500 のアクター（登場と model の替わり目つき）の
 /// タイムラインを並べて組ませている間も、引き当て（/v1/resolve）は 100 ms で答える。
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn アクター_500_のタイムラインを組む間も_引き当ては_100_ms_で答える() {
@@ -446,7 +371,7 @@ async fn 重い読みは読む接続を_2_本までしか使わない() {
             let path = if i % 2 == 0 {
                 "/graph/timeline"
             } else {
-                "/graph/tree"
+                "/v1/graph"
             };
             tokio::spawn(async move {
                 while !stop.load(std::sync::atomic::Ordering::Relaxed) {
