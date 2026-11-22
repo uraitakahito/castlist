@@ -12,6 +12,7 @@ cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
 ci/check-sql.sh                                                    # 行を書き替える・消す SQL が無いか
 ci/check-vendor.sh                                                 # 取り込んだ cytoscape が npm の物と同じか（static/vendor/SOURCES.md）
+ci/test-check-release-version.sh                                   # release の tag と版の突き合わせの試験
 (cd e2e && pnpm install --frozen-lockfile && pnpm test)            # 関係の網を本物の browser で見る（Playwright。castlist-server を作って空いた port で起こす）
 cargo test --locked --release --test load -- --ignored --nocapture # 負荷の試験（50 の客で 10 秒）
 CASTLIST_LISTEN=127.0.0.1:18802 CASTLIST_DB=/tmp/castlist-dev.db cargo run --bin castlist-server   # 手元で起こす（本物の castlist の 8802 とは別の port・別の DB）
@@ -37,7 +38,8 @@ mdbook build docs                                                  # この本�
 | 負荷 | 本物の binary を一時の DB で起こし、50 の客が 10 秒叩く（読む物の 2 割は監査の検索。ふだんは流さない） | `tests/load.rs`（CI の job `load`） |
 | 単体 | DB に触らない純な関数 | 各 file の `#[cfg(test)]` |
 | browser | 本物の castlist-server を空いた port と一時の DB で起こし、API で見本を置き、Chromium で関係の網を開く。点と線の数・押した先・model と effort の絞り・色（明るい・暗い）・console の誤りと CSP の違反が 0・script を切った時の字を見る | `e2e/`（Playwright。CI の job `e2e`。Node の依存の弱点は job `advisories` の `pnpm audit`） |
-| image | 空の image の中で起き、断るべき物を断り、画面と CSS が CSP の決まりどおりに出て、止めて起こし直せる | `ci/smoke-image.sh`（CI の job `image`） |
+| image | 空の image の中で起き、断るべき物を断り、画面（関係の網も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せる | `ci/smoke-image.sh`（CI の job `image` と release の `check`） |
+| release の版 | tag と `Cargo.toml` の版・`CHANGELOG.md` の節の突き合わせを、通る形と落ちる形で打つ | `ci/test-check-release-version.sh`（CI の job `test`） |
 
 ## 待たせない書き方
 

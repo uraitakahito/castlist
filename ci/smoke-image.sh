@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # image が、空の image の中で起き、/healthz に答え、外の Host と browser からの書き込みを断り、
-# 画面（一覧・系図・時間の帯）と CSS が CSP の決まりどおりに出て、止める合図で自分から終わり、起こし直しても答えるかを見る。
-# 使い方: ci/smoke-image.sh <image>
+# 画面（一覧・系図・時間の帯・関係の網）と CSS と script が CSP の決まりどおりに出て、止める合図で自分から終わり、
+# 起こし直しても答えるかを見る。
+# 使い方: ci/smoke-image.sh <image>（repo の checkout の中で打つ。配る cytoscape を static/vendor/ の物と突き合わせる）
 # container の名は smoke-castlist にする（castlist の設定の「PM だけ」の match（--name castlist など）に当てないため）。
 set -euo pipefail
 
 image=${1:?使い方: ci/smoke-image.sh <image>}
+here=$(cd "$(dirname "$0")" && pwd)
 name=smoke-castlist
 url=http://127.0.0.1:18802
 tmp=${RUNNER_TEMP:-/tmp}
@@ -53,6 +55,33 @@ grep -qF '当たるアクターはいない' "$tmp/timeline.html"
 curl -fsS -D "$tmp/css-head.txt" -o "$tmp/site.css" "$url/static/site.css"
 tr -d '\r' <"$tmp/css-head.txt" | grep -qi '^content-type: text/css'
 test -s "$tmp/site.css"
+# 関係の網: 同じ CSP が付き、inline の style が無く、script は castlist が配る 2 つ（cytoscape と network.js）を src で読むだけ。
+curl -fsS -D "$tmp/network-head.txt" -o "$tmp/network.html" "$url/graph/network"
+tr -d '\r' <"$tmp/network-head.txt" | grep -qixF "content-security-policy: $csp"
+if grep -qiE '<style|style=' "$tmp/network.html"; then
+  echo "NG: 関係の網に inline の style がある" >&2
+  exit 1
+fi
+scripts=$(grep -oiE '<script[^>]*>' "$tmp/network.html" | sed -E 's/\?v=[0-9a-f]+"/"/' | LC_ALL=C sort)
+want_scripts='<script src="/static/network.js">
+<script src="/static/vendor/cytoscape-3.35.0.min.js">'
+if [ "$scripts" != "$want_scripts" ]; then
+  echo "NG: 関係の網の script が、castlist の配る 2 つでない: $scripts" >&2
+  exit 1
+fi
+grep -qF 'data-src="/v1/graph"' "$tmp/network.html"
+# 関係の網の script（network.js）と cytoscape: JavaScript の型で、中身がある。cytoscape は static/vendor/ の物と同じ字。
+curl -fsS -D "$tmp/network-js-head.txt" -o "$tmp/network.js" "$url/static/network.js"
+tr -d '\r' <"$tmp/network-js-head.txt" | grep -qi '^content-type: application/javascript'
+tr -d '\r' <"$tmp/network-js-head.txt" | grep -qix 'x-content-type-options: nosniff'
+test -s "$tmp/network.js"
+curl -fsS -D "$tmp/cytoscape-head.txt" -o "$tmp/cytoscape.js" "$url/static/vendor/cytoscape-3.35.0.min.js"
+tr -d '\r' <"$tmp/cytoscape-head.txt" | grep -qi '^content-type: application/javascript'
+tr -d '\r' <"$tmp/cytoscape-head.txt" | grep -qix 'x-content-type-options: nosniff'
+cmp -s "$tmp/cytoscape.js" "$here/../static/vendor/cytoscape-3.35.0.min.js" || {
+  echo "NG: 配る cytoscape が static/vendor/cytoscape-3.35.0.min.js と違う" >&2
+  exit 1
+}
 # 止める合図（SIGTERM）で、自分から終わるか（PID 1 は受け口が無いと合図を無視する）。
 docker stop "$name"
 test "$(docker inspect -f '{{.State.ExitCode}}' "$name")" = 0
