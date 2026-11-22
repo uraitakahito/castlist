@@ -1,0 +1,9 @@
+{% macro time(t) %}<time datetime="{{ t.iso }}" title="{{ t.iso }}">{{ t.local }}</time>{% endmacro %}
+
+{% macro maybe_time(t) %}{% if let Some(t) = t %}{% call time(t) %}{% endcall %}{% else %}<span class="none">—</span>{% endif %}{% endmacro %}
+
+{% macro skew() %}<span class="skew" title="送り手の時計が、castlist の時計と 5 分より離れている">ずれ</span>{% endmacro %}
+
+{% macro presence(row) %}{% if row.present %}<span class="state on">いる</span>{% else %}<span class="state off">いない</span>{% endif %}{% if let Some(p) = row.presence %} <span class="event" title="{{ p.1 }}">{{ p.0 }}</span>{% endif %}{% endmacro %}
+
+{% macro setting(row) %}{% if let Some(s) = row.setting %}<code>{{ s.0 }}</code> · <code>{{ s.1 }}</code>{% else %}<span class="none">—</span>{% endif %}{% endmacro %}

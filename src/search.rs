@@ -25,12 +25,13 @@ use time::format_description::well_known::Rfc3339;
 const LIMIT: i64 = 100;
 const MAX_LIMIT: i64 = 1000;
 /// 線を辿る段の上限。
-const MAX_DEPTH: u32 = 20;
+pub(crate) const MAX_DEPTH: u32 = 20;
 
 // --- SQL ---
 
 /// 一覧の 1 行（アクター）。初めの登場・最後の退場・居るか・最新の model と effort は、
 /// アクター 1 つごとの「order by seq limit 1」で引く（events(actor_id, type, seq)・settings(actor_id, seq)）。
+/// 時計のずれた行を持つか（skewed）も、アクター 1 つごとに引く（画面の印。API の答えには出さない）。
 const ACTOR_ITEM: &str =
     "select a.seq, a.id, a.name, a.kind, a.issuer, a.at, a.received_at, a.clock_skew,
        (select e.received_at from events e
@@ -46,6 +47,13 @@ const ACTOR_ITEM: &str =
                  where e.actor_id = a.id
                    and e.type in ('entered', 'reentered', 'forked', 'cleared', 'exited', 'closed')
                  order by e.seq desc limit 1), 0) as present,
+       (select e.type from events e
+        where e.actor_id = a.id
+          and e.type in ('entered', 'reentered', 'forked', 'cleared', 'exited', 'closed')
+        order by e.seq desc limit 1) as presence,
+       (a.clock_skew
+        or exists(select 1 from events e where e.actor_id = a.id and e.clock_skew = 1)
+        or exists(select 1 from settings s where s.actor_id = a.id and s.clock_skew = 1)) as skewed,
        (select m.name from settings s join models m on m.id = s.model_id
         where s.actor_id = a.id order by s.seq desc limit 1) as model,
        (select f.name from settings s join efforts f on f.id = s.effort_id
@@ -163,9 +171,15 @@ pub struct ActorItem {
     pub last_exited_at: Option<String>,
     pub last_exit_type: Option<String>,
     pub present: bool,
+    /// 居る・居ないを替える出来事の最新の種類（画面に出す。API の答えには出さない）。
+    #[serde(skip)]
+    pub presence: Option<String>,
+    /// アクター・出来事・model と effort のどれかに、時計のずれた行がある（画面の印）。
+    #[serde(skip)]
+    pub skewed: bool,
     pub model: Option<String>,
     pub effort: Option<String>,
-    /// 横顔の頁の path。
+    /// プロフィールの頁の path。
     #[sqlx(skip)]
     pub url: String,
     #[serde(skip)]
@@ -761,19 +775,27 @@ impl Db {
 
 // --- 引数 ---
 
-type Pairs = Vec<(String, String)>;
+pub(crate) type Pairs = Vec<(String, String)>;
 
 /// 問い合わせの引数（名と値の並び）。知らない名と、1 つだけの名の重なりは、読む時に断る。
-struct Params(Pairs);
+pub(crate) struct Params(Pairs);
+
+/// 問い合わせの引数を、名と値の並びで読む（読めなければ 400）。
+pub(crate) fn pairs(q: Result<Query<Pairs>, QueryRejection>) -> Result<Pairs, ApiError> {
+    q.map(|Query(pairs)| pairs)
+        .map_err(|e| bad_request(format!("問い合わせの引数が読めない: {e}")))
+}
 
 impl Params {
-    fn parse(
+    pub(crate) fn parse(
         q: Result<Query<Pairs>, QueryRejection>,
         known: &[&str],
         repeatable: &[&str],
     ) -> Result<Self, ApiError> {
-        let Query(pairs) =
-            q.map_err(|e| bad_request(format!("問い合わせの引数が読めない: {e}")))?;
+        Self::new(pairs(q)?, known, repeatable)
+    }
+
+    pub(crate) fn new(pairs: Pairs, known: &[&str], repeatable: &[&str]) -> Result<Self, ApiError> {
         for (i, (name, _)) in pairs.iter().enumerate() {
             if !known.contains(&name.as_str()) {
                 return Err(bad_request(format!(
@@ -788,14 +810,14 @@ impl Params {
         Ok(Self(pairs))
     }
 
-    fn one(&self, name: &str) -> Option<&str> {
+    pub(crate) fn one(&self, name: &str) -> Option<&str> {
         self.0
             .iter()
             .find(|(n, _)| n == name)
             .map(|(_, v)| v.as_str())
     }
 
-    fn all<'a>(&'a self, name: &'a str) -> impl Iterator<Item = &'a str> {
+    pub(crate) fn all<'a>(&'a self, name: &'a str) -> impl Iterator<Item = &'a str> {
         self.0
             .iter()
             .filter(move |(n, _)| n == name)
@@ -803,7 +825,7 @@ impl Params {
     }
 
     /// 時刻（RFC 3339）を、castlist の時計の字（UTC・ミリ秒まで）にする。
-    fn time(&self, name: &str) -> Result<Option<String>, ApiError> {
+    pub(crate) fn time(&self, name: &str) -> Result<Option<String>, ApiError> {
         self.one(name)
             .map(|v| {
                 OffsetDateTime::parse(v, &Rfc3339)
@@ -893,7 +915,7 @@ impl Params {
 }
 
 /// `鍵:値`・`種類:値` を初めの `:` で分ける。
-fn pair(name: &str, v: &str, shape: &str) -> Result<(String, String), ApiError> {
+pub(crate) fn pair(name: &str, v: &str, shape: &str) -> Result<(String, String), ApiError> {
     match v.split_once(':') {
         Some((key, value)) if is_name(key) && is_value(value) => {
             Ok((key.to_owned(), value.to_owned()))
@@ -942,7 +964,7 @@ fn seq_after(p: &Params, what: &str) -> Result<i64, ApiError> {
 
 // --- 道 ---
 
-const ACTOR_PARAMS: &[&str] = &[
+pub(crate) const ACTOR_PARAMS: &[&str] = &[
     "label",
     "binding",
     "at",
@@ -964,6 +986,20 @@ const ACTOR_PARAMS: &[&str] = &[
 pub async fn actors(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Answer {
     let p = Params::parse(q, ACTOR_PARAMS, &["label"])?;
     let as_of = db::now();
+    let query = actor_query(&p, &as_of)?;
+    if !query.narrowed() {
+        return Err(bad_request(
+            "絞る条件を 1 つ以上付ける（label・binding・active_from・active_to・active=true・model・effort・launched_by・skewed のどれか）",
+        ));
+    }
+    let page = db.search_actors(&query).await?;
+    let next = actor_next(&query, &page);
+    Ok(Json(json!({ "as_of": as_of, "actors": page.rows, "next": next })).into_response())
+}
+
+/// `GET /v1/actors` の引数（[`ACTOR_PARAMS`]）を、探す条件にする。`as_of` は `at` の無い `binding` の時刻。
+/// 一覧の画面も、同じ引数をこれで読む。
+pub(crate) fn actor_query(p: &Params, as_of: &str) -> Result<ActorQuery, ApiError> {
     let labels = p
         .all("label")
         .map(|v| pair("label", v, "鍵:値"))
@@ -972,7 +1008,7 @@ pub async fn actors(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection
     let binding = match p.one("binding") {
         Some(v) => {
             let (kind, value) = pair("binding", v, "種類:値")?;
-            Some((kind, value, at.unwrap_or_else(|| as_of.clone())))
+            Some((kind, value, at.unwrap_or_else(|| as_of.to_owned())))
         }
         None if at.is_some() => {
             return Err(bad_request(
@@ -1002,7 +1038,7 @@ pub async fn actors(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection
             Some((parts[3].clone(), seq))
         }
     };
-    let query = ActorQuery {
+    Ok(ActorQuery {
         labels,
         binding,
         active_from: p.time("active_from")?,
@@ -1018,23 +1054,21 @@ pub async fn actors(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection
         desc,
         after,
         limit: Some(p.limit()?),
-    };
-    if !query.narrowed() {
-        return Err(bad_request(
-            "絞る条件を 1 つ以上付ける（label・binding・active_from・active_to・active=true・model・effort・launched_by・skewed のどれか）",
-        ));
-    }
-    let page = db.search_actors(&query).await?;
-    let next = page.more.then(|| page.rows.last()).flatten().map(|last| {
+    })
+}
+
+/// アクターの一覧の次の頁の印（終わりなら None）。
+pub(crate) fn actor_next(query: &ActorQuery, page: &Page<ActorItem>) -> Option<String> {
+    let order = if query.desc { "desc" } else { "asc" };
+    page.more.then(|| page.rows.last()).flatten().map(|last| {
         cursor(&[
             "actors",
-            sort.name(),
+            query.sort.name(),
             order,
             &last.sort_key,
             &last.seq.to_string(),
         ])
-    });
-    Ok(Json(json!({ "as_of": as_of, "actors": page.rows, "next": next })).into_response())
+    })
 }
 
 /// `GET /v1/actors/{id}/lineage?direction=up|down|both&depth=N&type=launched|continued`。

@@ -3,6 +3,7 @@
 
 use crate::db::{self, Db, NewActor, NewEvent, NewLink, NewSetting, Put, Ref, WriteError};
 use crate::error;
+use crate::search::{Pairs, Params, pair};
 use axum::body::{Body, Bytes};
 use axum::extract::{Path, Query, State};
 use axum::http::{StatusCode, header};
@@ -21,7 +22,7 @@ use tokio_util::io::ReaderStream;
 const MAX_REFS: usize = 100;
 
 /// 誤りの答え（状態と、日本語の訳）。
-pub struct ApiError(StatusCode, String);
+pub struct ApiError(pub(crate) StatusCode, pub(crate) String);
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
@@ -111,16 +112,6 @@ fn parse_ref(s: &str) -> Result<Ref, ApiError> {
     }
 }
 
-/// 札の `key:value`。
-fn parse_label(s: &str) -> Result<(String, String), ApiError> {
-    match s.split_once(':') {
-        Some((key, value)) if is_name(key) && is_value(value) => {
-            Ok((key.to_owned(), value.to_owned()))
-        }
-        _ => Err(invalid(format!("札は「鍵:値」の形（{s}）"))),
-    }
-}
-
 fn parse_at(s: &str, name: &str) -> Result<OffsetDateTime, ApiError> {
     OffsetDateTime::parse(s, &Rfc3339).map_err(|_| invalid(format!("{name} は RFC 3339 の時刻")))
 }
@@ -144,11 +135,6 @@ fn put_answer<T: Serialize>(put: Put<T>) -> Response {
         Put::Created(row) => (StatusCode::CREATED, Json(row)).into_response(),
         Put::Same(row) => (StatusCode::OK, Json(row)).into_response(),
     }
-}
-
-fn query<T>(q: Result<Query<T>, QueryRejection>) -> Result<T, ApiError> {
-    q.map(|Query(q)| q)
-        .map_err(|e| invalid(format!("問い合わせの引数が読めない: {e}")))
 }
 
 // --- 登録 ---
@@ -468,26 +454,16 @@ pub async fn actor(State(db): State<Db>, Path(id): Path<String>) -> Answer {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct GraphQuery {
-    label: Option<String>,
-    from: Option<String>,
-    to: Option<String>,
-}
-
 /// `GET /v1/graph?label=key:value&from=…&to=…`: 相関図（点と線）。
-pub async fn graph(State(db): State<Db>, q: Result<Query<GraphQuery>, QueryRejection>) -> Answer {
-    let q = query(q)?;
-    let label = q.label.as_deref().map(parse_label).transpose()?;
-    let from = match &q.from {
-        Some(from) => db::stamp(parse_at(from, "from")?),
-        None => String::new(),
-    };
-    let to = match &q.to {
-        Some(to) => db::stamp(parse_at(to, "to")?),
-        None => "9999".to_owned(),
-    };
+/// 引数の誤りは、監査の検索と同じく 400（訳に引数の名）。
+pub async fn graph(State(db): State<Db>, q: Result<Query<Pairs>, QueryRejection>) -> Answer {
+    let p = Params::parse(q, &["label", "from", "to"], &[])?;
+    let label = p
+        .one("label")
+        .map(|v| pair("label", v, "鍵:値"))
+        .transpose()?;
+    let from = p.time("from")?.unwrap_or_default();
+    let to = p.time("to")?.unwrap_or_else(|| "9999".to_owned());
     let as_of = db::now();
     let graph = db
         .graph(

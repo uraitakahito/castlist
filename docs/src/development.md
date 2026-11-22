@@ -29,10 +29,10 @@ mdbook build docs                                                  # この本�
 | 層 | 中身 | 在り処 |
 |---|---|---|
 | 受け入れ | 本物の binary を空いた port で起こし、HTTP で叩く | `tests/server.rs`（道具は `tests/common/mod.rs`） |
-| 道筋と DB | 試験ごとに一時の DB を作り、Router を直に呼ぶ。書く接続・読む接続を直に使って、DB の決まり（足すだけ・外のキー・索引）も見る | `tests/api.rs`・`tests/db.rs`・`tests/concurrency.rs`・`tests/search.rs`（監査の検索）（道具は `tests/common/app.rs`） |
+| 道筋と DB | 試験ごとに一時の DB を作り、Router を直に呼ぶ。書く接続・読む接続を直に使って、DB の決まり（足すだけ・外のキー・索引）も見る | `tests/api.rs`・`tests/db.rs`・`tests/concurrency.rs`・`tests/search.rs`（監査の検索）・`tests/ui.rs`（画面）（道具は `tests/common/app.rs`） |
 | 負荷 | 本物の binary を一時の DB で起こし、50 の客が 10 秒叩く（読む物の 2 割は監査の検索。ふだんは流さない） | `tests/load.rs`（CI の job `load`） |
 | 単体 | DB に触らない純な関数 | 各 file の `#[cfg(test)]` |
-| image | 空の image の中で起き、断るべき物を断り、止めて起こし直せる | `ci/smoke-image.sh`（CI の job `image`） |
+| image | 空の image の中で起き、断るべき物を断り、画面と CSS が CSP の決まりどおりに出て、止めて起こし直せる | `ci/smoke-image.sh`（CI の job `image`） |
 
 ## 待たせない書き方
 

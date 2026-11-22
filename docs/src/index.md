@@ -7,10 +7,10 @@ AI と人の「アクター」の台帳のサーバー。
 - 登場・退場と、誰が誰を起こしたかを、足すだけの記録（書き替えも消しもしない）で残す。
 - 相関図（系図・時間の帯・関係の網）と、監査のための検索を持つ。
 
-今は作っている途中で、アクターの登録・出来事・線・model と effort の記録と、引き当て・相関図・DB の写しの [API](api.md) が答える（表は [DB](db.md)）。画面と、監査のための詳しい検索は、これから。
+今は作っている途中で、アクターの登録・出来事・線・model と effort の記録と、引き当て・相関図・監査の検索・DB の写しの [API](api.md) が答え、アクターの一覧とプロフィールの[画面](ui.md)がある（表は [DB](db.md)）。相関図の画面は、これから。
 
 ## 守り
 
 - この Mac の中からの要求だけを受ける。`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403。
-- 画面の応答には Content-Security-Policy を付け、castlist 自身が配る script と style だけを許す（inline の script も断る）。
+- 画面の応答には Content-Security-Policy を付け、castlist 自身が配る script と style だけを許す（inline の script と style も断る。form は castlist 自身へだけ送れる）。
 - container を起こす・止める・data の volume を消すのは Product Manager だけ（repo の設定の `infra.castlist` は `pm-only`）。

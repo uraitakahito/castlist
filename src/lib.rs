@@ -21,7 +21,8 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 /// 画面の応答に付ける Content-Security-Policy。script と style は、castlist 自身が配る file だけを許す。
-pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+/// form は castlist 自身へだけ送れる（一覧の絞りの form は GET で `/` に送る）。
+pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
 /// 1 つの問い合わせにかけてよい長さ。過ぎれば 503 で返す。
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
