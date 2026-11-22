@@ -1,6 +1,6 @@
 # DB
 
-SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表は `migrations/0001_init.sql` に、監査の検索の索引は `migrations/0002_search.sql` にあり、移行の SQL は binary に埋め込む。移行は足すだけで、前の file は替えない。
+SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表は `migrations/0001_init.sql` に、監査の検索の索引は `migrations/0002_search.sql` に、送り手の時刻の列の名の替え（`at` から `sent_at`。0.2.0）は `migrations/0003_sent_at.sql` にあり、移行の SQL は binary に埋め込む。移行は足すだけで、前の file は替えない。
 
 ## 接続
 
@@ -22,11 +22,11 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | 欄 | 中身 |
 |---|---|
 | `seq` | 受けた順の番号（`integer primary key autoincrement`）。master の表には無い |
-| `at` | 送り手の時刻（RFC 3339 のまま残す） |
+| `sent_at` | 送り手の時刻。送り手（今は tpm）が送る時に付けた、送り手の時計の時刻。RFC 3339 の字のまま残し、castlist は直さない。送り手の時計がずれていれば、この値もずれる（0.1.x の名は `at`） |
 | `received_at` | castlist の時計（UTC・ミリ秒まで・24 字）。書く transaction の中で、今と、どの表の最新の `received_at` の遅い方にする。戻らない |
-| `clock_skew` | `at` と `received_at` が 5 分より離れていれば 1。受けはする |
+| `clock_skew` | `sent_at` と `received_at` が 5 分より離れていれば 1。受けはする |
 
-- 「最新」は `seq`（大きい方）だけで決める。送り手の時計がずれていても、`at` では決めない。
+- 「最新」は `seq`（大きい方）だけで決める。送り手の時計がずれていても、`sent_at` では決めない。
 - 時刻の窓で探すのは `received_at`。
 
 ## 表
@@ -58,9 +58,9 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `prefix` | `TEXT` | 不可 |  | 名の接頭辞。英小文字・数字・`-` で 32 字まで（API が見る） |
 | `n` | `INTEGER` | 不可 |  | `CHECK(n >= 1)`。同じ出し手と接頭辞のアクターの数 ＋ 1 |
 | `name` | `TEXT` | 不可 |  | `<prefix>.<n>`（例 `se.3`）。`unique(issuer, name)`・`unique(issuer, prefix, n)` |
-| `at` | `TEXT` | 不可 |  | 送り手の時刻。送り手が送った RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
+| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。送られた RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
 | `received_at` | `TEXT` | 不可 |  | castlist が受けた時刻。UTC・ミリ秒まで・24 字（`2026-11-22T04:00:00.123Z`）。字の順が時刻の順 |
-| `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`at` と `received_at` が 5 分より離れていれば 1 |
+| `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`sent_at` と `received_at` が 5 分より離れていれば 1 |
 
 ### `bindings`
 
@@ -72,7 +72,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `type` | `TEXT` | 不可 |  | 付随する id の種類（例 `claude.session`）。英小文字・数字・`.`・`-` で 64 字まで（API が見る） |
 | `value` | `TEXT` | 不可 |  | 値。制御文字の無い 256 字まで（API が見る） |
 | `is_key` | `INTEGER` | 不可 |  | `CHECK(is_key in (0, 1))`。1 は鍵（登録の初めの物）で、`(issuer, type, value)` で 1 つだけ |
-| `at` | `TEXT` | 不可 |  | 送り手の時刻。送り手が送った RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
+| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。送られた RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
 | `received_at` | `TEXT` | 不可 |  | castlist が受けた時刻。UTC・ミリ秒まで・24 字（`2026-11-22T04:00:00.123Z`）。字の順が時刻の順 |
 
 ### `efforts`
@@ -92,9 +92,9 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `actor_id` | `TEXT` | 不可 |  | `actors(id)` を指す外のキー |
 | `type` | `TEXT` | 不可 |  | `CHECK`: `entered`・`reentered`・`forked`・`compacted`・`cleared`・`exited`・`closed`・`reported_in`・`model_unreadable`・`retracted` のどれか |
 | `detail` | `TEXT` | 不可 | `'{}'` | `CHECK`: JSON の物（`json_valid` で、`json_type` が `object`） |
-| `at` | `TEXT` | 不可 |  | 送り手の時刻。送り手が送った RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
+| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。送られた RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
 | `received_at` | `TEXT` | 不可 |  | castlist が受けた時刻。UTC・ミリ秒まで・24 字（`2026-11-22T04:00:00.123Z`）。字の順が時刻の順 |
-| `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`at` と `received_at` が 5 分より離れていれば 1 |
+| `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`sent_at` と `received_at` が 5 分より離れていれば 1 |
 | `body_hash` | `TEXT` | 不可 |  | 本文の写し（SHA-256 の 16 進・64 字）。同じ `id` で違う本文なら 409 |
 
 ### `labels`
@@ -116,9 +116,9 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `type` | `TEXT` | 不可 |  | `CHECK(type in ('launched', 'continued'))` |
 | `from_actor` | `TEXT` | 不可 |  | `actors(id)` を指す外のキー（起こした・引き継がせたアクター） |
 | `to_actor` | `TEXT` | 不可 |  | `actors(id)` を指す外のキー（起こされた・引き継いだアクター） |
-| `at` | `TEXT` | 不可 |  | 送り手の時刻。送り手が送った RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
+| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。送られた RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
 | `received_at` | `TEXT` | 不可 |  | castlist が受けた時刻。UTC・ミリ秒まで・24 字（`2026-11-22T04:00:00.123Z`）。字の順が時刻の順 |
-| `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`at` と `received_at` が 5 分より離れていれば 1 |
+| `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`sent_at` と `received_at` が 5 分より離れていれば 1 |
 | `body_hash` | `TEXT` | 不可 |  | 本文の写し（SHA-256 の 16 進・64 字）。同じ `id` で違う本文なら 409 |
 
 ### `models`
@@ -139,9 +139,9 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `model_id` | `INTEGER` | 不可 |  | `models(id)` を指す外のキー |
 | `effort_id` | `INTEGER` | 不可 |  | `efforts(id)` を指す外のキー |
 | `source` | `TEXT` | 不可 |  | `CHECK(source in ('requested', 'observed'))` |
-| `at` | `TEXT` | 不可 |  | 送り手の時刻。送り手が送った RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
+| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。送られた RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
 | `received_at` | `TEXT` | 不可 |  | castlist が受けた時刻。UTC・ミリ秒まで・24 字（`2026-11-22T04:00:00.123Z`）。字の順が時刻の順 |
-| `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`at` と `received_at` が 5 分より離れていれば 1 |
+| `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`sent_at` と `received_at` が 5 分より離れていれば 1 |
 | `body_hash` | `TEXT` | 可 |  | 本文の写し（SHA-256 の 16 進・64 字）。`id` のある物だけ |
 
 ## view
