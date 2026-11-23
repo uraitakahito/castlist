@@ -5,13 +5,13 @@ Apple Container（`container` CLI）で、release の image を動かす。host�
 > [!WARNING]
 > castlist の container を起こす・止める・消すのと、data の volume（`castlist-data`）を消すのは、**Product Manager だけ**がする。この章の命令は、Product Manager が自分の terminal で直に打つ。
 >
-> AI の担当は、この章の命令を打てない（repo の `.claude/roles/config.jsonc` の `infra.castlist` は `pm-only` で、`--name castlist.box`・`container start castlist.box`・`container stop castlist.box` などに当たる命令は、どの担当にも断られる）。担当は、打ってほしい 1 行を確認のページに書いて、`tpm ask pm` で Product Manager に送る。
+> AI の担当は、この章の命令を打てない（repo の `.claude/roles/config.jsonc` の `infra.castlist` は `pm-only` で、`--name castlist.box`・`container start castlist.box`・`container stop castlist.box` などに当たる命令は、どの担当にも断られる）。担当は、打ってほしい 1 行を確認のページに書いて、`roster ask pm` で Product Manager に送る。
 
 | 物 | 値 |
 |---|---|
 | image | `ghcr.io/uraitakahito/castlist:v<version>`（[release](https://github.com/uraitakahito/castlist/releases) に digest がある。arm64） |
 | container | `castlist.box`（`127.0.0.1:8802` → 中の 8080。メモリは Apple Container の下限の 200 MiB、CPU は 1） |
-| URL | host の browser と tpm からは `http://127.0.0.1:8802/`（[画面](ui.md)。[API](api.md) は `/v1/`）。同じ network の container（置き場の pagetray など）からは `http://castlist.box:8080/` |
+| URL | host の browser と roster からは `http://127.0.0.1:8802/`（[画面](ui.md)。[API](api.md) は `/v1/`）。同じ network の container（置き場の pagetray など）からは `http://castlist.box:8080/` |
 | DB | 名前つきの volume `castlist-data`（中の `/data/castlist.db`）。host の folder は mount しない |
 | 記録 | 同じ volume の `/data/logs/`（0.3.0 から。合わせて 4 MiB と 64 KiB まで）。下の「落ちた後に調べる」 |
 | 設定 | 環境変数 `CASTLIST_DB`（既定 `/data/castlist.db`）・`CASTLIST_LISTEN`（既定 `0.0.0.0:8080`）。image の既定のままでよい |

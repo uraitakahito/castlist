@@ -22,7 +22,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | 欄 | 中身 |
 |---|---|
 | `seq` | 受けた順の番号（`integer primary key autoincrement`）。master の表には無い |
-| `sent_at` | 送り手の時刻。送り手（今は tpm）が送る時に付けた、送り手の時計の時刻。RFC 3339 の字のまま残し、castlist は直さない。送り手の時計がずれていれば、この値もずれる（0.1.x の名は `at`） |
+| `sent_at` | 送り手の時刻。送り手（今は roster）が送る時に付けた、送り手の時計の時刻。RFC 3339 の字のまま残し、castlist は直さない。送り手の時計がずれていれば、この値もずれる（0.1.x の名は `at`） |
 | `received_at` | castlist の時計（UTC・ミリ秒まで・24 字）。書く transaction の中で、今と、どの表の最新の `received_at` の遅い方にする。戻らない |
 | `clock_skew` | `sent_at` と `received_at` が 5 分より離れていれば 1。受けはする |
 

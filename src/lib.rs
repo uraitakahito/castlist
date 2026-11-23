@@ -88,7 +88,7 @@ async fn timeout(request: Request, next: Next) -> Response {
     }
 }
 
-/// 生きているかと、版と、castlist の今の時刻（送り手の tpm が、自分の動く機械の時計との差を測る）。
+/// 生きているかと、版と、castlist の今の時刻（送り手の roster が、自分の動く機械の時計との差を測る）。
 async fn healthz() -> Json<serde_json::Value> {
     let now = OffsetDateTime::now_utc()
         .format(&Rfc3339)
@@ -98,7 +98,7 @@ async fn healthz() -> Json<serde_json::Value> {
 
 /// browser で開いたほかのページからの要求を、`Host` と `Origin` で断る（同じ network の container は、`Host: 127.0.0.1` を付ければ通る）。
 /// - `Host` が 127.0.0.1・localhost でなければ断る（外の site が名前を付け替えて届ける要求を防ぐ）。
-/// - 書く要求に `Origin` が付いていれば断る（browser の中のページからは書かせない。tpm と `curl` は付けない）。
+/// - 書く要求に `Origin` が付いていれば断る（browser の中のページからは書かせない。roster と `curl` は付けない）。
 async fn guard(request: Request, next: Next) -> Response {
     let host = request
         .headers()
