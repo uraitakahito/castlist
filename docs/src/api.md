@@ -59,7 +59,7 @@
 
 `type` は次の 10 のどれか: `entered`・`reentered`・`forked`・`compacted`・`cleared`・`exited`・`closed`・`reported_in`・`model_unreadable`・`retracted`。`detail` は JSON の物（`{…}`。無ければ `{}`）。
 
-推しの幕引き: 送り手が、終わりの出来事を送れずに落ちたと推して後から送る `closed` は、`detail` に `"inferred": true`（JSON の真偽の true）と訳（`reason`）を付ける。castlist は、これを状態の `inferred`（下の「1 つのアクター」と「アクターの行」）と、画面の推しの帯と「停止（推し）」に使う。tpm が送る訳は `workspace_gone`（居場所が消えた）と `superseded`（居場所に後から別の session が入った）。`GET /v1/events?type=closed&reason=workspace_gone` で探せる。
+推しの幕引き: 送り手が、終わりの出来事を送れずに落ちたと推して後から送る `closed` は、`detail` に `"inferred": true`（JSON の真偽の true）と訳（`reason`）を付ける。castlist は、これを状態の `inferred`（下の「1 つのアクター」と「アクターの行」）と、画面の推しの帯と「停止（推し）」に使う。roster が送る訳は `workspace_gone`（居場所が消えた）と `superseded`（居場所に後から別の session が入った）。`GET /v1/events?type=closed&reason=workspace_gone` で探せる。
 
 - 201: 新しく足した。200: 同じ id で同じ本文が既にある。409: 同じ id で本文が違う。422: `by` のアクターを知らない・`type` が決まりの外・`detail` が物でない。
 
@@ -313,4 +313,4 @@ Auditor の使い方:
 
 ## `GET /healthz`
 
-`{"status":"ok","version":"…","now":"…"}`。`now` は castlist の今の時刻（送り手の tpm が、自分の動く機械の時計との差を測る）。
+`{"status":"ok","version":"…","now":"…"}`。`now` は castlist の今の時刻（送り手の roster が、自分の動く機械の時計との差を測る）。

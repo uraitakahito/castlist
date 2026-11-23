@@ -63,7 +63,7 @@ setup('見本の記録を置く', async ({ request }) => {
   await send(request, 'post', '/v1/actors', seat('other', 's-other', 't-99', 'claude-haiku-5', 'low'));
   await send(request, 'put', '/v1/links/l-tpm-other', line('launched', TPM, OTHER));
   await send(request, 'put', '/v1/events/e-other-in', event(OTHER, 'entered'));
-  // other.1 は、tpm が落ちたと推して閉じた（推しの幕引き）。
+  // other.1 は、roster が落ちたと推して閉じた（推しの幕引き）。
   await send(request, 'put', '/v1/events/e-other-out', {
     ...event(OTHER, 'closed'),
     detail: { inferred: true, reason: 'workspace_gone' },
