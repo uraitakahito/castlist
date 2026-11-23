@@ -11,11 +11,12 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 | 道の頭 | API は `/api/` の下（画面の `/actors/{id}` などと重ならないように）。`/healthz` だけは外 |
 | protocol | `aws.protocols#restJson1`。誤りの種類は header `X-Amzn-Errortype` と本文の `message` |
 | 欄の名 | camelCase（`sentAt`・`receivedAt`・`clockSkew`・`asOf`・`actorId`・`namePrefix`） |
-| 時刻 | RFC 3339（`ai.common#DateTime`）。答えの `receivedAt` は UTC・ミリ秒まで |
+| 時刻 | RFC 3339 の UTC（末尾 `Z`。`ai.common#DateTime`）。Smithy の `date-time` は時差の付いた時刻（`+09:00`）を受けず、400 `SerializationException` で断る。送り手の時刻（`sentAt`）は UTC に直して残す（今の server は字のまま残していた）。答えの `receivedAt` は UTC・ミリ秒まで |
 | 誤り | 定義に書いた型だけ: 400 `ValidationException`（欄の path と訳）・404 `NotFound`・409 `Conflict`・503 `Unavailable`。知らない道は生成した層が 404 `UnknownOperationException` |
 | 書いて足す操作 | 呼ぶ側が id を決める物は `put`（`PUT /api/events/{eventId}` など。同じ id・同じ本文は 200、新しく足せば 201、同じ id で本文が違えば 409）。状態の数は `@httpResponseCode` で返す |
 | ページ送り | `@paginated`。`maxResults`（1〜1000。既定 100）と、前の答えの `nextToken` をそのまま渡す |
 | 探す答え | どれも `asOf`（castlist の今の時刻）を付ける |
+| 決まった字の欄 | `kind` などの決まった字は、enum でなく `@pattern` の字で書く（codegen-server 0.1.40 の作る protocol の試験が、要る enum を空の字から作って panic するため。wire の形は同じ）|
 | 知らない欄 | restJson1 は知らない欄を読み飛ばす（今の 422 はやめる）。id を外から紛れ込ませる道は、定義に欄が無いので無い |
 
 ## 操作
