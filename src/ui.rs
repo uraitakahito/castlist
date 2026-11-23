@@ -878,7 +878,7 @@ fn lost_reason(reason: Option<&str>) -> &'static str {
     match reason {
         Some("workspace_gone") => "居場所が消えた",
         Some("superseded") => "居場所に別の session が入った",
-        _ => "tpm が落ちたと推した",
+        _ => "roster が落ちたと推した",
     }
 }
 
@@ -1212,8 +1212,8 @@ fn encode(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        GRAPH_PERIOD, LIST_PERIOD, encode, event_name, from_local, period, quick_links,
-        quick_ranges, time, to_local,
+        GRAPH_PERIOD, LIST_PERIOD, encode, event_name, from_local, lost_reason, period,
+        quick_links, quick_ranges, time, to_local,
     };
     use crate::api::EVENT_TYPES;
     use time::OffsetDateTime;
@@ -1426,5 +1426,16 @@ mod tests {
         assert_eq!(encode("tpm.key:t-23zs"), "tpm.key:t-23zs");
         assert_eq!(encode("a b&c=d+"), "a%20b%26c%3Dd%2B");
         assert_eq!(encode("<"), "%3C");
+    }
+
+    #[test]
+    fn 推しの訳が無い物と知らない訳は_roster_が推したと書く() {
+        assert_eq!(lost_reason(Some("workspace_gone")), "居場所が消えた");
+        assert_eq!(
+            lost_reason(Some("superseded")),
+            "居場所に別の session が入った"
+        );
+        assert_eq!(lost_reason(None), "roster が落ちたと推した");
+        assert_eq!(lost_reason(Some("other")), "roster が落ちたと推した");
     }
 }
