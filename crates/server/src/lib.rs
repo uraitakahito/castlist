@@ -8,10 +8,13 @@ pub mod db;
 mod errors;
 mod event;
 mod generated;
+mod lineage;
 mod link;
+mod list_actors;
 mod register;
 mod resolve;
 mod rows;
+pub mod search;
 mod setting;
 
 use std::sync::Arc;
@@ -38,6 +41,14 @@ pub fn app(db: Arc<Db>) -> Router {
         .get_actor({
             let db = db.clone();
             move |input| actor::get_actor(db.clone(), input)
+        })
+        .list_actors({
+            let db = db.clone();
+            move |input| list_actors::list_actors(db.clone(), input)
+        })
+        .get_lineage({
+            let db = db.clone();
+            move |input| lineage::get_lineage(db.clone(), input)
         })
         .resolve_actors({
             let db = db.clone();

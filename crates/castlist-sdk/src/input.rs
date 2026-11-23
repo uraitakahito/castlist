@@ -111,6 +111,157 @@ impl GetActorInput {
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]
+pub struct ListActorsInput {
+    /// ラベル（`鍵:値`）。重ねれば、どれも持つアクター。
+    pub label: ::std::option::Option<::std::vec::Vec<::std::string::String>>,
+    /// 付随する id（`種類:値`）。
+    pub binding: ::std::option::Option<::std::string::String>,
+    /// `binding` を引く時刻（既定は `asOf`）。`binding` と一緒にだけ付ける。
+    pub at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    /// 稼働した期間の窓の始め（両端を含む）。
+    pub active_from: ::std::option::Option<::aws_smithy_types::DateTime>,
+    /// 稼働した期間の窓の終わり（両端を含む）。
+    pub active_to: ::std::option::Option<::aws_smithy_types::DateTime>,
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+    pub kind: ::std::option::Option<::std::string::String>,
+    /// その名の model の行を 1 つでも持つ。
+    pub model: ::std::option::Option<::std::string::String>,
+    /// その名の effort の行を 1 つでも持つ。
+    pub effort: ::std::option::Option<::std::string::String>,
+    /// 今稼働中か。
+    pub active: ::std::option::Option<bool>,
+    /// このアクターが起こした（launched）。
+    pub launched_by: ::std::option::Option<::std::string::String>,
+    /// 時刻ずれの行を持つ（true だけ）。
+    pub skewed: ::std::option::Option<bool>,
+    /// `entered`（初めの登場。既定）か `exited`（最後の退場）。
+    pub sort: ::std::option::Option<::std::string::String>,
+    /// `asc`（既定）か `desc`。
+    pub order: ::std::option::Option<::std::string::String>,
+    /// 1 頁の数（既定 100）。
+    pub max_results: ::std::option::Option<i32>,
+    /// 前の答えの `nextToken`。
+    pub next_token: ::std::option::Option<::std::string::String>,
+}
+impl ListActorsInput {
+    /// ラベル（`鍵:値`）。重ねれば、どれも持つアクター。
+    pub fn label(&self) -> ::std::option::Option<&[::std::string::String]> {
+        self.label.as_deref()
+    }
+    /// 付随する id（`種類:値`）。
+    pub fn binding(&self) -> ::std::option::Option<&str> {
+        self.binding.as_deref()
+    }
+    /// `binding` を引く時刻（既定は `asOf`）。`binding` と一緒にだけ付ける。
+    pub fn at(&self) -> ::std::option::Option<&::aws_smithy_types::DateTime> {
+        self.at.as_ref()
+    }
+    /// 稼働した期間の窓の始め（両端を含む）。
+    pub fn active_from(&self) -> ::std::option::Option<&::aws_smithy_types::DateTime> {
+        self.active_from.as_ref()
+    }
+    /// 稼働した期間の窓の終わり（両端を含む）。
+    pub fn active_to(&self) -> ::std::option::Option<&::aws_smithy_types::DateTime> {
+        self.active_to.as_ref()
+    }
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+    pub fn kind(&self) -> ::std::option::Option<&str> {
+        self.kind.as_deref()
+    }
+    /// その名の model の行を 1 つでも持つ。
+    pub fn model(&self) -> ::std::option::Option<&str> {
+        self.model.as_deref()
+    }
+    /// その名の effort の行を 1 つでも持つ。
+    pub fn effort(&self) -> ::std::option::Option<&str> {
+        self.effort.as_deref()
+    }
+    /// 今稼働中か。
+    pub fn active(&self) -> ::std::option::Option<bool> {
+        self.active
+    }
+    /// このアクターが起こした（launched）。
+    pub fn launched_by(&self) -> ::std::option::Option<&str> {
+        self.launched_by.as_deref()
+    }
+    /// 時刻ずれの行を持つ（true だけ）。
+    pub fn skewed(&self) -> ::std::option::Option<bool> {
+        self.skewed
+    }
+    /// `entered`（初めの登場。既定）か `exited`（最後の退場）。
+    pub fn sort(&self) -> ::std::option::Option<&str> {
+        self.sort.as_deref()
+    }
+    /// `asc`（既定）か `desc`。
+    pub fn order(&self) -> ::std::option::Option<&str> {
+        self.order.as_deref()
+    }
+    /// 1 頁の数（既定 100）。
+    pub fn max_results(&self) -> ::std::option::Option<i32> {
+        self.max_results
+    }
+    /// 前の答えの `nextToken`。
+    pub fn next_token(&self) -> ::std::option::Option<&str> {
+        self.next_token.as_deref()
+    }
+}
+impl crate::constrained::Constrained for crate::input::ListActorsInput {
+    type Unconstrained = crate::input::list_actors_input_internal::Builder;
+}
+impl ListActorsInput {
+    /// Creates a new builder-style object to manufacture [`ListActorsInput`](crate::input::ListActorsInput).
+    pub fn builder() -> crate::input::list_actors_input::Builder {
+        crate::input::list_actors_input::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct GetLineageInput {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// `up`・`down`・`both`（既定）。
+    pub direction: ::std::option::Option<::std::string::String>,
+    /// 辿る段の数（1 から 20）。無ければ上 20 段・下 1 段。
+    pub depth: ::std::option::Option<i32>,
+    /// 線の種類で絞る（上りと下りの両方）。
+    pub r#type: ::std::option::Option<::std::string::String>,
+}
+impl GetLineageInput {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// `up`・`down`・`both`（既定）。
+    pub fn direction(&self) -> ::std::option::Option<&str> {
+        self.direction.as_deref()
+    }
+    /// 辿る段の数（1 から 20）。無ければ上 20 段・下 1 段。
+    pub fn depth(&self) -> ::std::option::Option<i32> {
+        self.depth
+    }
+    /// 線の種類で絞る（上りと下りの両方）。
+    pub fn r#type(&self) -> ::std::option::Option<&str> {
+        self.r#type.as_deref()
+    }
+}
+impl crate::constrained::Constrained for crate::input::GetLineageInput {
+    type Unconstrained = crate::input::get_lineage_input_internal::Builder;
+}
+impl GetLineageInput {
+    /// Creates a new builder-style object to manufacture [`GetLineageInput`](crate::input::GetLineageInput).
+    pub fn builder() -> crate::input::get_lineage_input::Builder {
+        crate::input::get_lineage_input::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
 pub struct ResolveActorsInput {
     /// 出し手。鍵は出し手の中で引く。
     pub issuer: ::std::string::String,
@@ -933,6 +1084,823 @@ pub mod get_actor_input {
         ) -> Result<crate::input::GetActorInput, ConstraintViolation> {
             Ok(crate::input::GetActorInput {
                 actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+            })
+        }
+    }
+}
+/// See [`ListActorsInput`](crate::input::ListActorsInput).
+pub(crate) mod list_actors_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// Constraint violation occurred building member `label` when building `ListActorsInput`.
+        #[doc(hidden)]
+        Label(crate::model::label_filters_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `binding` when building `ListActorsInput`.
+        #[doc(hidden)]
+        Binding(crate::model::actor_ref_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `kind` when building `ListActorsInput`.
+        #[doc(hidden)]
+        Kind(crate::model::actor_kind_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `model` when building `ListActorsInput`.
+        #[doc(hidden)]
+        Model(crate::model::name_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `effort` when building `ListActorsInput`.
+        #[doc(hidden)]
+        Effort(crate::model::name_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `launched_by` when building `ListActorsInput`.
+        #[doc(hidden)]
+        LaunchedBy(crate::model::actor_id_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `sort` when building `ListActorsInput`.
+        #[doc(hidden)]
+        Sort(crate::model::actor_sort_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `order` when building `ListActorsInput`.
+        #[doc(hidden)]
+        Order(crate::model::sort_order_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `max_results` when building `ListActorsInput`.
+        #[doc(hidden)]
+        MaxResults(crate::model::max_results_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `next_token` when building `ListActorsInput`.
+        #[doc(hidden)]
+        NextToken(crate::model::next_token_internal::ConstraintViolation),
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::Label(_) => write!(f, "constraint violation occurred building member `label` when building `ListActorsInput`"),
+                ConstraintViolation::Binding(_) => write!(f, "constraint violation occurred building member `binding` when building `ListActorsInput`"),
+                ConstraintViolation::Kind(_) => write!(f, "constraint violation occurred building member `kind` when building `ListActorsInput`"),
+                ConstraintViolation::Model(_) => write!(f, "constraint violation occurred building member `model` when building `ListActorsInput`"),
+                ConstraintViolation::Effort(_) => write!(f, "constraint violation occurred building member `effort` when building `ListActorsInput`"),
+                ConstraintViolation::LaunchedBy(_) => write!(f, "constraint violation occurred building member `launched_by` when building `ListActorsInput`"),
+                ConstraintViolation::Sort(_) => write!(f, "constraint violation occurred building member `sort` when building `ListActorsInput`"),
+                ConstraintViolation::Order(_) => write!(f, "constraint violation occurred building member `order` when building `ListActorsInput`"),
+                ConstraintViolation::MaxResults(_) => write!(f, "constraint violation occurred building member `max_results` when building `ListActorsInput`"),
+                ConstraintViolation::NextToken(_) => write!(f, "constraint violation occurred building member `next_token` when building `ListActorsInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                ConstraintViolation::Label(inner) => {
+                    inner.as_validation_exception_field(path + "/label")
+                }
+                ConstraintViolation::Binding(inner) => {
+                    inner.as_validation_exception_field(path + "/binding")
+                }
+                ConstraintViolation::Kind(inner) => {
+                    inner.as_validation_exception_field(path + "/kind")
+                }
+                ConstraintViolation::Model(inner) => {
+                    inner.as_validation_exception_field(path + "/model")
+                }
+                ConstraintViolation::Effort(inner) => {
+                    inner.as_validation_exception_field(path + "/effort")
+                }
+                ConstraintViolation::LaunchedBy(inner) => {
+                    inner.as_validation_exception_field(path + "/launchedBy")
+                }
+                ConstraintViolation::Sort(inner) => {
+                    inner.as_validation_exception_field(path + "/sort")
+                }
+                ConstraintViolation::Order(inner) => {
+                    inner.as_validation_exception_field(path + "/order")
+                }
+                ConstraintViolation::MaxResults(inner) => {
+                    inner.as_validation_exception_field(path + "/maxResults")
+                }
+                ConstraintViolation::NextToken(inner) => {
+                    inner.as_validation_exception_field(path + "/nextToken")
+                }
+            }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::ListActorsInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::ListActorsInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListActorsInput`](crate::input::ListActorsInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) label: ::std::option::Option<
+            crate::constrained::MaybeConstrained<
+                crate::constrained::label_filters_constrained::LabelFiltersConstrained,
+            >,
+        >,
+        pub(crate) binding:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorRef>>,
+        pub(crate) at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) active_from: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) active_to: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) kind:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorKind>>,
+        pub(crate) model:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) effort:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) active: ::std::option::Option<bool>,
+        pub(crate) launched_by:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorId>>,
+        pub(crate) skewed: ::std::option::Option<bool>,
+        pub(crate) sort:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorSort>>,
+        pub(crate) order:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::SortOrder>>,
+        pub(crate) max_results:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::MaxResults>>,
+        pub(crate) next_token:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::NextToken>>,
+    }
+    impl Builder {
+        /// ラベル（`鍵:値`）。重ねれば、どれも持つアクター。
+        pub(crate) fn set_label(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<
+                        crate::constrained::label_filters_constrained::LabelFiltersConstrained,
+                    >,
+                >,
+            >,
+        ) -> Self {
+            self.label = input.map(|v| v.into());
+            self
+        }
+        /// 付随する id（`種類:値`）。
+        pub(crate) fn set_binding(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::ActorRef>>,
+            >,
+        ) -> Self {
+            self.binding = input.map(|v| v.into());
+            self
+        }
+        /// `binding` を引く時刻（既定は `asOf`）。`binding` と一緒にだけ付ける。
+        pub(crate) fn set_at(
+            mut self,
+            input: Option<impl ::std::convert::Into<::aws_smithy_types::DateTime>>,
+        ) -> Self {
+            self.at = input.map(|v| v.into());
+            self
+        }
+        /// 稼働した期間の窓の始め（両端を含む）。
+        pub(crate) fn set_active_from(
+            mut self,
+            input: Option<impl ::std::convert::Into<::aws_smithy_types::DateTime>>,
+        ) -> Self {
+            self.active_from = input.map(|v| v.into());
+            self
+        }
+        /// 稼働した期間の窓の終わり（両端を含む）。
+        pub(crate) fn set_active_to(
+            mut self,
+            input: Option<impl ::std::convert::Into<::aws_smithy_types::DateTime>>,
+        ) -> Self {
+            self.active_to = input.map(|v| v.into());
+            self
+        }
+        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+        pub(crate) fn set_kind(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::ActorKind>>,
+            >,
+        ) -> Self {
+            self.kind = input.map(|v| v.into());
+            self
+        }
+        /// その名の model の行を 1 つでも持つ。
+        pub(crate) fn set_model(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+            >,
+        ) -> Self {
+            self.model = input.map(|v| v.into());
+            self
+        }
+        /// その名の effort の行を 1 つでも持つ。
+        pub(crate) fn set_effort(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+            >,
+        ) -> Self {
+            self.effort = input.map(|v| v.into());
+            self
+        }
+        /// 今稼働中か。
+        pub(crate) fn set_active(mut self, input: Option<impl ::std::convert::Into<bool>>) -> Self {
+            self.active = input.map(|v| v.into());
+            self
+        }
+        /// このアクターが起こした（launched）。
+        pub(crate) fn set_launched_by(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::ActorId>>,
+            >,
+        ) -> Self {
+            self.launched_by = input.map(|v| v.into());
+            self
+        }
+        /// 時刻ずれの行を持つ（true だけ）。
+        pub(crate) fn set_skewed(mut self, input: Option<impl ::std::convert::Into<bool>>) -> Self {
+            self.skewed = input.map(|v| v.into());
+            self
+        }
+        /// `entered`（初めの登場。既定）か `exited`（最後の退場）。
+        pub(crate) fn set_sort(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::ActorSort>>,
+            >,
+        ) -> Self {
+            self.sort = input.map(|v| v.into());
+            self
+        }
+        /// `asc`（既定）か `desc`。
+        pub(crate) fn set_order(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::SortOrder>>,
+            >,
+        ) -> Self {
+            self.order = input.map(|v| v.into());
+            self
+        }
+        /// 1 頁の数（既定 100）。
+        pub(crate) fn set_max_results(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<crate::model::MaxResults>,
+                >,
+            >,
+        ) -> Self {
+            self.max_results = input.map(|v| v.into());
+            self
+        }
+        /// 前の答えの `nextToken`。
+        pub(crate) fn set_next_token(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::NextToken>>,
+            >,
+        ) -> Self {
+            self.next_token = input.map(|v| v.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`ListActorsInput`](crate::input::ListActorsInput).
+        ///
+        /// The builder fails to construct a [`ListActorsInput`](crate::input::ListActorsInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::ListActorsInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::ListActorsInput, ConstraintViolation> {
+            Ok(crate::input::ListActorsInput {
+                label: self
+                    .label
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map(|v| v.into()).map_err(ConstraintViolation::Label))
+                    .transpose()?,
+                binding: self
+                    .binding
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Binding))
+                    .transpose()?
+                    .map(|v: crate::model::ActorRef| v.into()),
+                at: self.at,
+                active_from: self.active_from,
+                active_to: self.active_to,
+                kind: self
+                    .kind
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Kind))
+                    .transpose()?
+                    .map(|v: crate::model::ActorKind| v.into()),
+                model: self
+                    .model
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Model))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into()),
+                effort: self
+                    .effort
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Effort))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into()),
+                active: self.active,
+                launched_by: self
+                    .launched_by
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::LaunchedBy))
+                    .transpose()?
+                    .map(|v: crate::model::ActorId| v.into()),
+                skewed: self.skewed,
+                sort: self
+                    .sort
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Sort))
+                    .transpose()?
+                    .map(|v: crate::model::ActorSort| v.into()),
+                order: self
+                    .order
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Order))
+                    .transpose()?
+                    .map(|v: crate::model::SortOrder| v.into()),
+                max_results: self
+                    .max_results
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::MaxResults))
+                    .transpose()?
+                    .map(|v: crate::model::MaxResults| v.into()),
+                next_token: self
+                    .next_token
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::NextToken))
+                    .transpose()?
+                    .map(|v: crate::model::NextToken| v.into()),
+            })
+        }
+    }
+}
+/// See [`ListActorsInput`](crate::input::ListActorsInput).
+pub mod list_actors_input {
+
+    impl ::std::convert::From<Builder> for crate::input::ListActorsInput {
+        fn from(builder: Builder) -> Self {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListActorsInput`](crate::input::ListActorsInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) label: ::std::option::Option<::std::vec::Vec<::std::string::String>>,
+        pub(crate) binding: ::std::option::Option<::std::string::String>,
+        pub(crate) at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) active_from: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) active_to: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) kind: ::std::option::Option<::std::string::String>,
+        pub(crate) model: ::std::option::Option<::std::string::String>,
+        pub(crate) effort: ::std::option::Option<::std::string::String>,
+        pub(crate) active: ::std::option::Option<bool>,
+        pub(crate) launched_by: ::std::option::Option<::std::string::String>,
+        pub(crate) skewed: ::std::option::Option<bool>,
+        pub(crate) sort: ::std::option::Option<::std::string::String>,
+        pub(crate) order: ::std::option::Option<::std::string::String>,
+        pub(crate) max_results: ::std::option::Option<i32>,
+        pub(crate) next_token: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// ラベル（`鍵:値`）。重ねれば、どれも持つアクター。
+        pub fn label(
+            mut self,
+            input: ::std::option::Option<::std::vec::Vec<::std::string::String>>,
+        ) -> Self {
+            self.label = input;
+            self
+        }
+        /// 付随する id（`種類:値`）。
+        pub fn binding(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.binding = input;
+            self
+        }
+        /// `binding` を引く時刻（既定は `asOf`）。`binding` と一緒にだけ付ける。
+        pub fn at(mut self, input: ::std::option::Option<::aws_smithy_types::DateTime>) -> Self {
+            self.at = input;
+            self
+        }
+        /// 稼働した期間の窓の始め（両端を含む）。
+        pub fn active_from(
+            mut self,
+            input: ::std::option::Option<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.active_from = input;
+            self
+        }
+        /// 稼働した期間の窓の終わり（両端を含む）。
+        pub fn active_to(
+            mut self,
+            input: ::std::option::Option<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.active_to = input;
+            self
+        }
+        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+        pub fn kind(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.kind = input;
+            self
+        }
+        /// その名の model の行を 1 つでも持つ。
+        pub fn model(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.model = input;
+            self
+        }
+        /// その名の effort の行を 1 つでも持つ。
+        pub fn effort(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.effort = input;
+            self
+        }
+        /// 今稼働中か。
+        pub fn active(mut self, input: ::std::option::Option<bool>) -> Self {
+            self.active = input;
+            self
+        }
+        /// このアクターが起こした（launched）。
+        pub fn launched_by(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.launched_by = input;
+            self
+        }
+        /// 時刻ずれの行を持つ（true だけ）。
+        pub fn skewed(mut self, input: ::std::option::Option<bool>) -> Self {
+            self.skewed = input;
+            self
+        }
+        /// `entered`（初めの登場。既定）か `exited`（最後の退場）。
+        pub fn sort(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.sort = input;
+            self
+        }
+        /// `asc`（既定）か `desc`。
+        pub fn order(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.order = input;
+            self
+        }
+        /// 1 頁の数（既定 100）。
+        pub fn max_results(mut self, input: ::std::option::Option<i32>) -> Self {
+            self.max_results = input;
+            self
+        }
+        /// 前の答えの `nextToken`。
+        pub fn next_token(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.next_token = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`ListActorsInput`](crate::input::ListActorsInput).
+        pub fn build(self) -> crate::input::ListActorsInput {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(self) -> crate::input::ListActorsInput {
+            crate::input::ListActorsInput {
+                label: self.label,
+                binding: self.binding,
+                at: self.at,
+                active_from: self.active_from,
+                active_to: self.active_to,
+                kind: self.kind,
+                model: self.model,
+                effort: self.effort,
+                active: self.active,
+                launched_by: self.launched_by,
+                skewed: self.skewed,
+                sort: self.sort,
+                order: self.order,
+                max_results: self.max_results,
+                next_token: self.next_token,
+            }
+        }
+    }
+}
+/// See [`GetLineageInput`](crate::input::GetLineageInput).
+pub(crate) mod get_lineage_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `GetLineageInput`.
+        MissingActorId,
+        /// Constraint violation occurred building member `actor_id` when building `GetLineageInput`.
+        #[doc(hidden)]
+        ActorId(crate::model::actor_id_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `direction` when building `GetLineageInput`.
+        #[doc(hidden)]
+        Direction(crate::model::lineage_direction_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `depth` when building `GetLineageInput`.
+        #[doc(hidden)]
+        Depth(crate::model::lineage_depth_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `r#type` when building `GetLineageInput`.
+        #[doc(hidden)]
+        Type(crate::model::link_type_internal::ConstraintViolation),
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `GetLineageInput`"),
+                ConstraintViolation::ActorId(_) => write!(f, "constraint violation occurred building member `actor_id` when building `GetLineageInput`"),
+                ConstraintViolation::Direction(_) => write!(f, "constraint violation occurred building member `direction` when building `GetLineageInput`"),
+                ConstraintViolation::Depth(_) => write!(f, "constraint violation occurred building member `depth` when building `GetLineageInput`"),
+                ConstraintViolation::Type(_) => write!(f, "constraint violation occurred building member `r#type` when building `GetLineageInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingActorId => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/actorId' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/actorId",
+                                            },
+            ConstraintViolation::ActorId(inner) => inner.as_validation_exception_field(path + "/actorId"),
+            ConstraintViolation::Direction(inner) => inner.as_validation_exception_field(path + "/direction"),
+            ConstraintViolation::Depth(inner) => inner.as_validation_exception_field(path + "/depth"),
+            ConstraintViolation::Type(inner) => inner.as_validation_exception_field(path + "/type"),
+        }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::GetLineageInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::GetLineageInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetLineageInput`](crate::input::GetLineageInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) actor_id:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorId>>,
+        pub(crate) direction: ::std::option::Option<
+            crate::constrained::MaybeConstrained<crate::model::LineageDirection>,
+        >,
+        pub(crate) depth:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::LineageDepth>>,
+        pub(crate) r#type:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::LinkType>>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub(crate) fn set_actor_id(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorId>,
+            >,
+        ) -> Self {
+            self.actor_id = Some(input.into());
+            self
+        }
+        /// `up`・`down`・`both`（既定）。
+        pub(crate) fn set_direction(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<crate::model::LineageDirection>,
+                >,
+            >,
+        ) -> Self {
+            self.direction = input.map(|v| v.into());
+            self
+        }
+        /// 辿る段の数（1 から 20）。無ければ上 20 段・下 1 段。
+        pub(crate) fn set_depth(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<crate::model::LineageDepth>,
+                >,
+            >,
+        ) -> Self {
+            self.depth = input.map(|v| v.into());
+            self
+        }
+        /// 線の種類で絞る（上りと下りの両方）。
+        pub(crate) fn set_type(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::LinkType>>,
+            >,
+        ) -> Self {
+            self.r#type = input.map(|v| v.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`GetLineageInput`](crate::input::GetLineageInput).
+        ///
+        /// The builder fails to construct a [`GetLineageInput`](crate::input::GetLineageInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::GetLineageInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::GetLineageInput, ConstraintViolation> {
+            Ok(crate::input::GetLineageInput {
+                actor_id: self
+                    .actor_id
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::ActorId))
+                    .transpose()?
+                    .map(|v: crate::model::ActorId| v.into())
+                    .ok_or(ConstraintViolation::MissingActorId)?,
+                direction: self
+                    .direction
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Direction))
+                    .transpose()?
+                    .map(|v: crate::model::LineageDirection| v.into()),
+                depth: self
+                    .depth
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Depth))
+                    .transpose()?
+                    .map(|v: crate::model::LineageDepth| v.into()),
+                r#type: self
+                    .r#type
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Type))
+                    .transpose()?
+                    .map(|v: crate::model::LinkType| v.into()),
+            })
+        }
+    }
+}
+/// See [`GetLineageInput`](crate::input::GetLineageInput).
+pub mod get_lineage_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `GetLineageInput`.
+        MissingActorId,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `GetLineageInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::GetLineageInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetLineageInput`](crate::input::GetLineageInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) direction: ::std::option::Option<::std::string::String>,
+        pub(crate) depth: ::std::option::Option<i32>,
+        pub(crate) r#type: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// `up`・`down`・`both`（既定）。
+        pub fn direction(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.direction = input;
+            self
+        }
+        /// 辿る段の数（1 から 20）。無ければ上 20 段・下 1 段。
+        pub fn depth(mut self, input: ::std::option::Option<i32>) -> Self {
+            self.depth = input;
+            self
+        }
+        /// 線の種類で絞る（上りと下りの両方）。
+        pub fn r#type(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.r#type = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`GetLineageInput`](crate::input::GetLineageInput).
+        ///
+        /// The builder fails to construct a [`GetLineageInput`](crate::input::GetLineageInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::GetLineageInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::GetLineageInput, ConstraintViolation> {
+            Ok(crate::input::GetLineageInput {
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                direction: self.direction,
+                depth: self.depth,
+                r#type: self.r#type,
             })
         }
     }

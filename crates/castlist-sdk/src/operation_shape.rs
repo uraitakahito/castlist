@@ -116,6 +116,82 @@ impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for Get
     }
 }
 
+/// アクターを条件で探す（監査の検索）。条件はどれも AND。時刻の条件は、どれも castlist が受けた時刻（`receivedAt`）で比べる。 索引で引ける条件（`label`・`binding`・`activeFrom`・`activeTo`・`active` が true・`model`・`effort`・`launchedBy`・`skewed`）が 1 つも無ければ 400（`kind` と `active` が false は、それだけでは数えない）。 - `label` は `鍵:値`。重ねれば、どれも持つアクター。 - `binding` は `種類:値`。`at`（既定は `asOf`）までに受けた、その値の付随する id の最新の行（出し手と鍵かを問わない）のアクター 1 つ。 `at` は `binding` と一緒にだけ付ける（無ければ 400）。 - `activeFrom`・`activeTo` は稼働した期間（初めの登場から最後の退場まで。稼働中なら今まで）が窓に掛かるアクター（両端を含む）。 登場していないアクターは入らない。 - `active` は今稼働中か。`model`・`effort` は、その名の model か effort の行を 1 つでも持つ。`launchedBy` は、そのアクターが起こした（launched）。 - `skewed` は時刻ずれの行（アクター・出来事・model と effort）を持つ。true だけを受ける（false は 400。絞らないなら付けない）。 - 並びは `sort`（`entered` は初めの登場・`exited` は最後の退場。既定 `entered`）と `order`（既定 `asc`）。値の無いアクターは昇順で先・降順で後。 同じ値は受けた順（同じ向き）。 - 頁は keyset で分ける（並べる値と受けた順で後ろから続けるので、辿る間に行が足されても、元の組に穴も重なりも出ない）。 `nextToken` は同じ `sort` と `order` の答えの物を渡す（違えば 400。ほかの条件は見ない）。
+pub struct ListActors;
+
+impl ::aws_smithy_http_server::operation::OperationShape for ListActors {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#ListActors",
+            "ai.castlist",
+            "ListActors",
+        );
+
+    type Input = crate::input::ListActorsInput;
+    type Output = crate::output::ListActorsOutput;
+    type Error = crate::error::ListActorsError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for ListActors {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
+
+/// 起こした・継いだ線を上り下りする。上りは人で止める（人は含む。起点が人なら上らない）。 既定の深さは上 20 段・下 1 段で、`depth` を付ければ両方にそれを使う。`type` は上りと下りの両方の線を絞る。 `nodes` は一覧の形を初めの登場の順（同じなら受けた順）に、`edges` は線を受けた順に、重ならずに返す。
+pub struct GetLineage;
+
+impl ::aws_smithy_http_server::operation::OperationShape for GetLineage {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#GetLineage",
+            "ai.castlist",
+            "GetLineage",
+        );
+
+    type Input = crate::input::GetLineageInput;
+    type Output = crate::output::GetLineageOutput;
+    type Error = crate::error::GetLineageError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for GetLineage {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
+
 /// 鍵の付随する id（`種類:値`）から、出し手の中のアクターを引く。答えは問いと同じ順で、引けない物（知らない・鍵でない・出し手が違う）は `actor` が無い。 1 つでも形の違う参照があれば、全体を 400 で断る。
 pub struct ResolveActors;
 

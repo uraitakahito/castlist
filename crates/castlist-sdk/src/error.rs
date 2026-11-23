@@ -148,6 +148,154 @@ impl ::std::convert::From<crate::error::InternalError> for crate::error::GetActo
     }
 }
 
+/// Error type for the `ListActors` operation.
+/// Each variant represents an error that can occur for the `ListActors` operation.
+#[derive(::std::fmt::Debug)]
+pub enum ListActorsError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for ListActorsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            ListActorsError::ValidationException(_inner) => _inner.fmt(f),
+            ListActorsError::Unavailable(_inner) => _inner.fmt(f),
+            ListActorsError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl ListActorsError {
+    /// Returns `true` if the error kind is `ListActorsError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, ListActorsError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `ListActorsError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, ListActorsError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `ListActorsError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, ListActorsError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            ListActorsError::ValidationException(_inner) => _inner.name(),
+            ListActorsError::Unavailable(_inner) => _inner.name(),
+            ListActorsError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for ListActorsError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            ListActorsError::ValidationException(_inner) => Some(_inner),
+            ListActorsError::Unavailable(_inner) => Some(_inner),
+            ListActorsError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::ListActorsError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::ListActorsError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::ListActorsError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::ListActorsError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::ListActorsError {
+    fn from(variant: crate::error::InternalError) -> crate::error::ListActorsError {
+        Self::InternalError(variant)
+    }
+}
+
+/// Error type for the `GetLineage` operation.
+/// Each variant represents an error that can occur for the `GetLineage` operation.
+#[derive(::std::fmt::Debug)]
+pub enum GetLineageError {
+    /// 名指した物が無い。
+    NotFound(crate::error::NotFound),
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for GetLineageError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            GetLineageError::NotFound(_inner) => _inner.fmt(f),
+            GetLineageError::ValidationException(_inner) => _inner.fmt(f),
+            GetLineageError::Unavailable(_inner) => _inner.fmt(f),
+            GetLineageError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl GetLineageError {
+    /// Returns `true` if the error kind is `GetLineageError::NotFound`.
+    pub fn is_not_found(&self) -> bool {
+        matches!(&self, GetLineageError::NotFound(_))
+    }
+    /// Returns `true` if the error kind is `GetLineageError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, GetLineageError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `GetLineageError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, GetLineageError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `GetLineageError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, GetLineageError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            GetLineageError::NotFound(_inner) => _inner.name(),
+            GetLineageError::ValidationException(_inner) => _inner.name(),
+            GetLineageError::Unavailable(_inner) => _inner.name(),
+            GetLineageError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for GetLineageError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            GetLineageError::NotFound(_inner) => Some(_inner),
+            GetLineageError::ValidationException(_inner) => Some(_inner),
+            GetLineageError::Unavailable(_inner) => Some(_inner),
+            GetLineageError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::NotFound> for crate::error::GetLineageError {
+    fn from(variant: crate::error::NotFound) -> crate::error::GetLineageError {
+        Self::NotFound(variant)
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::GetLineageError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::GetLineageError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::GetLineageError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::GetLineageError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::GetLineageError {
+    fn from(variant: crate::error::InternalError) -> crate::error::GetLineageError {
+        Self::InternalError(variant)
+    }
+}
+
 /// Error type for the `ResolveActors` operation.
 /// Each variant represents an error that can occur for the `ResolveActors` operation.
 #[derive(::std::fmt::Debug)]

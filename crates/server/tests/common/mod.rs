@@ -1,6 +1,8 @@
 //! 試験の足場: 試験ごとに一時の DB を作り、Router に要求を通す。DB の決まりは、書く接続と読む接続を直に使って見る。
 #![allow(dead_code)]
 
+pub mod sample;
+
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};

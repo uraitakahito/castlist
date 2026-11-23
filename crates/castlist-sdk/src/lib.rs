@@ -178,6 +178,8 @@
 //!    let app = Castlist::builder(config)
 //!        .get_actor(get_actor)
 //!        .get_health(get_health)
+//!        .get_lineage(get_lineage)
+//!        .list_actors(list_actors)
 //!        .put_event(put_event)
 //!        .put_link(put_link)
 //!        .put_setting(put_setting)
@@ -205,6 +207,14 @@
 //! }
 //!
 //! async fn get_health(input: input::GetHealthInput) -> output::GetHealthOutput {
+//!     todo!()
+//! }
+//!
+//! async fn get_lineage(input: input::GetLineageInput) -> Result<output::GetLineageOutput, error::GetLineageError> {
+//!     todo!()
+//! }
+//!
+//! async fn list_actors(input: input::ListActorsInput) -> Result<output::ListActorsOutput, error::ListActorsError> {
 //!     todo!()
 //! }
 //!

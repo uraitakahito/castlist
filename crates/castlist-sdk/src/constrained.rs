@@ -24,6 +24,21 @@ pub(crate) mod labels_constrained {
         }
     }
 }
+pub(crate) mod label_filters_constrained {
+
+    #[derive(Debug, Clone)]
+    pub(crate) struct LabelFiltersConstrained(pub(crate) std::vec::Vec<crate::model::LabelFilter>);
+
+    impl crate::constrained::Constrained for LabelFiltersConstrained {
+        type Unconstrained =
+            crate::unconstrained::label_filters_unconstrained::LabelFiltersUnconstrained;
+    }
+    impl ::std::convert::From<LabelFiltersConstrained> for ::std::vec::Vec<::std::string::String> {
+        fn from(v: LabelFiltersConstrained) -> Self {
+            v.0.into_iter().map(|item| item.into()).collect()
+        }
+    }
+}
 
 /*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.

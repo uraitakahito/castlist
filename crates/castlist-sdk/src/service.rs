@@ -5,6 +5,8 @@
 pub struct CastlistBuilder<Body, L, HttpPl, ModelPl> {
     get_actor: Option<::aws_smithy_http_server::routing::Route<Body>>,
     get_health: Option<::aws_smithy_http_server::routing::Route<Body>>,
+    get_lineage: Option<::aws_smithy_http_server::routing::Route<Body>>,
+    list_actors: Option<::aws_smithy_http_server::routing::Route<Body>>,
     put_event: Option<::aws_smithy_http_server::routing::Route<Body>>,
     put_link: Option<::aws_smithy_http_server::routing::Route<Body>>,
     put_setting: Option<::aws_smithy_http_server::routing::Route<Body>>,
@@ -361,6 +363,354 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
         S::Future: Send + 'static,
     {
         self.get_health = Some(::aws_smithy_http_server::routing::Route::new(svc));
+        self
+    }
+
+    /// Sets the [`GetLineage`](crate::operation_shape::GetLineage) operation.
+    ///
+    /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
+    /// See the [operation module documentation](::aws_smithy_http_server::operation) for more information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use castlist_sdk::{Castlist, CastlistConfig};
+    ///
+    /// use castlist_sdk::{input, output, error};
+    ///
+    /// async fn handler(input: input::GetLineageInput) -> Result<output::GetLineageOutput, error::GetLineageError> {
+    ///     todo!()
+    /// }
+    ///
+    /// let config = CastlistConfig::builder().build();
+    /// let app = Castlist::builder(config)
+    ///     .get_lineage(handler)
+    ///     /* Set other handlers */
+    ///     .build()
+    ///     .unwrap();
+    /// # let app: Castlist<::aws_smithy_http_server::routing::RoutingService<::aws_smithy_http_server::protocol::rest::router::RestRouter<::aws_smithy_http_server::routing::Route>, ::aws_smithy_http_server::protocol::rest_json_1::RestJson1>> = app;
+    /// ```
+    ///
+                    pub fn get_lineage<HandlerType, HandlerExtractors, UpgradeExtractors>(self, handler: HandlerType) -> Self
+                    where
+                        HandlerType: ::aws_smithy_http_server::operation::Handler<crate::operation_shape::GetLineage, HandlerExtractors>,
+
+                        ModelPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetLineage,
+                            ::aws_smithy_http_server::operation::IntoService<crate::operation_shape::GetLineage, HandlerType>
+                        >,
+                        ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetLineage,
+                            ModelPl::Output
+                        >,
+                        HttpPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetLineage,
+                            <
+                                ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>
+                                as ::aws_smithy_http_server::plugin::Plugin<
+                                    Castlist<L>,
+                                    crate::operation_shape::GetLineage,
+                                    ModelPl::Output
+                                >
+                            >::Output
+                        >,
+
+                        HttpPl::Output: ::tower::Service<::http_1x::Request<Body>, Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>, Error = ::std::convert::Infallible> + Clone + Send + 'static,
+                        <HttpPl::Output as ::tower::Service<::http_1x::Request<Body>>>::Future: Send + 'static,
+
+{
+        use ::aws_smithy_http_server::operation::OperationShapeExt;
+        use ::aws_smithy_http_server::plugin::Plugin;
+        let svc = crate::operation_shape::GetLineage::from_handler(handler);
+        let svc = self.model_plugin.apply(svc);
+        let svc = ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>::new()
+            .with_request_body_read_timeout(
+                crate::service_config::service_config()
+                    .request_body
+                    .for_operation(&::aws_smithy_schema::ShapeId::from_parts(
+                        "ai.castlist#GetLineage",
+                        "ai.castlist",
+                        "GetLineage",
+                    ))
+                    .read_timeout
+                    .unwrap_or_default(),
+                "ai.castlist#GetLineage",
+            )
+            .apply(svc);
+        let svc = self.http_plugin.apply(svc);
+        self.get_lineage_custom(svc)
+    }
+
+    /// Sets the [`GetLineage`](crate::operation_shape::GetLineage) operation.
+    ///
+    /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
+    /// See the [operation module documentation](::aws_smithy_http_server::operation) for more information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use castlist_sdk::{Castlist, CastlistConfig};
+    ///
+    /// use castlist_sdk::{input, output, error};
+    ///
+    /// async fn handler(input: input::GetLineageInput) -> Result<output::GetLineageOutput, error::GetLineageError> {
+    ///     todo!()
+    /// }
+    ///
+    /// let config = CastlistConfig::builder().build();
+    /// let svc = ::tower::util::service_fn(handler);
+    /// let app = Castlist::builder(config)
+    ///     .get_lineage_service(svc)
+    ///     /* Set other handlers */
+    ///     .build()
+    ///     .unwrap();
+    /// # let app: Castlist<::aws_smithy_http_server::routing::RoutingService<::aws_smithy_http_server::protocol::rest::router::RestRouter<::aws_smithy_http_server::routing::Route>, ::aws_smithy_http_server::protocol::rest_json_1::RestJson1>> = app;
+    /// ```
+    ///
+                    pub fn get_lineage_service<S, ServiceExtractors, UpgradeExtractors>(self, service: S) -> Self
+                    where
+                        S: ::aws_smithy_http_server::operation::OperationService<crate::operation_shape::GetLineage, ServiceExtractors>,
+
+                        ModelPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetLineage,
+                            ::aws_smithy_http_server::operation::Normalize<crate::operation_shape::GetLineage, S>
+                        >,
+                        ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetLineage,
+                            ModelPl::Output
+                        >,
+                        HttpPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetLineage,
+                            <
+                                ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>
+                                as ::aws_smithy_http_server::plugin::Plugin<
+                                    Castlist<L>,
+                                    crate::operation_shape::GetLineage,
+                                    ModelPl::Output
+                                >
+                            >::Output
+                        >,
+
+                        HttpPl::Output: ::tower::Service<::http_1x::Request<Body>, Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>, Error = ::std::convert::Infallible> + Clone + Send + 'static,
+                        <HttpPl::Output as ::tower::Service<::http_1x::Request<Body>>>::Future: Send + 'static,
+
+{
+        use ::aws_smithy_http_server::operation::OperationShapeExt;
+        use ::aws_smithy_http_server::plugin::Plugin;
+        let svc = crate::operation_shape::GetLineage::from_service(service);
+        let svc = self.model_plugin.apply(svc);
+        let svc = ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>::new()
+            .with_request_body_read_timeout(
+                crate::service_config::service_config()
+                    .request_body
+                    .for_operation(&::aws_smithy_schema::ShapeId::from_parts(
+                        "ai.castlist#GetLineage",
+                        "ai.castlist",
+                        "GetLineage",
+                    ))
+                    .read_timeout
+                    .unwrap_or_default(),
+                "ai.castlist#GetLineage",
+            )
+            .apply(svc);
+        let svc = self.http_plugin.apply(svc);
+        self.get_lineage_custom(svc)
+    }
+
+    /// Sets the [`GetLineage`](crate::operation_shape::GetLineage) to a custom [`Service`](tower::Service).
+    /// not constrained by the Smithy contract.
+    fn get_lineage_custom<S>(mut self, svc: S) -> Self
+    where
+        S: ::tower::Service<
+                ::http_1x::Request<Body>,
+                Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>,
+                Error = ::std::convert::Infallible,
+            > + Clone
+            + Send
+            + 'static,
+        S::Future: Send + 'static,
+    {
+        self.get_lineage = Some(::aws_smithy_http_server::routing::Route::new(svc));
+        self
+    }
+
+    /// Sets the [`ListActors`](crate::operation_shape::ListActors) operation.
+    ///
+    /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
+    /// See the [operation module documentation](::aws_smithy_http_server::operation) for more information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use castlist_sdk::{Castlist, CastlistConfig};
+    ///
+    /// use castlist_sdk::{input, output, error};
+    ///
+    /// async fn handler(input: input::ListActorsInput) -> Result<output::ListActorsOutput, error::ListActorsError> {
+    ///     todo!()
+    /// }
+    ///
+    /// let config = CastlistConfig::builder().build();
+    /// let app = Castlist::builder(config)
+    ///     .list_actors(handler)
+    ///     /* Set other handlers */
+    ///     .build()
+    ///     .unwrap();
+    /// # let app: Castlist<::aws_smithy_http_server::routing::RoutingService<::aws_smithy_http_server::protocol::rest::router::RestRouter<::aws_smithy_http_server::routing::Route>, ::aws_smithy_http_server::protocol::rest_json_1::RestJson1>> = app;
+    /// ```
+    ///
+                    pub fn list_actors<HandlerType, HandlerExtractors, UpgradeExtractors>(self, handler: HandlerType) -> Self
+                    where
+                        HandlerType: ::aws_smithy_http_server::operation::Handler<crate::operation_shape::ListActors, HandlerExtractors>,
+
+                        ModelPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListActors,
+                            ::aws_smithy_http_server::operation::IntoService<crate::operation_shape::ListActors, HandlerType>
+                        >,
+                        ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListActors,
+                            ModelPl::Output
+                        >,
+                        HttpPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListActors,
+                            <
+                                ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>
+                                as ::aws_smithy_http_server::plugin::Plugin<
+                                    Castlist<L>,
+                                    crate::operation_shape::ListActors,
+                                    ModelPl::Output
+                                >
+                            >::Output
+                        >,
+
+                        HttpPl::Output: ::tower::Service<::http_1x::Request<Body>, Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>, Error = ::std::convert::Infallible> + Clone + Send + 'static,
+                        <HttpPl::Output as ::tower::Service<::http_1x::Request<Body>>>::Future: Send + 'static,
+
+{
+        use ::aws_smithy_http_server::operation::OperationShapeExt;
+        use ::aws_smithy_http_server::plugin::Plugin;
+        let svc = crate::operation_shape::ListActors::from_handler(handler);
+        let svc = self.model_plugin.apply(svc);
+        let svc = ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>::new()
+            .with_request_body_read_timeout(
+                crate::service_config::service_config()
+                    .request_body
+                    .for_operation(&::aws_smithy_schema::ShapeId::from_parts(
+                        "ai.castlist#ListActors",
+                        "ai.castlist",
+                        "ListActors",
+                    ))
+                    .read_timeout
+                    .unwrap_or_default(),
+                "ai.castlist#ListActors",
+            )
+            .apply(svc);
+        let svc = self.http_plugin.apply(svc);
+        self.list_actors_custom(svc)
+    }
+
+    /// Sets the [`ListActors`](crate::operation_shape::ListActors) operation.
+    ///
+    /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
+    /// See the [operation module documentation](::aws_smithy_http_server::operation) for more information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use castlist_sdk::{Castlist, CastlistConfig};
+    ///
+    /// use castlist_sdk::{input, output, error};
+    ///
+    /// async fn handler(input: input::ListActorsInput) -> Result<output::ListActorsOutput, error::ListActorsError> {
+    ///     todo!()
+    /// }
+    ///
+    /// let config = CastlistConfig::builder().build();
+    /// let svc = ::tower::util::service_fn(handler);
+    /// let app = Castlist::builder(config)
+    ///     .list_actors_service(svc)
+    ///     /* Set other handlers */
+    ///     .build()
+    ///     .unwrap();
+    /// # let app: Castlist<::aws_smithy_http_server::routing::RoutingService<::aws_smithy_http_server::protocol::rest::router::RestRouter<::aws_smithy_http_server::routing::Route>, ::aws_smithy_http_server::protocol::rest_json_1::RestJson1>> = app;
+    /// ```
+    ///
+                    pub fn list_actors_service<S, ServiceExtractors, UpgradeExtractors>(self, service: S) -> Self
+                    where
+                        S: ::aws_smithy_http_server::operation::OperationService<crate::operation_shape::ListActors, ServiceExtractors>,
+
+                        ModelPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListActors,
+                            ::aws_smithy_http_server::operation::Normalize<crate::operation_shape::ListActors, S>
+                        >,
+                        ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListActors,
+                            ModelPl::Output
+                        >,
+                        HttpPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListActors,
+                            <
+                                ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>
+                                as ::aws_smithy_http_server::plugin::Plugin<
+                                    Castlist<L>,
+                                    crate::operation_shape::ListActors,
+                                    ModelPl::Output
+                                >
+                            >::Output
+                        >,
+
+                        HttpPl::Output: ::tower::Service<::http_1x::Request<Body>, Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>, Error = ::std::convert::Infallible> + Clone + Send + 'static,
+                        <HttpPl::Output as ::tower::Service<::http_1x::Request<Body>>>::Future: Send + 'static,
+
+{
+        use ::aws_smithy_http_server::operation::OperationShapeExt;
+        use ::aws_smithy_http_server::plugin::Plugin;
+        let svc = crate::operation_shape::ListActors::from_service(service);
+        let svc = self.model_plugin.apply(svc);
+        let svc = ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>::new()
+            .with_request_body_read_timeout(
+                crate::service_config::service_config()
+                    .request_body
+                    .for_operation(&::aws_smithy_schema::ShapeId::from_parts(
+                        "ai.castlist#ListActors",
+                        "ai.castlist",
+                        "ListActors",
+                    ))
+                    .read_timeout
+                    .unwrap_or_default(),
+                "ai.castlist#ListActors",
+            )
+            .apply(svc);
+        let svc = self.http_plugin.apply(svc);
+        self.list_actors_custom(svc)
+    }
+
+    /// Sets the [`ListActors`](crate::operation_shape::ListActors) to a custom [`Service`](tower::Service).
+    /// not constrained by the Smithy contract.
+    fn list_actors_custom<S>(mut self, svc: S) -> Self
+    where
+        S: ::tower::Service<
+                ::http_1x::Request<Body>,
+                Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>,
+                Error = ::std::convert::Infallible,
+            > + Clone
+            + Send
+            + 'static,
+        S::Future: Send + 'static,
+    {
+        self.list_actors = Some(::aws_smithy_http_server::routing::Route::new(svc));
         self
     }
 
@@ -1267,6 +1617,14 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
                 missing_operation_names
                     .insert(crate::operation_shape::GetHealth::ID, ".get_health()");
             }
+            if self.get_lineage.is_none() {
+                missing_operation_names
+                    .insert(crate::operation_shape::GetLineage::ID, ".get_lineage()");
+            }
+            if self.list_actors.is_none() {
+                missing_operation_names
+                    .insert(crate::operation_shape::ListActors::ID, ".list_actors()");
+            }
             if self.put_event.is_none() {
                 missing_operation_names
                     .insert(crate::operation_shape::PutEvent::ID, ".put_event()");
@@ -1301,12 +1659,16 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
             crate::model::ActorKind::compile_regex();
             crate::model::NamePrefix::compile_regex();
             crate::model::ActorId::compile_regex();
-            crate::model::SenderId::compile_regex();
             crate::model::ActorRef::compile_regex();
-            crate::model::EventType::compile_regex();
+            crate::model::ActorSort::compile_regex();
+            crate::model::SortOrder::compile_regex();
+            crate::model::LineageDirection::compile_regex();
             crate::model::LinkType::compile_regex();
+            crate::model::SenderId::compile_regex();
+            crate::model::EventType::compile_regex();
             crate::model::SettingSource::compile_regex();
             crate::model::Text::compile_regex();
+            crate::model::LabelFilter::compile_regex();
 
             ::aws_smithy_http_server::protocol::rest::router::RestRouter::from_iter([
                 (
@@ -1316,6 +1678,14 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
                 (
                     request_specs::get_health(),
                     self.get_health.expect(unexpected_error_msg),
+                ),
+                (
+                    request_specs::get_lineage(),
+                    self.get_lineage.expect(unexpected_error_msg),
+                ),
+                (
+                    request_specs::list_actors(),
+                    self.list_actors.expect(unexpected_error_msg),
                 ),
                 (
                     request_specs::put_event(),
@@ -1374,6 +1744,24 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
             (
                 request_specs::get_health(),
                 self.get_health.unwrap_or_else(|| {
+                    let svc = ::aws_smithy_http_server::operation::MissingFailure::<
+                        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+                    >::default();
+                    ::aws_smithy_http_server::routing::Route::new(svc)
+                }),
+            ),
+            (
+                request_specs::get_lineage(),
+                self.get_lineage.unwrap_or_else(|| {
+                    let svc = ::aws_smithy_http_server::operation::MissingFailure::<
+                        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+                    >::default();
+                    ::aws_smithy_http_server::routing::Route::new(svc)
+                }),
+            ),
+            (
+                request_specs::list_actors(),
+                self.list_actors.unwrap_or_else(|| {
                     let svc = ::aws_smithy_http_server::operation::MissingFailure::<
                         ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
                     >::default();
@@ -1498,6 +1886,38 @@ mod request_specs {
                     ),
                 )
     }
+    pub(super) fn get_lineage() -> ::aws_smithy_http_server::routing::request_spec::RequestSpec {
+        ::aws_smithy_http_server::routing::request_spec::RequestSpec::new(
+                    ::http_1x::Method::GET,
+                    ::aws_smithy_http_server::routing::request_spec::UriSpec::new(
+                        ::aws_smithy_http_server::routing::request_spec::PathAndQuerySpec::new(
+                            ::aws_smithy_http_server::routing::request_spec::PathSpec::from_vector_unchecked(vec![
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("api")),
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("actors")),
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Label,
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("lineage")),
+]),
+                            ::aws_smithy_http_server::routing::request_spec::QuerySpec::from_vector_unchecked(vec![
+])
+                        )
+                    ),
+                )
+    }
+    pub(super) fn list_actors() -> ::aws_smithy_http_server::routing::request_spec::RequestSpec {
+        ::aws_smithy_http_server::routing::request_spec::RequestSpec::new(
+                    ::http_1x::Method::GET,
+                    ::aws_smithy_http_server::routing::request_spec::UriSpec::new(
+                        ::aws_smithy_http_server::routing::request_spec::PathAndQuerySpec::new(
+                            ::aws_smithy_http_server::routing::request_spec::PathSpec::from_vector_unchecked(vec![
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("api")),
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("actors")),
+]),
+                            ::aws_smithy_http_server::routing::request_spec::QuerySpec::from_vector_unchecked(vec![
+])
+                        )
+                    ),
+                )
+    }
     pub(super) fn put_event() -> ::aws_smithy_http_server::routing::request_spec::RequestSpec {
         ::aws_smithy_http_server::routing::request_spec::RequestSpec::new(
                     ::http_1x::Method::PUT,
@@ -1609,6 +2029,8 @@ impl Castlist<()> {
         CastlistBuilder {
             get_actor: None,
             get_health: None,
+            get_lineage: None,
+            list_actors: None,
             put_event: None,
             put_link: None,
             put_setting: None,
@@ -1643,6 +2065,8 @@ impl Castlist<()> {
         CastlistBuilder {
             get_actor: None,
             get_health: None,
+            get_lineage: None,
+            list_actors: None,
             put_event: None,
             put_link: None,
             put_setting: None,
@@ -1772,6 +2196,8 @@ where
 pub enum Operation {
     GetActor,
     GetHealth,
+    GetLineage,
+    ListActors,
     PutEvent,
     PutLink,
     PutSetting,
@@ -1792,6 +2218,16 @@ impl Operation {
                 "ai.castlist#GetHealth",
                 "ai.castlist",
                 "GetHealth",
+            ),
+            Operation::GetLineage => ::aws_smithy_http_server::shape_id::ShapeId::new(
+                "ai.castlist#GetLineage",
+                "ai.castlist",
+                "GetLineage",
+            ),
+            Operation::ListActors => ::aws_smithy_http_server::shape_id::ShapeId::new(
+                "ai.castlist#ListActors",
+                "ai.castlist",
+                "ListActors",
             ),
             Operation::PutEvent => ::aws_smithy_http_server::shape_id::ShapeId::new(
                 "ai.castlist#PutEvent",
@@ -1830,6 +2266,16 @@ impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_sh
     for Castlist<L>
 {
     const VALUE: Operation = Operation::GetHealth;
+}
+impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_shape::GetLineage>
+    for Castlist<L>
+{
+    const VALUE: Operation = Operation::GetLineage;
+}
+impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_shape::ListActors>
+    for Castlist<L>
+{
+    const VALUE: Operation = Operation::ListActors;
 }
 impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_shape::PutEvent>
     for Castlist<L>
@@ -2062,6 +2508,24 @@ macro_rules! scope {
                             scope! { @ $ name, $ contains (GetHealth $($ member)*) ($ other $($ temp)*) ($($ not_member)*) }
                         };
 
+                        // GetLineage match found, pop from both `member` and `not_member`
+                        (@ $ name: ident, $ contains: ident (GetLineage $($ member: ident)*) ($($ temp: ident)*) (GetLineage $($ not_member: ident)*)) => {
+                            scope! { @ $ name, $ contains ($($ member)*) ($($ temp)*) ($($ not_member)*) }
+                        };
+                        // GetLineage match not found, pop from `not_member` into `temp` stack
+                        (@ $ name: ident, $ contains: ident (GetLineage $($ member: ident)*) ($($ temp: ident)*) ($ other: ident $($ not_member: ident)*)) => {
+                            scope! { @ $ name, $ contains (GetLineage $($ member)*) ($ other $($ temp)*) ($($ not_member)*) }
+                        };
+
+                        // ListActors match found, pop from both `member` and `not_member`
+                        (@ $ name: ident, $ contains: ident (ListActors $($ member: ident)*) ($($ temp: ident)*) (ListActors $($ not_member: ident)*)) => {
+                            scope! { @ $ name, $ contains ($($ member)*) ($($ temp)*) ($($ not_member)*) }
+                        };
+                        // ListActors match not found, pop from `not_member` into `temp` stack
+                        (@ $ name: ident, $ contains: ident (ListActors $($ member: ident)*) ($($ temp: ident)*) ($ other: ident $($ not_member: ident)*)) => {
+                            scope! { @ $ name, $ contains (ListActors $($ member)*) ($ other $($ temp)*) ($($ not_member)*) }
+                        };
+
                         // PutEvent match found, pop from both `member` and `not_member`
                         (@ $ name: ident, $ contains: ident (PutEvent $($ member: ident)*) ($($ temp: ident)*) (PutEvent $($ not_member: ident)*)) => {
                             scope! { @ $ name, $ contains ($($ member)*) ($($ temp)*) ($($ not_member)*) }
@@ -2121,7 +2585,7 @@ macro_rules! scope {
                                 excludes: []
                             }
                         }
-                        scope! { @ $ name, False ($($ include)*) () (GetActor GetHealth PutEvent PutLink PutSetting RegisterActor ResolveActors) }
+                        scope! { @ $ name, False ($($ include)*) () (GetActor GetHealth GetLineage ListActors PutEvent PutLink PutSetting RegisterActor ResolveActors) }
                     };
                     (
                         $(#[$ attrs:meta])*
@@ -2138,6 +2602,6 @@ macro_rules! scope {
                                 excludes: [$($ exclude),*]
                             }
                         }
-                        scope! { @ $ name, True ($($ exclude)*) () (GetActor GetHealth PutEvent PutLink PutSetting RegisterActor ResolveActors) }
+                        scope! { @ $ name, True ($($ exclude)*) () (GetActor GetHealth GetLineage ListActors PutEvent PutLink PutSetting RegisterActor ResolveActors) }
                     };
                 }

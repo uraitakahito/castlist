@@ -77,6 +77,47 @@ pub(crate) mod bindings_unconstrained {
         }
     }
 }
+pub(crate) mod label_filters_unconstrained {
+
+    #[derive(Debug, Clone)]
+    pub(crate) struct LabelFiltersUnconstrained(pub(crate) std::vec::Vec<::std::string::String>);
+
+    impl From<LabelFiltersUnconstrained>
+        for crate::constrained::MaybeConstrained<
+            crate::constrained::label_filters_constrained::LabelFiltersConstrained,
+        >
+    {
+        fn from(value: LabelFiltersUnconstrained) -> Self {
+            Self::Unconstrained(value)
+        }
+    }
+    impl std::convert::TryFrom<LabelFiltersUnconstrained>
+        for crate::constrained::label_filters_constrained::LabelFiltersConstrained
+    {
+        type Error = crate::model::label_filters_internal::ConstraintViolation;
+        fn try_from(value: LabelFiltersUnconstrained) -> std::result::Result<Self, Self::Error> {
+            let res: ::std::result::Result<
+                ::std::vec::Vec<crate::model::LabelFilter>,
+                (
+                    usize,
+                    crate::model::label_filter_internal::ConstraintViolation,
+                ),
+            > = value
+                .0
+                .into_iter()
+                .enumerate()
+                .map(|(idx, inner)| {
+                    inner
+                        .try_into()
+                        .map_err(|inner_violation| (idx, inner_violation))
+                })
+                .collect();
+            let inner =
+                res.map_err(|(idx, inner_violation)| Self::Error::Member(idx, inner_violation))?;
+            Ok(Self(inner))
+        }
+    }
+}
 pub(crate) mod actor_refs_unconstrained {
 
     #[derive(Debug, Clone)]

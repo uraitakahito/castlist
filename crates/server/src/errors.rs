@@ -1,7 +1,7 @@
 //! 操作に共通の誤りの作り方。
 use castlist_sdk::error::{
-    Conflict, GetActorError, InternalError, PutEventError, PutLinkError, PutSettingError,
-    ResolveActorsError, Unavailable, ValidationException,
+    Conflict, GetActorError, GetLineageError, InternalError, ListActorsError, PutEventError,
+    PutLinkError, PutSettingError, ResolveActorsError, Unavailable, ValidationException,
 };
 
 use crate::db::WriteError;
@@ -55,7 +55,12 @@ macro_rules! from_failure {
     )*};
 }
 
-from_failure!(GetActorError, ResolveActorsError);
+from_failure!(
+    GetActorError,
+    ResolveActorsError,
+    ListActorsError,
+    GetLineageError
+);
 
 /// 送り手の id で足す操作（Put…）の失敗: 中身の誤り（400）・同じ id で違う中身など（409）・混んでいる（503）・中の失敗（500）。
 pub enum PutFailure {
