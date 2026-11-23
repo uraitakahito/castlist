@@ -428,3 +428,57 @@ async fn inferred_is_decided_by_the_first_exit_after_the_last_enter() {
     assert_eq!(s["present"], true, "{s}");
     assert_eq!(s["inferred"], false, "{s}");
 }
+
+/// 500 の InternalError で、中の誤りの字（`leak` を含む物）を出さないことを見る。
+async fn internal_error(app: &App, id: &str, leak: &str) {
+    let (status, headers, answer) = app.get(&format!("/api/actors/{id}")).await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR, "{answer}");
+    assert_eq!(error_type(&headers), "InternalError");
+    let message = answer["message"].as_str().unwrap_or_default();
+    assert!(!message.is_empty(), "{answer}");
+    assert!(!message.contains(leak), "中の誤りの字が出ている: {message}");
+}
+
+/// DB の誤り（混んでいる以外）は、500 の InternalError で、決まった字を返す。
+#[tokio::test]
+async fn a_db_error_is_a_500_internal_error_with_a_fixed_message() {
+    let app = App::start().await;
+    let se1 = id(&app.register(&ai("se", "s-1")).await);
+    // 札の表を外して、札を読む所を落とす。
+    app.execute("alter table labels rename to labels_gone")
+        .await;
+    internal_error(&app, &se1, "labels").await;
+}
+
+/// 残っている行を答えの形に直せない時（読めない時刻）も、500 の InternalError で、決まった字を返す。
+#[tokio::test]
+async fn a_stored_row_that_cannot_be_converted_is_a_500_internal_error() {
+    let app = App::start().await;
+    let se1 = id(&app.register(&ai("se", "s-1")).await);
+    app.event_at("e-1", &se1, "entered", "{}", "not-a-time")
+        .await;
+    internal_error(&app, &se1, "not-a-time").await;
+}
+
+/// 読む接続が空かない（混んでいる）時だけは、503 の Unavailable（送り直せば通る見込み）。
+#[tokio::test]
+async fn waiting_too_long_for_a_read_connection_is_503_unavailable() {
+    let app = App::start().await;
+    let se1 = id(&app.register(&ai("se", "s-1")).await);
+    // 軽い読みの接続（READS 本）を、みな握ったままにする。
+    let mut held = Vec::new();
+    for _ in 0..castlist_next::db::READS {
+        held.push(app.db.read().acquire().await.expect("読む接続"));
+    }
+    let (status, headers, answer) = app.get(&format!("/api/actors/{se1}")).await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{answer}");
+    assert_eq!(error_type(&headers), "Unavailable");
+    assert!(
+        answer["message"]
+            .as_str()
+            .is_some_and(|m| m.contains("混んでいる")),
+        "{answer}"
+    );
+    drop(held);
+    app.actor(&se1).await;
+}

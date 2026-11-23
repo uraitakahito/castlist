@@ -77,6 +77,8 @@ pub enum GetActorError {
     ValidationException(crate::error::ValidationException),
     /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
     Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
 }
 impl ::std::fmt::Display for GetActorError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -84,6 +86,7 @@ impl ::std::fmt::Display for GetActorError {
             GetActorError::NotFound(_inner) => _inner.fmt(f),
             GetActorError::ValidationException(_inner) => _inner.fmt(f),
             GetActorError::Unavailable(_inner) => _inner.fmt(f),
+            GetActorError::InternalError(_inner) => _inner.fmt(f),
         }
     }
 }
@@ -100,12 +103,17 @@ impl GetActorError {
     pub fn is_unavailable(&self) -> bool {
         matches!(&self, GetActorError::Unavailable(_))
     }
+    /// Returns `true` if the error kind is `GetActorError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, GetActorError::InternalError(_))
+    }
     /// Returns the error name string by matching the correct variant.
     pub fn name(&self) -> &'static str {
         match &self {
             GetActorError::NotFound(_inner) => _inner.name(),
             GetActorError::ValidationException(_inner) => _inner.name(),
             GetActorError::Unavailable(_inner) => _inner.name(),
+            GetActorError::InternalError(_inner) => _inner.name(),
         }
     }
 }
@@ -115,6 +123,7 @@ impl ::std::error::Error for GetActorError {
             GetActorError::NotFound(_inner) => Some(_inner),
             GetActorError::ValidationException(_inner) => Some(_inner),
             GetActorError::Unavailable(_inner) => Some(_inner),
+            GetActorError::InternalError(_inner) => Some(_inner),
         }
     }
 }
@@ -133,6 +142,11 @@ impl ::std::convert::From<crate::error::Unavailable> for crate::error::GetActorE
         Self::Unavailable(variant)
     }
 }
+impl ::std::convert::From<crate::error::InternalError> for crate::error::GetActorError {
+    fn from(variant: crate::error::InternalError) -> crate::error::GetActorError {
+        Self::InternalError(variant)
+    }
+}
 
 /// Error type for the `ResolveActors` operation.
 /// Each variant represents an error that can occur for the `ResolveActors` operation.
@@ -142,12 +156,15 @@ pub enum ResolveActorsError {
     ValidationException(crate::error::ValidationException),
     /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
     Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
 }
 impl ::std::fmt::Display for ResolveActorsError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
             ResolveActorsError::ValidationException(_inner) => _inner.fmt(f),
             ResolveActorsError::Unavailable(_inner) => _inner.fmt(f),
+            ResolveActorsError::InternalError(_inner) => _inner.fmt(f),
         }
     }
 }
@@ -160,11 +177,16 @@ impl ResolveActorsError {
     pub fn is_unavailable(&self) -> bool {
         matches!(&self, ResolveActorsError::Unavailable(_))
     }
+    /// Returns `true` if the error kind is `ResolveActorsError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, ResolveActorsError::InternalError(_))
+    }
     /// Returns the error name string by matching the correct variant.
     pub fn name(&self) -> &'static str {
         match &self {
             ResolveActorsError::ValidationException(_inner) => _inner.name(),
             ResolveActorsError::Unavailable(_inner) => _inner.name(),
+            ResolveActorsError::InternalError(_inner) => _inner.name(),
         }
     }
 }
@@ -173,6 +195,7 @@ impl ::std::error::Error for ResolveActorsError {
         match &self {
             ResolveActorsError::ValidationException(_inner) => Some(_inner),
             ResolveActorsError::Unavailable(_inner) => Some(_inner),
+            ResolveActorsError::InternalError(_inner) => Some(_inner),
         }
     }
 }
@@ -184,6 +207,11 @@ impl ::std::convert::From<crate::error::ValidationException> for crate::error::R
 impl ::std::convert::From<crate::error::Unavailable> for crate::error::ResolveActorsError {
     fn from(variant: crate::error::Unavailable) -> crate::error::ResolveActorsError {
         Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::ResolveActorsError {
+    fn from(variant: crate::error::InternalError) -> crate::error::ResolveActorsError {
+        Self::InternalError(variant)
     }
 }
 

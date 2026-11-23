@@ -138,3 +138,27 @@ async fn an_issuer_of_the_wrong_form_is_400() {
     )
     .await;
 }
+
+/// DB の誤り（混んでいる以外）は、500 の InternalError で、決まった字を返す。
+#[tokio::test]
+async fn a_db_error_is_a_500_internal_error_with_a_fixed_message() {
+    let app = App::start().await;
+    app.register(&ai("se", "s-1")).await;
+    // 付随する id の表を外して、引き当てを落とす。
+    app.execute("alter table bindings rename to bindings_gone")
+        .await;
+    let (status, headers, answer) = app
+        .post(
+            "/api/resolve",
+            &json!({ "issuer": "tpm", "refs": ["claude.session:s-1"] }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR, "{answer}");
+    assert_eq!(error_type(&headers), "InternalError");
+    let message = answer["message"].as_str().unwrap_or_default();
+    assert!(!message.is_empty(), "{answer}");
+    assert!(
+        !message.contains("bindings"),
+        "中の誤りの字が出ている: {message}"
+    );
+}

@@ -150,6 +150,31 @@ pub fn ser_resolve_actors_http_error(
                     .status(503)
                     .body(::aws_smithy_http_server::body::to_boxed(payload))?
             }
+            crate::error::ResolveActorsError::InternalError(output) => {
+                let payload =
+                    crate::protocol_serde::shape_internal_error::ser_internal_error_error(output)?;
+                #[allow(unused_mut)]
+                let mut builder = ::http_1x::Response::builder();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_TYPE,
+                    "application/json",
+                );
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::HeaderName::from_static("x-amzn-errortype"),
+                    "InternalError",
+                );
+                let content_length = payload.len();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_LENGTH,
+                    content_length,
+                );
+                builder
+                    .status(500)
+                    .body(::aws_smithy_http_server::body::to_boxed(payload))?
+            }
         }
     })
 }

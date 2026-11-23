@@ -401,6 +401,7 @@ operation GetActor {
         NotFound
         ValidationException
         Unavailable
+        InternalError
     ]
 }
 
@@ -467,6 +468,7 @@ operation ResolveActors {
     errors: [
         ValidationException
         Unavailable
+        InternalError
     ]
 }
 
