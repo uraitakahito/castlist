@@ -1,0 +1,453 @@
+//! 接続・移行・SQL。SQL は動く時に組む形（`query`・`query_as`）で書く。
+//!
+//! - 書く接続は 1 本だけ。番号（n）を数える所と、同じ物かを見る所が 1 列に並ぶ。
+//! - 読む接続は 4 本（軽い読み）と 2 本（重い読み）で、読むだけ。WAL なので、書いている間も待たずに読める。
+//! - どの表も足すだけ。この file の SQL は insert と select だけで、`ci/check-sql.sh` が見張る。
+//!   「最新」は seq だけで決め、送り手の時刻（sent_at）では決めない。
+use std::fmt;
+use std::path::Path;
+use std::time::Duration;
+
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
+use sqlx::{FromRow, Sqlite, SqlitePool, Transaction};
+use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
+
+/// 書く接続を待つ長さ。過ぎれば「混んでいる」で返す。
+pub const WRITE_WAIT: Duration = Duration::from_secs(2);
+/// 軽い読みの接続の本数。
+pub const READS: u32 = 4;
+/// 重い読み（図の点と線・タイムライン）だけが使う、読むだけの接続の本数。軽い読みの接続とは別にして、
+/// 重い読みが引き当てなどの軽い読みの接続を取らないようにする。
+pub const HEAVY_READS: u32 = 2;
+/// 送り手の時刻と castlist の時計が、これより離れていれば clock_skew を立てる（ちょうどなら立てない）。
+pub const SKEW: time::Duration = time::Duration::minutes(5);
+
+/// 鍵の付随する id から、アクターを引く。
+const RESOLVE: &str =
+    "select a.id, a.name, a.kind from bindings b join actors a on a.id = b.actor_id
+     where b.issuer = ?1 and b.type = ?2 and b.value = ?3 and b.is_key = 1";
+
+/// どの表の最新の received_at より前にならないよう、表ごとの最新（seq の大きい方）を見る。
+const CLOCK: &str = "select max(t) from (
+       select (select received_at from actors order by seq desc limit 1) as t
+       union all select (select received_at from labels order by seq desc limit 1)
+       union all select (select received_at from bindings order by seq desc limit 1)
+       union all select (select received_at from links order by seq desc limit 1)
+       union all select (select received_at from events order by seq desc limit 1)
+       union all select (select received_at from settings order by seq desc limit 1))";
+
+pub struct Db {
+    read: SqlitePool,
+    /// 重い読みだけが使う、読むだけの接続（[`HEAVY_READS`] 本）。
+    heavy: SqlitePool,
+    write: SqlitePool,
+}
+
+/// 付随する id 1 つ。
+#[derive(Clone, Debug)]
+pub struct Ref {
+    pub kind: String,
+    pub value: String,
+}
+
+/// 登録の中身（形は定義が見てある）。
+pub struct NewActor<'a> {
+    pub issuer: &'a str,
+    pub kind: &'a str,
+    pub prefix: &'a str,
+    pub labels: &'a [(String, String)],
+    /// 初めの物が鍵。
+    pub bindings: &'a [Ref],
+    pub sent_at: OffsetDateTime,
+    /// 頼んだ model と effort。
+    pub settings: Option<(&'a str, &'a str)>,
+}
+
+/// アクターを指す時の短い形。
+#[derive(Clone, Debug, FromRow, PartialEq, Eq)]
+pub struct ActorRef {
+    pub id: String,
+    pub name: String,
+    pub kind: String,
+}
+
+/// 書けない訳。
+#[derive(Debug)]
+pub enum WriteError {
+    /// 書く接続が空かない（混んでいる）。
+    Busy,
+    /// 定義の形では言えない、中身の誤り。
+    Invalid(String),
+    Db(sqlx::Error),
+}
+
+impl From<sqlx::Error> for WriteError {
+    fn from(e: sqlx::Error) -> Self {
+        match e {
+            sqlx::Error::PoolTimedOut => WriteError::Busy,
+            e => WriteError::Db(e),
+        }
+    }
+}
+
+/// DB を開けない訳。
+#[derive(Debug)]
+pub enum OpenError {
+    Db(sqlx::Error),
+    Migrate(sqlx::migrate::MigrateError),
+    /// 外のキーの崩れた行がある（表と rowid と、指す先の表）。
+    ForeignKey(Vec<String>),
+}
+
+impl fmt::Display for OpenError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            OpenError::Db(e) => write!(f, "DB を開けない: {e}"),
+            OpenError::Migrate(e) => write!(f, "DB の移行に落ちた: {e}"),
+            OpenError::ForeignKey(rows) => write!(
+                f,
+                "外のキーの崩れた行があるので開かない: {}",
+                rows.join("・")
+            ),
+        }
+    }
+}
+
+impl std::error::Error for OpenError {}
+
+// --- 時刻 ---
+
+/// castlist の時計の字（UTC・ミリ秒まで・いつも 24 字なので、字の順が時刻の順になる）。
+pub fn stamp(t: OffsetDateTime) -> String {
+    let t = t.to_offset(time::UtcOffset::UTC);
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}Z",
+        t.year().clamp(0, 9999),
+        u8::from(t.month()),
+        t.day(),
+        t.hour(),
+        t.minute(),
+        t.second(),
+        t.millisecond()
+    )
+}
+
+/// 今の castlist の時刻。
+pub fn now() -> String {
+    stamp(OffsetDateTime::now_utc())
+}
+
+/// 書く transaction の中で、受けた時刻を決める: 今と、どの表の最新の received_at の、遅い方。
+async fn received_at(tx: &mut Transaction<'_, Sqlite>) -> Result<String, sqlx::Error> {
+    let latest: Option<String> = sqlx::query_scalar(CLOCK).fetch_one(&mut **tx).await?;
+    let now = now();
+    Ok(match latest {
+        Some(latest) if latest > now => latest,
+        _ => now,
+    })
+}
+
+/// 送り手の時刻が、受けた時刻から 5 分より離れているか。
+fn skewed(sent: OffsetDateTime, received: &str) -> bool {
+    OffsetDateTime::parse(received, &Rfc3339).is_ok_and(|r| (r - sent).abs() > SKEW)
+}
+
+/// 送り手の時刻の字（RFC 3339・UTC。秒の下は要る桁だけ）。年が 4 桁に収まらなければ読めない時刻。
+fn sent_text(t: OffsetDateTime) -> Result<String, WriteError> {
+    t.to_offset(time::UtcOffset::UTC)
+        .format(&Rfc3339)
+        .map_err(|_| WriteError::Invalid("sentAt は 0000 年から 9999 年までの時刻".to_owned()))
+}
+
+// --- 開く ---
+
+impl Db {
+    /// 開き、移行し、外のキーの崩れが無いかを見る。崩れがあれば開かない。
+    pub async fn open(path: &Path) -> Result<Self, OpenError> {
+        // どの接続にも: 外のキーを効かせ、置き換え（REPLACE）が行を消す時も trigger を動かす。
+        // 一時の物は memory に置く（動かす image には /tmp が無い）。
+        let options = SqliteConnectOptions::new()
+            .filename(path)
+            .create_if_missing(true)
+            .journal_mode(SqliteJournalMode::Wal)
+            .foreign_keys(true)
+            .busy_timeout(Duration::from_secs(5))
+            .pragma("recursive_triggers", "ON")
+            .pragma("temp_store", "MEMORY");
+        let write = SqlitePoolOptions::new()
+            .max_connections(1)
+            .acquire_timeout(WRITE_WAIT)
+            .connect_with(options.clone())
+            .await
+            .map_err(OpenError::Db)?;
+        sqlx::migrate!("./migrations")
+            .run(&write)
+            .await
+            .map_err(OpenError::Migrate)?;
+        let broken: Vec<(String, Option<i64>, String)> =
+            sqlx::query_as("select \"table\", rowid, parent from pragma_foreign_key_check")
+                .fetch_all(&write)
+                .await
+                .map_err(OpenError::Db)?;
+        if !broken.is_empty() {
+            write.close().await;
+            return Err(OpenError::ForeignKey(
+                broken
+                    .into_iter()
+                    .map(|(table, rowid, parent)| {
+                        let rowid = rowid.map_or("-".to_owned(), |r| r.to_string());
+                        format!("{table} の rowid {rowid}（{parent} を指す）")
+                    })
+                    .collect(),
+            ));
+        }
+        let heavy = SqlitePoolOptions::new()
+            .max_connections(HEAVY_READS)
+            .acquire_timeout(Duration::from_secs(5))
+            .connect_with(options.clone().read_only(true))
+            .await
+            .map_err(OpenError::Db)?;
+        let read = SqlitePoolOptions::new()
+            .max_connections(READS)
+            .acquire_timeout(Duration::from_secs(5))
+            .connect_with(options.read_only(true))
+            .await
+            .map_err(OpenError::Db)?;
+        Ok(Self { read, heavy, write })
+    }
+
+    /// 軽い読みの接続（[`READS`] 本・読むだけ）。
+    pub fn read(&self) -> &SqlitePool {
+        &self.read
+    }
+
+    /// 重い読みだけが使う接続（[`HEAVY_READS`] 本・読むだけ）。
+    pub fn heavy(&self) -> &SqlitePool {
+        &self.heavy
+    }
+
+    /// 書く接続（1 本だけ）。
+    pub fn write(&self) -> &SqlitePool {
+        &self.write
+    }
+
+    pub async fn close(&self) {
+        self.read.close().await;
+        self.heavy.close().await;
+        self.write.close().await;
+    }
+}
+
+// --- 書く ---
+
+#[derive(Clone, Copy)]
+enum Master {
+    Models,
+    Efforts,
+}
+
+/// model・effort の名の番号。知らない名なら足す（同じ transaction の中で。2 度目は足さない）。
+async fn master(
+    tx: &mut Transaction<'_, Sqlite>,
+    table: Master,
+    name: &str,
+    received: &str,
+) -> Result<i64, sqlx::Error> {
+    let (insert, select) = match table {
+        Master::Models => (
+            "insert into models(name, first_seen_at) values(?1, ?2) on conflict(name) do nothing",
+            "select id from models where name = ?1",
+        ),
+        Master::Efforts => (
+            "insert into efforts(name, first_seen_at) values(?1, ?2) on conflict(name) do nothing",
+            "select id from efforts where name = ?1",
+        ),
+    };
+    sqlx::query(insert)
+        .bind(name)
+        .bind(received)
+        .execute(&mut **tx)
+        .await?;
+    sqlx::query_scalar(select)
+        .bind(name)
+        .fetch_one(&mut **tx)
+        .await
+}
+
+async fn insert_binding(
+    tx: &mut Transaction<'_, Sqlite>,
+    actor_id: &str,
+    issuer: &str,
+    binding: &Ref,
+    is_key: bool,
+    sent_at: &str,
+    received: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "insert into bindings(actor_id, issuer, type, value, is_key, sent_at, received_at)
+         values(?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+    )
+    .bind(actor_id)
+    .bind(issuer)
+    .bind(&binding.kind)
+    .bind(&binding.value)
+    .bind(is_key)
+    .bind(sent_at)
+    .bind(received)
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
+impl Db {
+    /// アクターを登録する。鍵の付随する id が出し手の中に既にあれば、そのアクターを返す（created = false）。
+    /// その時は、変わった鍵でない付随する id と、変わった頼んだ model と effort だけを足す。
+    pub async fn register(&self, new: &NewActor<'_>) -> Result<(ActorRef, bool), WriteError> {
+        let (key, rest) = new.bindings.split_first().ok_or_else(|| {
+            WriteError::Invalid("bindings に 1 つ以上（初めの物が鍵）".to_owned())
+        })?;
+        let mut tx = self.write.begin().await?;
+        let received = received_at(&mut tx).await?;
+        let skew = i64::from(skewed(new.sent_at, &received));
+        let sent_at = sent_text(new.sent_at)?;
+        let found: Option<ActorRef> = sqlx::query_as(RESOLVE)
+            .bind(new.issuer)
+            .bind(&key.kind)
+            .bind(&key.value)
+            .fetch_optional(&mut *tx)
+            .await?;
+        let (actor, created) = match found {
+            Some(actor) => (actor, false),
+            None => {
+                // n は、同じ出し手と接頭辞のアクターの数 ＋ 1（数を持つ行は作らない）。
+                let n: i64 = sqlx::query_scalar(
+                    "select count(*) + 1 from actors where issuer = ?1 and prefix = ?2",
+                )
+                .bind(new.issuer)
+                .bind(new.prefix)
+                .fetch_one(&mut *tx)
+                .await?;
+                let actor = ActorRef {
+                    id: uuid::Uuid::now_v7().to_string(),
+                    name: format!("{}.{n}", new.prefix),
+                    kind: new.kind.to_owned(),
+                };
+                sqlx::query(
+                    "insert into actors(id, issuer, kind, prefix, n, name, sent_at, received_at, clock_skew)
+                     values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                )
+                .bind(&actor.id)
+                .bind(new.issuer)
+                .bind(new.kind)
+                .bind(new.prefix)
+                .bind(n)
+                .bind(&actor.name)
+                .bind(&sent_at)
+                .bind(&received)
+                .bind(skew)
+                .execute(&mut *tx)
+                .await?;
+                // 札は新しく作る時だけ書く。
+                for (key, value) in new.labels {
+                    sqlx::query(
+                        "insert into labels(actor_id, key, value, received_at) values(?1, ?2, ?3, ?4)",
+                    )
+                    .bind(&actor.id)
+                    .bind(key)
+                    .bind(value)
+                    .bind(&received)
+                    .execute(&mut *tx)
+                    .await?;
+                }
+                insert_binding(
+                    &mut tx, &actor.id, new.issuer, key, true, &sent_at, &received,
+                )
+                .await?;
+                (actor, true)
+            }
+        };
+        // 鍵でない付随する id は、そのアクターの同じ種類の最新と違う時だけ足す（新しく作った時も）。
+        for binding in rest {
+            let latest: Option<String> = sqlx::query_scalar(
+                "select value from bindings where actor_id = ?1 and type = ?2 order by seq desc limit 1",
+            )
+            .bind(&actor.id)
+            .bind(&binding.kind)
+            .fetch_optional(&mut *tx)
+            .await?;
+            if latest.as_deref() != Some(binding.value.as_str()) {
+                insert_binding(
+                    &mut tx, &actor.id, new.issuer, binding, false, &sent_at, &received,
+                )
+                .await?;
+            }
+        }
+        // 頼んだ model と effort は、最新（source を問わない）と違う時だけ足す。
+        if let Some((model, effort)) = new.settings {
+            let model_id = master(&mut tx, Master::Models, model, &received).await?;
+            let effort_id = master(&mut tx, Master::Efforts, effort, &received).await?;
+            let latest: Option<(i64, i64)> = sqlx::query_as(
+                "select model_id, effort_id from settings where actor_id = ?1 order by seq desc limit 1",
+            )
+            .bind(&actor.id)
+            .fetch_optional(&mut *tx)
+            .await?;
+            if latest != Some((model_id, effort_id)) {
+                sqlx::query(
+                    "insert into settings(actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew)
+                     values(?1, ?2, ?3, 'requested', ?4, ?5, ?6)",
+                )
+                .bind(&actor.id)
+                .bind(model_id)
+                .bind(effort_id)
+                .bind(&sent_at)
+                .bind(&received)
+                .bind(skew)
+                .execute(&mut *tx)
+                .await?;
+            }
+        }
+        tx.commit().await?;
+        Ok((actor, created))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn t(s: &str) -> OffsetDateTime {
+        OffsetDateTime::parse(s, &Rfc3339).unwrap()
+    }
+
+    #[test]
+    fn stamp_is_utc_with_milliseconds_and_24_chars() {
+        assert_eq!(
+            stamp(t("2026-01-02T03:04:05.678901+09:00")),
+            "2026-01-01T18:04:05.678Z"
+        );
+        assert_eq!(stamp(t("2026-01-02T03:04:05Z")), "2026-01-02T03:04:05.000Z");
+    }
+
+    #[test]
+    fn sent_text_is_utc_with_only_the_needed_fraction() {
+        assert_eq!(
+            sent_text(t("2099-01-01T00:00:00Z")).unwrap(),
+            "2099-01-01T00:00:00Z"
+        );
+        assert_eq!(
+            sent_text(t("2099-01-01T08:59:59.999+09:00")).unwrap(),
+            "2098-12-31T23:59:59.999Z"
+        );
+    }
+
+    #[test]
+    fn skew_is_more_than_5_minutes() {
+        let received = "2099-01-01T00:05:00.000Z";
+        assert!(!skewed(t("2099-01-01T00:00:00Z"), received));
+        assert!(!skewed(t("2099-01-01T00:10:00Z"), received));
+        assert!(skewed(t("2098-12-31T23:59:59.999Z"), received));
+        assert!(skewed(t("2099-01-01T00:10:00.001Z"), received));
+    }
+}

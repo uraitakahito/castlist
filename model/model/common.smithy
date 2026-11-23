@@ -39,6 +39,15 @@ structure Gone {
     message: String
 }
 
+/// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。
+/// 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+@error("server")
+@httpError(500)
+structure InternalError {
+    @required
+    message: String
+}
+
 /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
 @error("server")
 @httpError(503)
@@ -46,4 +55,28 @@ structure Gone {
 structure Unavailable {
     @required
     message: String
+}
+
+/// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+@pattern("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+string ActorId
+
+/// アクターの種類: `ai` か `human`。
+/// enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、
+/// 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを
+/// 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+@pattern("^(ai|human)$")
+string ActorKind
+
+/// アクターを指す時の短い形。
+structure ActorSummary {
+    @required
+    id: ActorId
+
+    /// `<接頭辞>.<番号>`（番号は出し手と接頭辞ごとに 1 から）。
+    @required
+    name: String
+
+    @required
+    kind: ActorKind
 }

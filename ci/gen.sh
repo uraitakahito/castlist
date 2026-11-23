@@ -113,6 +113,12 @@ made="$build/smithy/source/rust-server-codegen"
 # 字の並びを整える。生成器も cargo fmt を流すが、作る folder が workspace の外の扱いになって落ちる（warning で続く）ので、
 # ここで rustfmt を直に流す。repo の中で打つので、rust-toolchain.toml の版の rustfmt が使われる。
 (cd "$root" && find "$made" -name '*.rs' -print0 | xargs -0 rustfmt --edition 2021) || ng "rustfmt が落ちた"
+# 骨には clippy を掛けない。骨は server の crate が引くので、`cargo clippy` は骨も workspace の member として見る。
+# 生成器が付ける断り（lib.rs の頭の allow）は、新しい Rust の lint（useless_borrows_in_formatting など）に追いつかないので、
+# clippy の lint をまとめて外す 1 行を、頭に足す。
+lib="$made/src/lib.rs"
+[ -f "$lib" ] || ng "server の骨の lib.rs が無い"
+{ echo '#![allow(clippy::all)]'; cat "$lib"; } >"$lib.new" && mv "$lib.new" "$lib"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 

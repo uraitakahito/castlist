@@ -1,3 +1,4 @@
+#![allow(clippy::all)]
 #![allow(deprecated)]
 #![allow(unknown_lints)]
 #![allow(clippy::module_inception)]
@@ -40,7 +41,7 @@
     not(feature = "aws-lambda"),
     doc = " by enabling the `aws-lambda` feature flag and utilizing the `LambdaHandler`."
 )]
-//! The [`crate::input`], and [`crate::output`],
+//! The [`crate::input`], [`crate::output`], and [`crate::error`]
 //! modules provide the types used in each operation.
 //!
 //! ### Running on Hyper
@@ -176,6 +177,7 @@
 //!    let config = CastlistConfig::builder().build();
 //!    let app = Castlist::builder(config)
 //!        .get_health(get_health)
+//!        .register_actor(register_actor)
 //!        .build()
 //!        .expect("failed to build an instance of Castlist");
 //!
@@ -191,9 +193,13 @@
 //!    }
 //! }
 //!
-//! use castlist_sdk::{input, output};
+//! use castlist_sdk::{input, output, error};
 //!
 //! async fn get_health(input: input::GetHealthInput) -> output::GetHealthOutput {
+//!     todo!()
+//! }
+//!
+//! async fn register_actor(input: input::RegisterActorInput) -> Result<output::RegisterActorOutput, error::RegisterActorError> {
 //!     todo!()
 //! }
 //!
@@ -254,11 +260,17 @@ pub mod server {
 /// Crate version number.
 pub static PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Constrained types for constrained shapes.
+mod constrained;
+
 /// All error types that operations can return. Documentation on these types is copied from the model.
 pub mod error;
 
 /// Input structures for operations. Documentation on these types is copied from the model.
 pub mod input;
+
+/// Data structures used by operation inputs/outputs. Documentation on these types is copied from the model.
+pub mod model;
 
 /// All operations that this crate can perform.
 pub mod operation;
@@ -280,8 +292,8 @@ mod service;
 /// Data primitives referenced by other data types.
 pub mod types;
 
-/// Constrained types for constrained shapes.
-mod constrained;
+/// Unconstrained types for constrained shapes.
+mod unconstrained;
 
 mod mimes;
 

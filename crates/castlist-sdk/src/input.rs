@@ -13,6 +13,74 @@ impl GetHealthInput {
         crate::input::get_health_input::Builder::default()
     }
 }
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct RegisterActorInput {
+    /// 出し手（tpm・pagetray など）。名の番号と鍵は、出し手ごとに分かれる。
+    pub issuer: ::std::string::String,
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+    pub kind: ::std::string::String,
+    /// 名の接頭辞（名は `&lt;接頭辞&gt;.&lt;番号&gt;`）。
+    pub name_prefix: ::std::string::String,
+    /// 札（project など）。新しく作った時だけ書く。
+    pub labels: ::std::option::Option<
+        ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    >,
+    /// 付随する id。初めの物が鍵（1 つのアクターにだけ付く）。鍵でない物は、同じ種類の最新と違う時だけ足す。
+    pub bindings: ::std::vec::Vec<crate::model::Binding>,
+    /// 送り手の時刻。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 頼んだ model と effort。最新と違う時だけ足す。
+    pub settings: ::std::option::Option<crate::model::RequestedSettings>,
+}
+impl RegisterActorInput {
+    /// 出し手（tpm・pagetray など）。名の番号と鍵は、出し手ごとに分かれる。
+    pub fn issuer(&self) -> &str {
+        use std::ops::Deref;
+        self.issuer.deref()
+    }
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+    pub fn kind(&self) -> &str {
+        use std::ops::Deref;
+        self.kind.deref()
+    }
+    /// 名の接頭辞（名は `&lt;接頭辞&gt;.&lt;番号&gt;`）。
+    pub fn name_prefix(&self) -> &str {
+        use std::ops::Deref;
+        self.name_prefix.deref()
+    }
+    /// 札（project など）。新しく作った時だけ書く。
+    pub fn labels(
+        &self,
+    ) -> ::std::option::Option<
+        &::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    > {
+        self.labels.as_ref()
+    }
+    /// 付随する id。初めの物が鍵（1 つのアクターにだけ付く）。鍵でない物は、同じ種類の最新と違う時だけ足す。
+    pub fn bindings(&self) -> &[crate::model::Binding] {
+        use std::ops::Deref;
+        self.bindings.deref()
+    }
+    /// 送り手の時刻。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 頼んだ model と effort。最新と違う時だけ足す。
+    pub fn settings(&self) -> ::std::option::Option<&crate::model::RequestedSettings> {
+        self.settings.as_ref()
+    }
+}
+impl crate::constrained::Constrained for crate::input::RegisterActorInput {
+    type Unconstrained = crate::input::register_actor_input_internal::Builder;
+}
+impl RegisterActorInput {
+    /// Creates a new builder-style object to manufacture [`RegisterActorInput`](crate::input::RegisterActorInput).
+    pub fn builder() -> crate::input::register_actor_input::Builder {
+        crate::input::register_actor_input::Builder::default()
+    }
+}
 /// See [`GetHealthInput`](crate::input::GetHealthInput).
 pub(crate) mod get_health_input_internal {
 
@@ -52,6 +120,414 @@ pub mod get_health_input {
         }
         fn build_enforcing_required_and_enum_traits(self) -> crate::input::GetHealthInput {
             crate::input::GetHealthInput {}
+        }
+    }
+}
+/// See [`RegisterActorInput`](crate::input::RegisterActorInput).
+pub(crate) mod register_actor_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `issuer` was not provided but it is required when building `RegisterActorInput`.
+        MissingIssuer,
+        /// Constraint violation occurred building member `issuer` when building `RegisterActorInput`.
+        #[doc(hidden)]
+        Issuer(crate::model::name_internal::ConstraintViolation),
+        /// `kind` was not provided but it is required when building `RegisterActorInput`.
+        MissingKind,
+        /// Constraint violation occurred building member `kind` when building `RegisterActorInput`.
+        #[doc(hidden)]
+        Kind(crate::model::actor_kind_internal::ConstraintViolation),
+        /// `name_prefix` was not provided but it is required when building `RegisterActorInput`.
+        MissingNamePrefix,
+        /// Constraint violation occurred building member `name_prefix` when building `RegisterActorInput`.
+        #[doc(hidden)]
+        NamePrefix(crate::model::name_prefix_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `labels` when building `RegisterActorInput`.
+        #[doc(hidden)]
+        Labels(crate::model::labels_internal::ConstraintViolation),
+        /// `bindings` was not provided but it is required when building `RegisterActorInput`.
+        MissingBindings,
+        /// Constraint violation occurred building member `bindings` when building `RegisterActorInput`.
+        #[doc(hidden)]
+        Bindings(crate::model::bindings_internal::ConstraintViolation),
+        /// `sent_at` was not provided but it is required when building `RegisterActorInput`.
+        MissingSentAt,
+        /// Constraint violation occurred building member `settings` when building `RegisterActorInput`.
+        #[doc(hidden)]
+        Settings(crate::model::requested_settings_internal::ConstraintViolation),
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `RegisterActorInput`"),
+                ConstraintViolation::Issuer(_) => write!(f, "constraint violation occurred building member `issuer` when building `RegisterActorInput`"),
+                ConstraintViolation::MissingKind => write!(f, "`kind` was not provided but it is required when building `RegisterActorInput`"),
+                ConstraintViolation::Kind(_) => write!(f, "constraint violation occurred building member `kind` when building `RegisterActorInput`"),
+                ConstraintViolation::MissingNamePrefix => write!(f, "`name_prefix` was not provided but it is required when building `RegisterActorInput`"),
+                ConstraintViolation::NamePrefix(_) => write!(f, "constraint violation occurred building member `name_prefix` when building `RegisterActorInput`"),
+                ConstraintViolation::Labels(_) => write!(f, "constraint violation occurred building member `labels` when building `RegisterActorInput`"),
+                ConstraintViolation::MissingBindings => write!(f, "`bindings` was not provided but it is required when building `RegisterActorInput`"),
+                ConstraintViolation::Bindings(_) => write!(f, "constraint violation occurred building member `bindings` when building `RegisterActorInput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `RegisterActorInput`"),
+                ConstraintViolation::Settings(_) => write!(f, "constraint violation occurred building member `settings` when building `RegisterActorInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingIssuer => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/issuer' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/issuer",
+                                            },
+            ConstraintViolation::Issuer(inner) => inner.as_validation_exception_field(path + "/issuer"),
+            ConstraintViolation::MissingKind => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/kind' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/kind",
+                                            },
+            ConstraintViolation::Kind(inner) => inner.as_validation_exception_field(path + "/kind"),
+            ConstraintViolation::MissingNamePrefix => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/namePrefix' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/namePrefix",
+                                            },
+            ConstraintViolation::NamePrefix(inner) => inner.as_validation_exception_field(path + "/namePrefix"),
+            ConstraintViolation::Labels(inner) => inner.as_validation_exception_field(path + "/labels"),
+            ConstraintViolation::MissingBindings => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/bindings' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/bindings",
+                                            },
+            ConstraintViolation::Bindings(inner) => inner.as_validation_exception_field(path + "/bindings"),
+            ConstraintViolation::MissingSentAt => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/sentAt' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/sentAt",
+                                            },
+            ConstraintViolation::Settings(inner) => inner.as_validation_exception_field(path + "/settings"),
+        }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::RegisterActorInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::RegisterActorInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`RegisterActorInput`](crate::input::RegisterActorInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) issuer:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) kind:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorKind>>,
+        pub(crate) name_prefix:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::NamePrefix>>,
+        pub(crate) labels: ::std::option::Option<
+            crate::constrained::MaybeConstrained<
+                crate::constrained::labels_constrained::LabelsConstrained,
+            >,
+        >,
+        pub(crate) bindings:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Bindings>>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) settings: ::std::option::Option<
+            crate::constrained::MaybeConstrained<crate::model::RequestedSettings>,
+        >,
+    }
+    impl Builder {
+        /// 出し手（tpm・pagetray など）。名の番号と鍵は、出し手ごとに分かれる。
+        pub(crate) fn set_issuer(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        ) -> Self {
+            self.issuer = Some(input.into());
+            self
+        }
+        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+        pub(crate) fn set_kind(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorKind>,
+            >,
+        ) -> Self {
+            self.kind = Some(input.into());
+            self
+        }
+        /// 名の接頭辞（名は `&lt;接頭辞&gt;.&lt;番号&gt;`）。
+        pub(crate) fn set_name_prefix(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::NamePrefix>,
+            >,
+        ) -> Self {
+            self.name_prefix = Some(input.into());
+            self
+        }
+        /// 札（project など）。新しく作った時だけ書く。
+        pub(crate) fn set_labels(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<
+                        crate::constrained::labels_constrained::LabelsConstrained,
+                    >,
+                >,
+            >,
+        ) -> Self {
+            self.labels = input.map(|v| v.into());
+            self
+        }
+        /// 付随する id。初めの物が鍵（1 つのアクターにだけ付く）。鍵でない物は、同じ種類の最新と違う時だけ足す。
+        pub(crate) fn set_bindings(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::Bindings>,
+            >,
+        ) -> Self {
+            self.bindings = Some(input.into());
+            self
+        }
+        /// 送り手の時刻。
+        pub(crate) fn set_sent_at(
+            mut self,
+            input: impl ::std::convert::Into<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.sent_at = Some(input.into());
+            self
+        }
+        /// 頼んだ model と effort。最新と違う時だけ足す。
+        pub(crate) fn set_settings(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<crate::model::RequestedSettings>,
+                >,
+            >,
+        ) -> Self {
+            self.settings = input.map(|v| v.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`RegisterActorInput`](crate::input::RegisterActorInput).
+        ///
+        /// The builder fails to construct a [`RegisterActorInput`](crate::input::RegisterActorInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::RegisterActorInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::RegisterActorInput, ConstraintViolation> {
+            Ok(crate::input::RegisterActorInput {
+                issuer: self
+                    .issuer
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Issuer))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into())
+                    .ok_or(ConstraintViolation::MissingIssuer)?,
+                kind: self
+                    .kind
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Kind))
+                    .transpose()?
+                    .map(|v: crate::model::ActorKind| v.into())
+                    .ok_or(ConstraintViolation::MissingKind)?,
+                name_prefix: self
+                    .name_prefix
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::NamePrefix))
+                    .transpose()?
+                    .map(|v: crate::model::NamePrefix| v.into())
+                    .ok_or(ConstraintViolation::MissingNamePrefix)?,
+                labels: self
+                    .labels
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map(|v| v.into()).map_err(ConstraintViolation::Labels))
+                    .transpose()?,
+                bindings: self
+                    .bindings
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Bindings))
+                    .transpose()?
+                    .map(|v: crate::model::Bindings| v.into())
+                    .ok_or(ConstraintViolation::MissingBindings)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                settings: self
+                    .settings
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Settings))
+                    .transpose()?,
+            })
+        }
+    }
+}
+/// See [`RegisterActorInput`](crate::input::RegisterActorInput).
+pub mod register_actor_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `issuer` was not provided but it is required when building `RegisterActorInput`.
+        MissingIssuer,
+        /// `kind` was not provided but it is required when building `RegisterActorInput`.
+        MissingKind,
+        /// `name_prefix` was not provided but it is required when building `RegisterActorInput`.
+        MissingNamePrefix,
+        /// `bindings` was not provided but it is required when building `RegisterActorInput`.
+        MissingBindings,
+        /// `sent_at` was not provided but it is required when building `RegisterActorInput`.
+        MissingSentAt,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `RegisterActorInput`"),
+                ConstraintViolation::MissingKind => write!(f, "`kind` was not provided but it is required when building `RegisterActorInput`"),
+                ConstraintViolation::MissingNamePrefix => write!(f, "`name_prefix` was not provided but it is required when building `RegisterActorInput`"),
+                ConstraintViolation::MissingBindings => write!(f, "`bindings` was not provided but it is required when building `RegisterActorInput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `RegisterActorInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::RegisterActorInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`RegisterActorInput`](crate::input::RegisterActorInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) issuer: ::std::option::Option<::std::string::String>,
+        pub(crate) kind: ::std::option::Option<::std::string::String>,
+        pub(crate) name_prefix: ::std::option::Option<::std::string::String>,
+        pub(crate) labels: ::std::option::Option<
+            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        >,
+        pub(crate) bindings: ::std::option::Option<::std::vec::Vec<crate::model::Binding>>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) settings: ::std::option::Option<crate::model::RequestedSettings>,
+    }
+    impl Builder {
+        /// 出し手（tpm・pagetray など）。名の番号と鍵は、出し手ごとに分かれる。
+        pub fn issuer(mut self, input: ::std::string::String) -> Self {
+            self.issuer = Some(input);
+            self
+        }
+        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+        pub fn kind(mut self, input: ::std::string::String) -> Self {
+            self.kind = Some(input);
+            self
+        }
+        /// 名の接頭辞（名は `&lt;接頭辞&gt;.&lt;番号&gt;`）。
+        pub fn name_prefix(mut self, input: ::std::string::String) -> Self {
+            self.name_prefix = Some(input);
+            self
+        }
+        /// 札（project など）。新しく作った時だけ書く。
+        pub fn labels(
+            mut self,
+            input: ::std::option::Option<
+                ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+            >,
+        ) -> Self {
+            self.labels = input;
+            self
+        }
+        /// 付随する id。初めの物が鍵（1 つのアクターにだけ付く）。鍵でない物は、同じ種類の最新と違う時だけ足す。
+        pub fn bindings(mut self, input: ::std::vec::Vec<crate::model::Binding>) -> Self {
+            self.bindings = Some(input);
+            self
+        }
+        /// 送り手の時刻。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 頼んだ model と effort。最新と違う時だけ足す。
+        pub fn settings(
+            mut self,
+            input: ::std::option::Option<crate::model::RequestedSettings>,
+        ) -> Self {
+            self.settings = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`RegisterActorInput`](crate::input::RegisterActorInput).
+        ///
+        /// The builder fails to construct a [`RegisterActorInput`](crate::input::RegisterActorInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::RegisterActorInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::RegisterActorInput, ConstraintViolation> {
+            Ok(crate::input::RegisterActorInput {
+                issuer: self.issuer.ok_or(ConstraintViolation::MissingIssuer)?,
+                kind: self.kind.ok_or(ConstraintViolation::MissingKind)?,
+                name_prefix: self
+                    .name_prefix
+                    .ok_or(ConstraintViolation::MissingNamePrefix)?,
+                labels: self.labels,
+                bindings: self.bindings.ok_or(ConstraintViolation::MissingBindings)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                settings: self.settings,
+            })
         }
     }
 }

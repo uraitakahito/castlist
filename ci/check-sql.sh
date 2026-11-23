@@ -3,12 +3,13 @@
 # 見る形（大文字と小文字は問わない・改行をまたいでも見る）:
 #   update <表> set ・ delete from ・ insert or replace ・ replace into ・ do update
 # 1 つでも当たれば、file と行を出して exit 1。
-# 使い方: ci/check-sql.sh [path…]（既定は src）
+# 使い方: ci/check-sql.sh [path…]（既定は src と crates/server/src。今の server と、作り直している新しい server）
 set -euo pipefail
 
 if [ "$#" -eq 0 ]; then
   here=$(cd "$(dirname "$0")" && pwd)
-  set -- "$(dirname "$here")/src"
+  root=$(dirname "$here")
+  set -- "$root/src" "$root/crates/server/src"
 fi
 
 files=$(find "$@" -type f -name '*.rs' | LC_ALL=C sort)
