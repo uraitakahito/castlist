@@ -638,6 +638,41 @@ impl ListSettingsOutput {
         crate::output::list_settings_output::Builder::default()
     }
 }
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct GetGraphOutput {
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+    /// 絞った組と、組に触れる線の向こうの端のアクター（受けた順）。
+    pub nodes: ::std::vec::Vec<crate::model::GraphNode>,
+    /// 組に触れる線の全部（受けた順）。
+    pub edges: ::std::vec::Vec<crate::model::Link>,
+}
+impl GetGraphOutput {
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+    /// 絞った組と、組に触れる線の向こうの端のアクター（受けた順）。
+    pub fn nodes(&self) -> &[crate::model::GraphNode] {
+        use std::ops::Deref;
+        self.nodes.deref()
+    }
+    /// 組に触れる線の全部（受けた順）。
+    pub fn edges(&self) -> &[crate::model::Link] {
+        use std::ops::Deref;
+        self.edges.deref()
+    }
+}
+impl GetGraphOutput {
+    /// Creates a new builder-style object to manufacture [`GetGraphOutput`](crate::output::GetGraphOutput).
+    pub fn builder() -> crate::output::get_graph_output::Builder {
+        crate::output::get_graph_output::Builder::default()
+    }
+}
 /// See [`GetHealthOutput`](crate::output::GetHealthOutput).
 pub mod get_health_output {
 
@@ -1913,6 +1948,87 @@ pub mod list_settings_output {
                 as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
                 settings: self.settings.ok_or(ConstraintViolation::MissingSettings)?,
                 next_token: self.next_token,
+            })
+        }
+    }
+}
+/// See [`GetGraphOutput`](crate::output::GetGraphOutput).
+pub mod get_graph_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `as_of` was not provided but it is required when building `GetGraphOutput`.
+        MissingAsOf,
+        /// `nodes` was not provided but it is required when building `GetGraphOutput`.
+        MissingNodes,
+        /// `edges` was not provided but it is required when building `GetGraphOutput`.
+        MissingEdges,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingAsOf => write!(
+                    f,
+                    "`as_of` was not provided but it is required when building `GetGraphOutput`"
+                ),
+                ConstraintViolation::MissingNodes => write!(
+                    f,
+                    "`nodes` was not provided but it is required when building `GetGraphOutput`"
+                ),
+                ConstraintViolation::MissingEdges => write!(
+                    f,
+                    "`edges` was not provided but it is required when building `GetGraphOutput`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::GetGraphOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetGraphOutput`](crate::output::GetGraphOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) nodes: ::std::option::Option<::std::vec::Vec<crate::model::GraphNode>>,
+        pub(crate) edges: ::std::option::Option<::std::vec::Vec<crate::model::Link>>,
+    }
+    impl Builder {
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        /// 絞った組と、組に触れる線の向こうの端のアクター（受けた順）。
+        pub fn nodes(mut self, input: ::std::vec::Vec<crate::model::GraphNode>) -> Self {
+            self.nodes = Some(input);
+            self
+        }
+        /// 組に触れる線の全部（受けた順）。
+        pub fn edges(mut self, input: ::std::vec::Vec<crate::model::Link>) -> Self {
+            self.edges = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`GetGraphOutput`](crate::output::GetGraphOutput).
+        ///
+        /// The builder fails to construct a [`GetGraphOutput`](crate::output::GetGraphOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::GetGraphOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::GetGraphOutput, ConstraintViolation> {
+            Ok(crate::output::GetGraphOutput {
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+                nodes: self.nodes.ok_or(ConstraintViolation::MissingNodes)?,
+                edges: self.edges.ok_or(ConstraintViolation::MissingEdges)?,
             })
         }
     }

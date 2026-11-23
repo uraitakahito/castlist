@@ -1,7 +1,8 @@
 //! 新しい castlist の server（AI-36）。
 //!
 //! 定義（model/）から作った骨（crates/castlist-sdk/）に処理（handler）を入れ、守りの層を前に掛ける。
-//! 手の道（画面・backup・logs）は、この後の PR で同じ Router に足す。
+//! 手の道のうち画面（[`ui`]）は、同じ Router に並べる（Smithy の定義の外）。backup・logs は、この後の PR で足す。
+//! どの答えにも型の推し量りを止める header を付け、画面（HTML）の答えには CSP を付ける（[`stamp`]。今の server と同じ）。
 mod actor;
 mod actor_settings;
 mod body;
@@ -9,6 +10,8 @@ pub mod db;
 mod errors;
 mod event;
 mod generated;
+mod get_graph;
+pub mod graph;
 mod lineage;
 mod link;
 mod list_actors;
@@ -19,13 +22,15 @@ mod resolve;
 mod rows;
 pub mod search;
 mod setting;
+mod timeline;
 mod token;
+mod ui;
 
 use std::sync::Arc;
 
 use axum::Router;
 use axum::extract::Request;
-use axum::http::{Method, StatusCode, header};
+use axum::http::{HeaderValue, Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use castlist_sdk::output::GetHealthOutput;
@@ -33,6 +38,10 @@ use castlist_sdk::{Castlist, CastlistConfig};
 
 use crate::db::Db;
 use crate::generated::Generated;
+
+/// 画面の応答に付ける Content-Security-Policy。script と style は、castlist 自身が配る file だけを許す。
+/// form は castlist 自身へだけ送れる（一覧の絞りの form は GET で `/` に送る）。今の server（src/lib.rs）と同じ。
+pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
 /// 動かす Router。DB は、どの handler も同じ物を使う。
 pub fn app(db: Arc<Db>) -> Router {
@@ -82,12 +91,21 @@ pub fn app(db: Arc<Db>) -> Router {
             let db = db.clone();
             move |input| link::put_link(db.clone(), input)
         })
-        .put_setting(move |input| setting::put_setting(db.clone(), input))
+        .get_graph({
+            let db = db.clone();
+            move |input| get_graph::get_graph(db.clone(), input)
+        })
+        .put_setting({
+            let db = db.clone();
+            move |input| setting::put_setting(db.clone(), input)
+        })
         .build()
         .expect("どの操作にも handler がある");
-    Router::new()
+    ui::routes(db)
         .fallback_service(Generated::new(generated))
         .layer(middleware::from_fn(guard))
+        // 一番外に置く。guard が断った答えにも付く。
+        .layer(middleware::from_fn(stamp))
 }
 
 async fn get_health(_input: castlist_sdk::input::GetHealthInput) -> GetHealthOutput {
@@ -150,4 +168,30 @@ async fn guard(request: Request, next: Next) -> Response {
         return StatusCode::FORBIDDEN.into_response();
     }
     next.run(request).await
+}
+
+/// どの答えにも、型の推し量りを止める header と、referrer を送らせない header を付け、画面（HTML）の答えには CSP を付ける
+/// （今の server の src/lib.rs の stamp と同じ）。
+async fn stamp(request: Request, next: Next) -> Response {
+    let mut response = next.run(request).await;
+    let headers = response.headers_mut();
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("no-referrer"),
+    );
+    let html = headers
+        .get(header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.starts_with("text/html"));
+    if html {
+        headers.insert(
+            header::CONTENT_SECURITY_POLICY,
+            HeaderValue::from_static(CSP),
+        );
+    }
+    response
 }

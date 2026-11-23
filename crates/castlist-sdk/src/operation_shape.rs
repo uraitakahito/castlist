@@ -495,3 +495,41 @@ impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for Lis
         ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
     }
 }
+
+/// 図（タイムライン・相関図）の点と線。`label`（`鍵:値`）と、登録を受けた時刻（`receivedAt`）の窓（`from`・`to`。両端を含む）で アクターの組を絞り、組に触れる線（`from` か `to` が組の中）の全部と、その線の向こうの端のアクター（一歩だけ）も含める（人の根が切れないように）。 どれも無ければ全部のアクター。点も線も受けた順（seq）。重い読みの接続（2 本）だけを使い、引き当てなどの軽い読みを待たせない。 引数はどれも 1 つだけ（restJson1 は、2 度付ければ初めの物を使う）。
+pub struct GetGraph;
+
+impl ::aws_smithy_http_server::operation::OperationShape for GetGraph {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#GetGraph",
+            "ai.castlist",
+            "GetGraph",
+        );
+
+    type Input = crate::input::GetGraphInput;
+    type Output = crate::output::GetGraphOutput;
+    type Error = crate::error::GetGraphError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for GetGraph {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}

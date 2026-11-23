@@ -1,10 +1,12 @@
-//! DB の行を、答えの形に直す（GetActor の中の物と、Put… の答えで同じ形。一覧の行は ListActors と GetLineage で同じ形。
+//! DB の行を、答えの形に直す（GetActor の中の物と、Put… の答えと、図の点で同じ形。一覧の行は ListActors と GetLineage で同じ形。
 //! 探した出来事と model と effort の行は、その形にアクターの名を足した物）。直せなければ、その訳の字を返す（呼ぶ側が中の失敗にする）。
 use aws_smithy_types::{Document, Number};
-use castlist_sdk::model::{ActorRow, Event, EventRow, Link, Setting, SettingRow};
+use castlist_sdk::model::{
+    ActorRow, ActorState, Event, EventRow, GraphNode, Link, Setting, SettingRow,
+};
 
 use crate::datetime;
-use crate::{db, search};
+use crate::{db, graph, search};
 
 pub fn event(e: db::Event) -> Result<Event, String> {
     let detail = serde_json::from_str(&e.detail)
@@ -42,6 +44,32 @@ pub fn link(l: db::Link) -> Result<Link, String> {
         from: l.from_actor,
         to: l.to_actor,
         clock_skew: l.clock_skew,
+    })
+}
+
+/// 今の状態を、答えの形にする（GetActor の state と、図の点で同じ形）。
+pub fn state(s: db::State) -> Result<ActorState, String> {
+    Ok(ActorState {
+        presence: s.presence,
+        present: s.present,
+        inferred: s.inferred,
+        entered_at: s.entered_at.as_deref().map(datetime).transpose()?,
+        exited_at: s.exited_at.as_deref().map(datetime).transpose()?,
+    })
+}
+
+/// 図の点を、答えの形にする。
+pub fn graph_node(n: graph::Node) -> Result<GraphNode, String> {
+    Ok(GraphNode {
+        sent_at: datetime(&n.actor.sent_at)?,
+        received_at: datetime(&n.actor.received_at)?,
+        id: n.actor.id,
+        name: n.actor.name,
+        kind: n.actor.kind,
+        issuer: n.actor.issuer,
+        clock_skew: n.actor.clock_skew,
+        state: state(n.state)?,
+        current_settings: n.current_settings.map(setting).transpose()?,
     })
 }
 

@@ -3193,3 +3193,326 @@ mod list_settings_test {
         );
     }
 }
+
+::pin_project_lite::pin_project! {
+    /// A [`Future`](std::future::Future) aggregating the body bytes of a [`Request`] and constructing the
+    /// [`GetGraphInput`](crate::input::GetGraphInput) using modelled bindings.
+    pub struct GetGraphInputFuture {
+        inner: std::pin::Pin<Box<dyn std::future::Future<Output = Result<crate::input::GetGraphInput, ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError>> + Send>>
+    }
+}
+
+impl std::future::Future for GetGraphInputFuture {
+    type Output = Result<
+        crate::input::GetGraphInput,
+        ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError,
+    >;
+
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        let this = self.project();
+        this.inner.as_mut().poll(cx)
+    }
+}
+
+impl<B>
+    ::aws_smithy_http_server::request::FromRequest<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+        B,
+    > for crate::input::GetGraphInput
+where
+    B: ::aws_smithy_http_server::body::HttpBody + Send,
+    B: 'static,
+
+    B::Data: Send,
+    ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection:
+        From<<B as ::aws_smithy_http_server::body::HttpBody>::Error>,
+{
+    type Rejection = ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError;
+    type Future = GetGraphInputFuture;
+
+    fn from_request(request: ::http_1x::Request<B>) -> Self::Future {
+        let fut = async move {
+            if !::aws_smithy_http_server::protocol::accept_header_classifier(
+                request.headers(),
+                &crate::mimes::CONTENT_TYPE_APPLICATION_JSON,
+            ) {
+                return Err(::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection::NotAcceptable);
+            }
+            crate::protocol_serde::shape_get_graph::de_get_graph_http_request(request).await
+        };
+        use ::futures_util::future::TryFutureExt;
+        let fut = fut.map_err(
+            |e: ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection| {
+                ::tracing::debug!(error = %e, "failed to deserialize request");
+                ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(
+                    e,
+                )
+            },
+        );
+        GetGraphInputFuture {
+            inner: Box::pin(fut),
+        }
+    }
+}
+impl
+    ::aws_smithy_http_server::response::IntoResponse<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+    > for crate::output::GetGraphOutput
+{
+    fn into_response(self) -> ::aws_smithy_http_server::response::Response {
+        match crate::protocol_serde::shape_get_graph::ser_get_graph_http_response(self) {
+            Ok(response) => response,
+            Err(e) => {
+                ::tracing::error!(error = %e, "failed to serialize response");
+                ::aws_smithy_http_server::response::IntoResponse::<::aws_smithy_http_server::protocol::rest_json_1::RestJson1>::into_response(::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(e))
+            }
+        }
+    }
+}
+impl
+    ::aws_smithy_http_server::response::IntoResponse<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+    > for crate::error::GetGraphError
+{
+    fn into_response(self) -> ::aws_smithy_http_server::response::Response {
+        match crate::protocol_serde::shape_get_graph::ser_get_graph_http_error(&self) {
+            Ok(mut response) => {
+                response.extensions_mut().insert(
+                    ::aws_smithy_http_server::extension::ModeledErrorExtension::new(self.name()),
+                );
+                response
+            }
+            Err(e) => {
+                ::tracing::error!(error = %e, "failed to serialize response");
+                ::aws_smithy_http_server::response::IntoResponse::<::aws_smithy_http_server::protocol::rest_json_1::RestJson1>::into_response(::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(e))
+            }
+        }
+    }
+}
+
+#[allow(unreachable_code, unused_variables)]
+#[cfg(test)]
+mod get_graph_test {
+
+    /// ラベルと、登録を受けた時刻の窓は引数
+    /// Test ID: GetGraphRequest
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn get_graph_request_request() {
+        #[allow(unused_mut)]
+        let mut http_request = ::http_1x::Request::builder()
+            .uri("/api/graph")
+            .method("GET")
+            .body(::aws_smithy_http_server::body::boxed(
+                ::http_body_util::Empty::new(),
+            ))
+            .unwrap();
+        *http_request.uri_mut() =
+            "/api/graph?label=tpm.key:t-23zs&from=2026-11-24T00:00:00Z&to=2026-11-25T00:00:00Z"
+                .parse()
+                .unwrap();
+        #[allow(unused_mut)]
+        let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
+        let config = crate::service::CastlistConfig::builder().build();
+        let service =
+            crate::service::Castlist::builder::<::aws_smithy_http_server::body::BoxBody, _, _, _>(
+                config,
+            )
+            .get_graph(
+                // Rust 1.94+ flags the moved `sender` as "value captured is never read"
+                // since `send()` only borrows it.
+                #[allow(unused_assignments)]
+                move |input: crate::input::GetGraphInput| {
+                    let sender = sender.clone();
+                    async move {
+                        let result = {
+                            let expected = crate::input::GetGraphInput {
+                                label: ::std::option::Option::Some("tpm.key:t-23zs".to_owned()),
+                                from: ::std::option::Option::Some(
+                                    ::aws_smithy_types::DateTime::from_fractional_secs(
+                                        1795478400, 0_f64,
+                                    ),
+                                ),
+                                to: ::std::option::Option::Some(
+                                    ::aws_smithy_types::DateTime::from_fractional_secs(
+                                        1795564800, 0_f64,
+                                    ),
+                                ),
+                            };
+                            ::pretty_assertions::assert_eq!(input, expected);
+                            let output = crate::output::GetGraphOutput {
+                                as_of: ::aws_smithy_types::DateTime::from_fractional_secs(0, 0_f64),
+                                nodes: vec![],
+                                edges: vec![],
+                            };
+                            Ok(output)
+                        };
+                        sender.send(()).await.expect("receiver dropped early");
+                        result
+                    }
+                },
+            )
+            .build_unchecked();
+        let http_response = ::tower::ServiceExt::oneshot(service, http_request)
+            .await
+            .expect("unable to make an HTTP request");
+        assert!(
+            receiver.recv().await.is_some(),
+            "we expected operation handler to be invoked but it was not entered"
+        );
+    }
+
+    /// 引数はどれも無くてよい（全部のアクター）
+    /// Test ID: GetGraphRequestWithoutParams
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn get_graph_request_without_params_request() {
+        #[allow(unused_mut)]
+        let mut http_request = ::http_1x::Request::builder()
+            .uri("/api/graph")
+            .method("GET")
+            .body(::aws_smithy_http_server::body::boxed(
+                ::http_body_util::Empty::new(),
+            ))
+            .unwrap();
+        #[allow(unused_mut)]
+        let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
+        let config = crate::service::CastlistConfig::builder().build();
+        let service =
+            crate::service::Castlist::builder::<::aws_smithy_http_server::body::BoxBody, _, _, _>(
+                config,
+            )
+            .get_graph(
+                // Rust 1.94+ flags the moved `sender` as "value captured is never read"
+                // since `send()` only borrows it.
+                #[allow(unused_assignments)]
+                move |input: crate::input::GetGraphInput| {
+                    let sender = sender.clone();
+                    async move {
+                        let result = {
+                            let expected = crate::input::GetGraphInput {
+                                label: ::std::option::Option::None,
+                                from: ::std::option::Option::None,
+                                to: ::std::option::Option::None,
+                            };
+                            ::pretty_assertions::assert_eq!(input, expected);
+                            let output = crate::output::GetGraphOutput {
+                                as_of: ::aws_smithy_types::DateTime::from_fractional_secs(0, 0_f64),
+                                nodes: vec![],
+                                edges: vec![],
+                            };
+                            Ok(output)
+                        };
+                        sender.send(()).await.expect("receiver dropped early");
+                        result
+                    }
+                },
+            )
+            .build_unchecked();
+        let http_response = ::tower::ServiceExt::oneshot(service, http_request)
+            .await
+            .expect("unable to make an HTTP request");
+        assert!(
+            receiver.recv().await.is_some(),
+            "we expected operation handler to be invoked but it was not entered"
+        );
+    }
+
+    /// 点は登録の欄と今の状態と最新の model と effort、線は GetActor の線と同じ形
+    /// Test ID: GetGraphResponse
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn get_graph_response_response() {
+        let output = crate::output::GetGraphOutput {
+            as_of: ::aws_smithy_types::DateTime::from_fractional_secs(1795478402, 0_f64),
+            nodes: vec![
+                crate::model::GraphNode {
+                    id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                    name: "se.1".to_owned(),
+                    kind: "ai".to_owned(),
+                    issuer: "tpm".to_owned(),
+                    sent_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478400, 0_f64),
+                    received_at: ::aws_smithy_types::DateTime::from_fractional_secs(
+                        1795478401, 0_f64,
+                    ),
+                    clock_skew: false,
+                    state: crate::model::ActorState {
+                        presence: ::std::option::Option::Some("entered".to_owned()),
+                        present: true,
+                        inferred: false,
+                        entered_at: ::std::option::Option::Some(
+                            ::aws_smithy_types::DateTime::from_fractional_secs(1795478401, 0_f64),
+                        ),
+                        exited_at: ::std::option::Option::None,
+                    },
+                    current_settings: ::std::option::Option::Some(crate::model::Setting {
+                        actor_id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                        model: "claude-opus-5-5".to_owned(),
+                        effort: "high".to_owned(),
+                        source: "requested".to_owned(),
+                        sent_at: ::aws_smithy_types::DateTime::from_fractional_secs(
+                            1795478400, 0_f64,
+                        ),
+                        received_at: ::aws_smithy_types::DateTime::from_fractional_secs(
+                            1795478401, 0_f64,
+                        ),
+                        clock_skew: false,
+                        id: ::std::option::Option::None,
+                    }),
+                },
+                crate::model::GraphNode {
+                    id: "019abcde-0000-7000-8000-000000000002".to_owned(),
+                    name: "pm.1".to_owned(),
+                    kind: "human".to_owned(),
+                    issuer: "tpm".to_owned(),
+                    sent_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478400, 0_f64),
+                    received_at: ::aws_smithy_types::DateTime::from_fractional_secs(
+                        1795478401, 0_f64,
+                    ),
+                    clock_skew: false,
+                    state: crate::model::ActorState {
+                        present: false,
+                        inferred: false,
+                        presence: ::std::option::Option::None,
+                        entered_at: ::std::option::Option::None,
+                        exited_at: ::std::option::Option::None,
+                    },
+                    current_settings: ::std::option::Option::None,
+                },
+            ],
+            edges: vec![crate::model::Link {
+                id: "l-1".to_owned(),
+                r#type: "launched".to_owned(),
+                from: "019abcde-0000-7000-8000-000000000002".to_owned(),
+                to: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                sent_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478400, 0_f64),
+                received_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478401, 0_f64),
+                clock_skew: false,
+            }],
+        };
+        use ::aws_smithy_http_server::response::IntoResponse;
+        let http_response = output.into_response();
+        ::pretty_assertions::assert_eq!(
+            ::http_1x::StatusCode::from_u16(200).expect("invalid expected HTTP status code"),
+            http_response.status()
+        );
+        let expected_headers = [("Content-Type", "application/json")];
+        ::aws_smithy_protocol_test::assert_ok(::aws_smithy_protocol_test::validate_headers(
+            http_response.headers(),
+            expected_headers,
+        ));
+        use ::http_body_util::BodyExt;
+        let body = http_response
+            .into_body()
+            .collect()
+            .await
+            .expect("unable to collect body")
+            .to_bytes();
+        ::aws_smithy_protocol_test::assert_ok(
+        ::aws_smithy_protocol_test::validate_body(&body, "{\"asOf\":\"2026-11-24T00:00:02Z\",\"nodes\":[{\"id\":\"019abcde-0000-7000-8000-000000000001\",\"name\":\"se.1\",\"kind\":\"ai\",\"issuer\":\"tpm\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false,\"state\":{\"presence\":\"entered\",\"present\":true,\"inferred\":false,\"enteredAt\":\"2026-11-24T00:00:01Z\"},\"currentSettings\":{\"actorId\":\"019abcde-0000-7000-8000-000000000001\",\"model\":\"claude-opus-5-5\",\"effort\":\"high\",\"source\":\"requested\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false}},{\"id\":\"019abcde-0000-7000-8000-000000000002\",\"name\":\"pm.1\",\"kind\":\"human\",\"issuer\":\"tpm\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false,\"state\":{\"present\":false,\"inferred\":false}}],\"edges\":[{\"id\":\"l-1\",\"type\":\"launched\",\"from\":\"019abcde-0000-7000-8000-000000000002\",\"to\":\"019abcde-0000-7000-8000-000000000001\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false}]}", ::aws_smithy_protocol_test::MediaType::from("application/json"))
+        );
+    }
+}

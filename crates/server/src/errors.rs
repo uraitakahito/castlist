@@ -1,6 +1,6 @@
 //! 操作に共通の誤りの作り方。
 use castlist_sdk::error::{
-    Conflict, GetActorError, GetActorSettingAtError, GetLineageError, InternalError,
+    Conflict, GetActorError, GetActorSettingAtError, GetGraphError, GetLineageError, InternalError,
     ListActorSettingsError, ListActorsError, ListEventsError, ListSettingsError, PutEventError,
     PutLinkError, PutSettingError, ResolveActorsError, Unavailable, ValidationException,
 };
@@ -64,7 +64,8 @@ from_failure!(
     ListActorSettingsError,
     GetActorSettingAtError,
     ListSettingsError,
-    ListEventsError
+    ListEventsError,
+    GetGraphError
 );
 
 /// 送り手の id で足す操作（Put…）の失敗: 中身の誤り（400）・同じ id で違う中身など（409）・混んでいる（503）・中の失敗（500）。

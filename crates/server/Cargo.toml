@@ -8,9 +8,17 @@ rust-version.workspace = true
 license.workspace = true
 publish = false
 
+[[bin]]
+# e2e/ の Playwright の試験を、新しい server にも向けるための最小の binary（記録・止め方・時間切れは、守りの層の PR で足す）。
+name = "castlist-next"
+path = "src/main.rs"
+
 [dependencies]
 castlist_sdk = { path = "../castlist-sdk" }
-axum = { version = "0.8.9", default-features = false, features = ["http1", "tokio"] }
+# 画面の HTML（repo の templates/ を、今の server と共に使う。askama.toml）。root の crate と同じ版。
+askama = "0.16.1"
+# query は、画面の URL の引数を名と値の並びで読むため（今の server と同じ）。
+axum = { version = "0.8.9", default-features = false, features = ["http1", "query", "tokio"] }
 aws-smithy-types = "1.9.4"
 bytes = "1"
 http-body = "1"
@@ -22,14 +30,13 @@ sha2 = { version = "0.11.1", default-features = false }
 # SQL は動く時に組む形（query・query_as）だけを使う。macros は、移行の SQL を埋め込む migrate!() のため（今の server と同じ）。
 sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
 time = { version = "0.3", features = ["formatting", "parsing"] }
+# タイムラインを組む重い計算を、tokio の糸の外（spawn_blocking）で走らせる。binary の起動と待ち受けにも使う。
+tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "net"] }
 tower = { version = "0.5", features = ["util"] }
 # 記録（root の crate と同じ版と features）。
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 # アクターの id（UUID v7）。
 uuid = { version = "1", default-features = false, features = ["std", "v7"] }
-
-[dev-dependencies]
-tokio = { version = "1.54", features = ["rt-multi-thread", "macros"] }
 
 [lints.clippy]
 await_holding_lock = "deny"

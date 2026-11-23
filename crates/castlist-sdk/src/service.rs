@@ -5,6 +5,7 @@
 pub struct CastlistBuilder<Body, L, HttpPl, ModelPl> {
     get_actor: Option<::aws_smithy_http_server::routing::Route<Body>>,
     get_actor_setting_at: Option<::aws_smithy_http_server::routing::Route<Body>>,
+    get_graph: Option<::aws_smithy_http_server::routing::Route<Body>>,
     get_health: Option<::aws_smithy_http_server::routing::Route<Body>>,
     get_lineage: Option<::aws_smithy_http_server::routing::Route<Body>>,
     list_actors: Option<::aws_smithy_http_server::routing::Route<Body>>,
@@ -367,6 +368,180 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
         S::Future: Send + 'static,
     {
         self.get_actor_setting_at = Some(::aws_smithy_http_server::routing::Route::new(svc));
+        self
+    }
+
+    /// Sets the [`GetGraph`](crate::operation_shape::GetGraph) operation.
+    ///
+    /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
+    /// See the [operation module documentation](::aws_smithy_http_server::operation) for more information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use castlist_sdk::{Castlist, CastlistConfig};
+    ///
+    /// use castlist_sdk::{input, output, error};
+    ///
+    /// async fn handler(input: input::GetGraphInput) -> Result<output::GetGraphOutput, error::GetGraphError> {
+    ///     todo!()
+    /// }
+    ///
+    /// let config = CastlistConfig::builder().build();
+    /// let app = Castlist::builder(config)
+    ///     .get_graph(handler)
+    ///     /* Set other handlers */
+    ///     .build()
+    ///     .unwrap();
+    /// # let app: Castlist<::aws_smithy_http_server::routing::RoutingService<::aws_smithy_http_server::protocol::rest::router::RestRouter<::aws_smithy_http_server::routing::Route>, ::aws_smithy_http_server::protocol::rest_json_1::RestJson1>> = app;
+    /// ```
+    ///
+                    pub fn get_graph<HandlerType, HandlerExtractors, UpgradeExtractors>(self, handler: HandlerType) -> Self
+                    where
+                        HandlerType: ::aws_smithy_http_server::operation::Handler<crate::operation_shape::GetGraph, HandlerExtractors>,
+
+                        ModelPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetGraph,
+                            ::aws_smithy_http_server::operation::IntoService<crate::operation_shape::GetGraph, HandlerType>
+                        >,
+                        ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetGraph,
+                            ModelPl::Output
+                        >,
+                        HttpPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetGraph,
+                            <
+                                ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>
+                                as ::aws_smithy_http_server::plugin::Plugin<
+                                    Castlist<L>,
+                                    crate::operation_shape::GetGraph,
+                                    ModelPl::Output
+                                >
+                            >::Output
+                        >,
+
+                        HttpPl::Output: ::tower::Service<::http_1x::Request<Body>, Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>, Error = ::std::convert::Infallible> + Clone + Send + 'static,
+                        <HttpPl::Output as ::tower::Service<::http_1x::Request<Body>>>::Future: Send + 'static,
+
+{
+        use ::aws_smithy_http_server::operation::OperationShapeExt;
+        use ::aws_smithy_http_server::plugin::Plugin;
+        let svc = crate::operation_shape::GetGraph::from_handler(handler);
+        let svc = self.model_plugin.apply(svc);
+        let svc = ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>::new()
+            .with_request_body_read_timeout(
+                crate::service_config::service_config()
+                    .request_body
+                    .for_operation(&::aws_smithy_schema::ShapeId::from_parts(
+                        "ai.castlist#GetGraph",
+                        "ai.castlist",
+                        "GetGraph",
+                    ))
+                    .read_timeout
+                    .unwrap_or_default(),
+                "ai.castlist#GetGraph",
+            )
+            .apply(svc);
+        let svc = self.http_plugin.apply(svc);
+        self.get_graph_custom(svc)
+    }
+
+    /// Sets the [`GetGraph`](crate::operation_shape::GetGraph) operation.
+    ///
+    /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
+    /// See the [operation module documentation](::aws_smithy_http_server::operation) for more information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use castlist_sdk::{Castlist, CastlistConfig};
+    ///
+    /// use castlist_sdk::{input, output, error};
+    ///
+    /// async fn handler(input: input::GetGraphInput) -> Result<output::GetGraphOutput, error::GetGraphError> {
+    ///     todo!()
+    /// }
+    ///
+    /// let config = CastlistConfig::builder().build();
+    /// let svc = ::tower::util::service_fn(handler);
+    /// let app = Castlist::builder(config)
+    ///     .get_graph_service(svc)
+    ///     /* Set other handlers */
+    ///     .build()
+    ///     .unwrap();
+    /// # let app: Castlist<::aws_smithy_http_server::routing::RoutingService<::aws_smithy_http_server::protocol::rest::router::RestRouter<::aws_smithy_http_server::routing::Route>, ::aws_smithy_http_server::protocol::rest_json_1::RestJson1>> = app;
+    /// ```
+    ///
+                    pub fn get_graph_service<S, ServiceExtractors, UpgradeExtractors>(self, service: S) -> Self
+                    where
+                        S: ::aws_smithy_http_server::operation::OperationService<crate::operation_shape::GetGraph, ServiceExtractors>,
+
+                        ModelPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetGraph,
+                            ::aws_smithy_http_server::operation::Normalize<crate::operation_shape::GetGraph, S>
+                        >,
+                        ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetGraph,
+                            ModelPl::Output
+                        >,
+                        HttpPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::GetGraph,
+                            <
+                                ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>
+                                as ::aws_smithy_http_server::plugin::Plugin<
+                                    Castlist<L>,
+                                    crate::operation_shape::GetGraph,
+                                    ModelPl::Output
+                                >
+                            >::Output
+                        >,
+
+                        HttpPl::Output: ::tower::Service<::http_1x::Request<Body>, Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>, Error = ::std::convert::Infallible> + Clone + Send + 'static,
+                        <HttpPl::Output as ::tower::Service<::http_1x::Request<Body>>>::Future: Send + 'static,
+
+{
+        use ::aws_smithy_http_server::operation::OperationShapeExt;
+        use ::aws_smithy_http_server::plugin::Plugin;
+        let svc = crate::operation_shape::GetGraph::from_service(service);
+        let svc = self.model_plugin.apply(svc);
+        let svc = ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>::new()
+            .with_request_body_read_timeout(
+                crate::service_config::service_config()
+                    .request_body
+                    .for_operation(&::aws_smithy_schema::ShapeId::from_parts(
+                        "ai.castlist#GetGraph",
+                        "ai.castlist",
+                        "GetGraph",
+                    ))
+                    .read_timeout
+                    .unwrap_or_default(),
+                "ai.castlist#GetGraph",
+            )
+            .apply(svc);
+        let svc = self.http_plugin.apply(svc);
+        self.get_graph_custom(svc)
+    }
+
+    /// Sets the [`GetGraph`](crate::operation_shape::GetGraph) to a custom [`Service`](tower::Service).
+    /// not constrained by the Smithy contract.
+    fn get_graph_custom<S>(mut self, svc: S) -> Self
+    where
+        S: ::tower::Service<
+                ::http_1x::Request<Body>,
+                Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>,
+                Error = ::std::convert::Infallible,
+            > + Clone
+            + Send
+            + 'static,
+        S::Future: Send + 'static,
+    {
+        self.get_graph = Some(::aws_smithy_http_server::routing::Route::new(svc));
         self
     }
 
@@ -2319,6 +2494,10 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
                     ".get_actor_setting_at()",
                 );
             }
+            if self.get_graph.is_none() {
+                missing_operation_names
+                    .insert(crate::operation_shape::GetGraph::ID, ".get_graph()");
+            }
             if self.get_health.is_none() {
                 missing_operation_names
                     .insert(crate::operation_shape::GetHealth::ID, ".get_health()");
@@ -2398,6 +2577,10 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
                 (
                     request_specs::get_actor_setting_at(),
                     self.get_actor_setting_at.expect(unexpected_error_msg),
+                ),
+                (
+                    request_specs::get_graph(),
+                    self.get_graph.expect(unexpected_error_msg),
                 ),
                 (
                     request_specs::get_health(),
@@ -2480,6 +2663,15 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
             (
                 request_specs::get_actor_setting_at(),
                 self.get_actor_setting_at.unwrap_or_else(|| {
+                    let svc = ::aws_smithy_http_server::operation::MissingFailure::<
+                        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+                    >::default();
+                    ::aws_smithy_http_server::routing::Route::new(svc)
+                }),
+            ),
+            (
+                request_specs::get_graph(),
+                self.get_graph.unwrap_or_else(|| {
                     let svc = ::aws_smithy_http_server::operation::MissingFailure::<
                         ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
                     >::default();
@@ -2656,6 +2848,21 @@ mod request_specs {
     ::aws_smithy_http_server::routing::request_spec::PathSegment::Label,
     ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("settings")),
     ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("at")),
+]),
+                            ::aws_smithy_http_server::routing::request_spec::QuerySpec::from_vector_unchecked(vec![
+])
+                        )
+                    ),
+                )
+    }
+    pub(super) fn get_graph() -> ::aws_smithy_http_server::routing::request_spec::RequestSpec {
+        ::aws_smithy_http_server::routing::request_spec::RequestSpec::new(
+                    ::http_1x::Method::GET,
+                    ::aws_smithy_http_server::routing::request_spec::UriSpec::new(
+                        ::aws_smithy_http_server::routing::request_spec::PathAndQuerySpec::new(
+                            ::aws_smithy_http_server::routing::request_spec::PathSpec::from_vector_unchecked(vec![
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("api")),
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("graph")),
 ]),
                             ::aws_smithy_http_server::routing::request_spec::QuerySpec::from_vector_unchecked(vec![
 ])
@@ -2868,6 +3075,7 @@ impl Castlist<()> {
         CastlistBuilder {
             get_actor: None,
             get_actor_setting_at: None,
+            get_graph: None,
             get_health: None,
             get_lineage: None,
             list_actors: None,
@@ -2908,6 +3116,7 @@ impl Castlist<()> {
         CastlistBuilder {
             get_actor: None,
             get_actor_setting_at: None,
+            get_graph: None,
             get_health: None,
             get_lineage: None,
             list_actors: None,
@@ -3043,6 +3252,7 @@ where
 pub enum Operation {
     GetActor,
     GetActorSettingAt,
+    GetGraph,
     GetHealth,
     GetLineage,
     ListActors,
@@ -3069,6 +3279,11 @@ impl Operation {
                 "ai.castlist#GetActorSettingAt",
                 "ai.castlist",
                 "GetActorSettingAt",
+            ),
+            Operation::GetGraph => ::aws_smithy_http_server::shape_id::ShapeId::new(
+                "ai.castlist#GetGraph",
+                "ai.castlist",
+                "GetGraph",
             ),
             Operation::GetHealth => ::aws_smithy_http_server::shape_id::ShapeId::new(
                 "ai.castlist#GetHealth",
@@ -3138,6 +3353,11 @@ impl<L>
     for Castlist<L>
 {
     const VALUE: Operation = Operation::GetActorSettingAt;
+}
+impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_shape::GetGraph>
+    for Castlist<L>
+{
+    const VALUE: Operation = Operation::GetGraph;
 }
 impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_shape::GetHealth>
     for Castlist<L>
@@ -3401,6 +3621,15 @@ macro_rules! scope {
                             scope! { @ $ name, $ contains (GetActorSettingAt $($ member)*) ($ other $($ temp)*) ($($ not_member)*) }
                         };
 
+                        // GetGraph match found, pop from both `member` and `not_member`
+                        (@ $ name: ident, $ contains: ident (GetGraph $($ member: ident)*) ($($ temp: ident)*) (GetGraph $($ not_member: ident)*)) => {
+                            scope! { @ $ name, $ contains ($($ member)*) ($($ temp)*) ($($ not_member)*) }
+                        };
+                        // GetGraph match not found, pop from `not_member` into `temp` stack
+                        (@ $ name: ident, $ contains: ident (GetGraph $($ member: ident)*) ($($ temp: ident)*) ($ other: ident $($ not_member: ident)*)) => {
+                            scope! { @ $ name, $ contains (GetGraph $($ member)*) ($ other $($ temp)*) ($($ not_member)*) }
+                        };
+
                         // GetHealth match found, pop from both `member` and `not_member`
                         (@ $ name: ident, $ contains: ident (GetHealth $($ member: ident)*) ($($ temp: ident)*) (GetHealth $($ not_member: ident)*)) => {
                             scope! { @ $ name, $ contains ($($ member)*) ($($ temp)*) ($($ not_member)*) }
@@ -3514,7 +3743,7 @@ macro_rules! scope {
                                 excludes: []
                             }
                         }
-                        scope! { @ $ name, False ($($ include)*) () (GetActor GetActorSettingAt GetHealth GetLineage ListActors ListActorSettings ListEvents ListSettings PutEvent PutLink PutSetting RegisterActor ResolveActors) }
+                        scope! { @ $ name, False ($($ include)*) () (GetActor GetActorSettingAt GetGraph GetHealth GetLineage ListActors ListActorSettings ListEvents ListSettings PutEvent PutLink PutSetting RegisterActor ResolveActors) }
                     };
                     (
                         $(#[$ attrs:meta])*
@@ -3531,6 +3760,6 @@ macro_rules! scope {
                                 excludes: [$($ exclude),*]
                             }
                         }
-                        scope! { @ $ name, True ($($ exclude)*) () (GetActor GetActorSettingAt GetHealth GetLineage ListActors ListActorSettings ListEvents ListSettings PutEvent PutLink PutSetting RegisterActor ResolveActors) }
+                        scope! { @ $ name, True ($($ exclude)*) () (GetActor GetActorSettingAt GetGraph GetHealth GetLineage ListActors ListActorSettings ListEvents ListSettings PutEvent PutLink PutSetting RegisterActor ResolveActors) }
                     };
                 }

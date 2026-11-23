@@ -278,7 +278,7 @@ pub struct Link {
 }
 
 /// 今の状態（view の actor_state と、推しの停止か）。
-#[derive(Clone, Debug, FromRow)]
+#[derive(Clone, Debug, Default, FromRow)]
 pub struct State {
     pub presence: Option<String>,
     pub present: bool,

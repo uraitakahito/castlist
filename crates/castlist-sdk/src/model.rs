@@ -1762,6 +1762,102 @@ mod test_setting_source {
     }
 }
 
+/// ラベルの絞り: `鍵:値`。初めの `:` で分ける。鍵は名の形、値は空でなく制御文字の無い 256 字まで。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`LabelFilter::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct LabelFilter(pub(crate) ::std::string::String);
+#[allow(dead_code)]
+impl LabelFilter {
+    /// Extracts a string slice containing the entire underlying `String`.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns an immutable reference to the underlying [`::std::string::String`].
+    pub fn inner(&self) -> &::std::string::String {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`::std::string::String`].
+    pub fn into_inner(self) -> ::std::string::String {
+        self.0
+    }
+}
+impl LabelFilter {
+    fn check_pattern(
+        string: ::std::string::String,
+    ) -> ::std::result::Result<
+        ::std::string::String,
+        crate::model::label_filter_internal::ConstraintViolation,
+    > {
+        let regex = Self::compile_regex();
+
+        if regex.is_match(&string) {
+            Ok(string)
+        } else {
+            Err(crate::model::label_filter_internal::ConstraintViolation::Pattern(string))
+        }
+    }
+
+    /// Attempts to compile the regex for this constrained type's `@pattern`.
+    /// This can fail if the specified regex is not supported by the `::regex` crate.
+    pub fn compile_regex() -> &'static ::regex::Regex {
+        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
+            ::regex::Regex::new(r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#).expect(r#"The regular expression ^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
+        });
+
+        &REGEX
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for LabelFilter {
+    type Error = crate::model::label_filter_internal::ConstraintViolation;
+
+    /// Constructs a `LabelFilter` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
+        let value = Self::check_pattern(value)?;
+
+        Ok(Self(value))
+    }
+}
+impl crate::constrained::Constrained for LabelFilter {
+    type Unconstrained = ::std::string::String;
+}
+
+impl ::std::convert::From<::std::string::String>
+    for crate::constrained::MaybeConstrained<crate::model::LabelFilter>
+{
+    fn from(value: ::std::string::String) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for LabelFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<LabelFilter> for ::std::string::String {
+    fn from(value: LabelFilter) -> Self {
+        value.into_inner()
+    }
+}
+
+#[cfg(test)]
+mod test_label_filter {
+    #[test]
+    fn regex_compiles() {
+        crate::model::LabelFilter::compile_regex();
+    }
+}
+
 /// 付随する id 1 つ（claude.session・tpm.person・cmux.workspace.ref など）。
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
@@ -1993,102 +2089,6 @@ impl Link {
     /// Creates a new builder-style object to manufacture [`Link`](crate::model::Link).
     pub fn builder() -> crate::model::link::Builder {
         crate::model::link::Builder::default()
-    }
-}
-
-/// ラベルの絞り: `鍵:値`。初めの `:` で分ける。鍵は名の形、値は空でなく制御文字の無い 256 字まで。
-///
-/// This is a constrained type because its corresponding modeled Smithy shape has one or more
-/// [constraint traits]. Use [`LabelFilter::try_from`] to construct values of this type.
-///
-/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
-///
-#[derive(
-    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
-)]
-pub(crate) struct LabelFilter(pub(crate) ::std::string::String);
-#[allow(dead_code)]
-impl LabelFilter {
-    /// Extracts a string slice containing the entire underlying `String`.
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-
-    /// Returns an immutable reference to the underlying [`::std::string::String`].
-    pub fn inner(&self) -> &::std::string::String {
-        &self.0
-    }
-
-    /// Consumes the value, returning the underlying [`::std::string::String`].
-    pub fn into_inner(self) -> ::std::string::String {
-        self.0
-    }
-}
-impl LabelFilter {
-    fn check_pattern(
-        string: ::std::string::String,
-    ) -> ::std::result::Result<
-        ::std::string::String,
-        crate::model::label_filter_internal::ConstraintViolation,
-    > {
-        let regex = Self::compile_regex();
-
-        if regex.is_match(&string) {
-            Ok(string)
-        } else {
-            Err(crate::model::label_filter_internal::ConstraintViolation::Pattern(string))
-        }
-    }
-
-    /// Attempts to compile the regex for this constrained type's `@pattern`.
-    /// This can fail if the specified regex is not supported by the `::regex` crate.
-    pub fn compile_regex() -> &'static ::regex::Regex {
-        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
-            ::regex::Regex::new(r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#).expect(r#"The regular expression ^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
-        });
-
-        &REGEX
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for LabelFilter {
-    type Error = crate::model::label_filter_internal::ConstraintViolation;
-
-    /// Constructs a `LabelFilter` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
-    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
-        let value = Self::check_pattern(value)?;
-
-        Ok(Self(value))
-    }
-}
-impl crate::constrained::Constrained for LabelFilter {
-    type Unconstrained = ::std::string::String;
-}
-
-impl ::std::convert::From<::std::string::String>
-    for crate::constrained::MaybeConstrained<crate::model::LabelFilter>
-{
-    fn from(value: ::std::string::String) -> Self {
-        Self::Unconstrained(value)
-    }
-}
-
-impl ::std::fmt::Display for LabelFilter {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl ::std::convert::From<LabelFilter> for ::std::string::String {
-    fn from(value: LabelFilter) -> Self {
-        value.into_inner()
-    }
-}
-
-#[cfg(test)]
-mod test_label_filter {
-    #[test]
-    fn regex_compiles() {
-        crate::model::LabelFilter::compile_regex();
     }
 }
 
@@ -2372,6 +2372,79 @@ impl SettingRow {
     /// Creates a new builder-style object to manufacture [`SettingRow`](crate::model::SettingRow).
     pub fn builder() -> crate::model::setting_row::Builder {
         crate::model::setting_row::Builder::default()
+    }
+}
+
+/// 図の点 1 つ: 登録の欄と、今の状態と、最新の model と effort。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct GraphNode {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub id: ::std::string::String,
+    /// `&lt;接頭辞&gt;.&lt;番号&gt;`。
+    pub name: ::std::string::String,
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+    pub kind: ::std::string::String,
+    /// 出し手。
+    pub issuer: ::std::string::String,
+    /// 登録の送り手の時刻。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 登録を受けた castlist の時刻。
+    pub received_at: ::aws_smithy_types::DateTime,
+    /// 送り手の時刻と受けた時刻が 5 分より離れていたか。
+    pub clock_skew: bool,
+    /// 今の状態（GetActor の state と同じ形）。
+    pub state: crate::model::ActorState,
+    /// model と effort の最新（受けた順で）。1 つも無ければ無い。
+    pub current_settings: ::std::option::Option<crate::model::Setting>,
+}
+impl GraphNode {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn id(&self) -> &str {
+        use std::ops::Deref;
+        self.id.deref()
+    }
+    /// `&lt;接頭辞&gt;.&lt;番号&gt;`。
+    pub fn name(&self) -> &str {
+        use std::ops::Deref;
+        self.name.deref()
+    }
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+    pub fn kind(&self) -> &str {
+        use std::ops::Deref;
+        self.kind.deref()
+    }
+    /// 出し手。
+    pub fn issuer(&self) -> &str {
+        use std::ops::Deref;
+        self.issuer.deref()
+    }
+    /// 登録の送り手の時刻。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 登録を受けた castlist の時刻。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    /// 送り手の時刻と受けた時刻が 5 分より離れていたか。
+    pub fn clock_skew(&self) -> bool {
+        self.clock_skew
+    }
+    /// 今の状態（GetActor の state と同じ形）。
+    pub fn state(&self) -> &crate::model::ActorState {
+        &self.state
+    }
+    /// model と effort の最新（受けた順で）。1 つも無ければ無い。
+    pub fn current_settings(&self) -> ::std::option::Option<&crate::model::Setting> {
+        self.current_settings.as_ref()
+    }
+}
+impl GraphNode {
+    /// Creates a new builder-style object to manufacture [`GraphNode`](crate::model::GraphNode).
+    pub fn builder() -> crate::model::graph_node::Builder {
+        crate::model::graph_node::Builder::default()
     }
 }
 pub(crate) mod name_internal {
@@ -3700,6 +3773,45 @@ pub(crate) mod setting_source_internal {
         }
     }
 }
+pub(crate) mod label_filter_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        /// Error when a string doesn't satisfy its `@pattern`.
+        /// Contains the String that failed the pattern.
+        Pattern(String),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Pattern(_) => {
+                    format!(
+                        r#"Value provided for `ai.castlist#LabelFilter` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
+                        r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#
+                    )
+                }
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            #[allow(unused_variables)]
+    Self::Pattern(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#),
+                            path
+                        },
+                        }
+        }
+    }
+}
 /// See [`Binding`](crate::model::Binding).
 pub(crate) mod binding_internal {
 
@@ -4340,45 +4452,6 @@ pub mod link {
         }
     }
 }
-pub(crate) mod label_filter_internal {
-
-    #[derive(Debug, PartialEq)]
-    pub enum ConstraintViolation {
-        /// Error when a string doesn't satisfy its `@pattern`.
-        /// Contains the String that failed the pattern.
-        Pattern(String),
-    }
-
-    impl ::std::fmt::Display for ConstraintViolation {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let message = match self {
-                Self::Pattern(_) => {
-                    format!(
-                        r#"Value provided for `ai.castlist#LabelFilter` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
-                        r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#
-                    )
-                }
-            };
-            write!(f, "{message}")
-        }
-    }
-
-    impl ::std::error::Error for ConstraintViolation {}
-    impl ConstraintViolation {
-        pub(crate) fn as_validation_exception_field(
-            self,
-            path: ::std::string::String,
-        ) -> crate::model::ValidationExceptionField {
-            match self {
-                            #[allow(unused_variables)]
-    Self::Pattern(_) => crate::model::ValidationExceptionField {
-                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#),
-                            path
-                        },
-                        }
-        }
-    }
-}
 /// See [`ActorRow`](crate::model::ActorRow).
 pub mod actor_row {
 
@@ -4986,6 +5059,166 @@ pub mod setting_row {
                 actor_name: self
                     .actor_name
                     .ok_or(ConstraintViolation::MissingActorName)?,
+            })
+        }
+    }
+}
+/// See [`GraphNode`](crate::model::GraphNode).
+pub mod graph_node {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `id` was not provided but it is required when building `GraphNode`.
+        MissingId,
+        /// `name` was not provided but it is required when building `GraphNode`.
+        MissingName,
+        /// `kind` was not provided but it is required when building `GraphNode`.
+        MissingKind,
+        /// `issuer` was not provided but it is required when building `GraphNode`.
+        MissingIssuer,
+        /// `sent_at` was not provided but it is required when building `GraphNode`.
+        MissingSentAt,
+        /// `received_at` was not provided but it is required when building `GraphNode`.
+        MissingReceivedAt,
+        /// `clock_skew` was not provided but it is required when building `GraphNode`.
+        MissingClockSkew,
+        /// `state` was not provided but it is required when building `GraphNode`.
+        MissingState,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingId => write!(
+                    f,
+                    "`id` was not provided but it is required when building `GraphNode`"
+                ),
+                ConstraintViolation::MissingName => write!(
+                    f,
+                    "`name` was not provided but it is required when building `GraphNode`"
+                ),
+                ConstraintViolation::MissingKind => write!(
+                    f,
+                    "`kind` was not provided but it is required when building `GraphNode`"
+                ),
+                ConstraintViolation::MissingIssuer => write!(
+                    f,
+                    "`issuer` was not provided but it is required when building `GraphNode`"
+                ),
+                ConstraintViolation::MissingSentAt => write!(
+                    f,
+                    "`sent_at` was not provided but it is required when building `GraphNode`"
+                ),
+                ConstraintViolation::MissingReceivedAt => write!(
+                    f,
+                    "`received_at` was not provided but it is required when building `GraphNode`"
+                ),
+                ConstraintViolation::MissingClockSkew => write!(
+                    f,
+                    "`clock_skew` was not provided but it is required when building `GraphNode`"
+                ),
+                ConstraintViolation::MissingState => write!(
+                    f,
+                    "`state` was not provided but it is required when building `GraphNode`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::model::GraphNode {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GraphNode`](crate::model::GraphNode).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) name: ::std::option::Option<::std::string::String>,
+        pub(crate) kind: ::std::option::Option<::std::string::String>,
+        pub(crate) issuer: ::std::option::Option<::std::string::String>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) clock_skew: ::std::option::Option<bool>,
+        pub(crate) state: ::std::option::Option<crate::model::ActorState>,
+        pub(crate) current_settings: ::std::option::Option<crate::model::Setting>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn id(mut self, input: ::std::string::String) -> Self {
+            self.id = Some(input);
+            self
+        }
+        /// `&lt;接頭辞&gt;.&lt;番号&gt;`。
+        pub fn name(mut self, input: ::std::string::String) -> Self {
+            self.name = Some(input);
+            self
+        }
+        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+        pub fn kind(mut self, input: ::std::string::String) -> Self {
+            self.kind = Some(input);
+            self
+        }
+        /// 出し手。
+        pub fn issuer(mut self, input: ::std::string::String) -> Self {
+            self.issuer = Some(input);
+            self
+        }
+        /// 登録の送り手の時刻。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 登録を受けた castlist の時刻。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        /// 送り手の時刻と受けた時刻が 5 分より離れていたか。
+        pub fn clock_skew(mut self, input: bool) -> Self {
+            self.clock_skew = Some(input);
+            self
+        }
+        /// 今の状態（GetActor の state と同じ形）。
+        pub fn state(mut self, input: crate::model::ActorState) -> Self {
+            self.state = Some(input);
+            self
+        }
+        /// model と effort の最新（受けた順で）。1 つも無ければ無い。
+        pub fn current_settings(
+            mut self,
+            input: ::std::option::Option<crate::model::Setting>,
+        ) -> Self {
+            self.current_settings = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`GraphNode`](crate::model::GraphNode).
+        ///
+        /// The builder fails to construct a [`GraphNode`](crate::model::GraphNode) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::model::GraphNode, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::model::GraphNode, ConstraintViolation> {
+            Ok(crate::model::GraphNode {
+                id: self.id.ok_or(ConstraintViolation::MissingId)?,
+                name: self.name.ok_or(ConstraintViolation::MissingName)?,
+                kind: self.kind.ok_or(ConstraintViolation::MissingKind)?,
+                issuer: self.issuer.ok_or(ConstraintViolation::MissingIssuer)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                clock_skew: self
+                    .clock_skew
+                    .ok_or(ConstraintViolation::MissingClockSkew)?,
+                state: self.state.ok_or(ConstraintViolation::MissingState)?,
+                current_settings: self.current_settings,
             })
         }
     }

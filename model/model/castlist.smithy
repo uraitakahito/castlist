@@ -37,6 +37,7 @@ service Castlist {
         PutLink
         PutSetting
         ListSettings
+        GetGraph
     ]
 }
 
@@ -1227,6 +1228,164 @@ operation ListEvents {
 
 list EventTypes {
     member: EventType
+}
+
+/// 図（タイムライン・相関図）の点と線。`label`（`鍵:値`）と、登録を受けた時刻（`receivedAt`）の窓（`from`・`to`。両端を含む）で
+/// アクターの組を絞り、組に触れる線（`from` か `to` が組の中）の全部と、その線の向こうの端のアクター（一歩だけ）も含める（人の根が切れないように）。
+/// どれも無ければ全部のアクター。点も線も受けた順（seq）。重い読みの接続（2 本）だけを使い、引き当てなどの軽い読みを待たせない。
+/// 引数はどれも 1 つだけ（restJson1 は、2 度付ければ初めの物を使う）。
+@readonly
+@http(method: "GET", uri: "/api/graph")
+@httpRequestTests([
+    {
+        id: "GetGraphRequest"
+        documentation: "ラベルと、登録を受けた時刻の窓は引数"
+        protocol: restJson1
+        method: "GET"
+        uri: "/api/graph"
+        queryParams: ["label=tpm.key:t-23zs", "from=2026-11-24T00:00:00Z", "to=2026-11-25T00:00:00Z"]
+        params: { label: "tpm.key:t-23zs", from: 1795478400, to: 1795564800 }
+    }
+    {
+        id: "GetGraphRequestWithoutParams"
+        documentation: "引数はどれも無くてよい（全部のアクター）"
+        protocol: restJson1
+        method: "GET"
+        uri: "/api/graph"
+        params: {}
+    }
+])
+@httpResponseTests([
+    {
+        id: "GetGraphResponse"
+        documentation: "点は登録の欄と今の状態と最新の model と effort、線は GetActor の線と同じ形"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"asOf":"2026-11-24T00:00:02Z","nodes":[{"id":"019abcde-0000-7000-8000-000000000001","name":"se.1","kind":"ai","issuer":"tpm","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false,"state":{"presence":"entered","present":true,"inferred":false,"enteredAt":"2026-11-24T00:00:01Z"},"currentSettings":{"actorId":"019abcde-0000-7000-8000-000000000001","model":"claude-opus-5-5","effort":"high","source":"requested","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false}},{"id":"019abcde-0000-7000-8000-000000000002","name":"pm.1","kind":"human","issuer":"tpm","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false,"state":{"present":false,"inferred":false}}],"edges":[{"id":"l-1","type":"launched","from":"019abcde-0000-7000-8000-000000000002","to":"019abcde-0000-7000-8000-000000000001","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false}]}"""
+        bodyMediaType: "application/json"
+        params: {
+            asOf: 1795478402
+            nodes: [
+                {
+                    id: "019abcde-0000-7000-8000-000000000001"
+                    name: "se.1"
+                    kind: "ai"
+                    issuer: "tpm"
+                    sentAt: 1795478400
+                    receivedAt: 1795478401
+                    clockSkew: false
+                    state: { presence: "entered", present: true, inferred: false, enteredAt: 1795478401 }
+                    currentSettings: {
+                        actorId: "019abcde-0000-7000-8000-000000000001"
+                        model: "claude-opus-5-5"
+                        effort: "high"
+                        source: "requested"
+                        sentAt: 1795478400
+                        receivedAt: 1795478401
+                        clockSkew: false
+                    }
+                }
+                {
+                    id: "019abcde-0000-7000-8000-000000000002"
+                    name: "pm.1"
+                    kind: "human"
+                    issuer: "tpm"
+                    sentAt: 1795478400
+                    receivedAt: 1795478401
+                    clockSkew: false
+                    state: { present: false, inferred: false }
+                }
+            ]
+            edges: [
+                {
+                    id: "l-1"
+                    type: "launched"
+                    from: "019abcde-0000-7000-8000-000000000002"
+                    to: "019abcde-0000-7000-8000-000000000001"
+                    sentAt: 1795478400
+                    receivedAt: 1795478401
+                    clockSkew: false
+                }
+            ]
+        }
+    }
+])
+operation GetGraph {
+    input := {
+        /// このラベル（`鍵:値`）を持つアクター。
+        @httpQuery("label")
+        label: LabelFilter
+
+        /// 登録を受けた時刻の窓の始め（含む）。
+        @httpQuery("from")
+        from: DateTime
+
+        /// 登録を受けた時刻の窓の終わり（含む）。
+        @httpQuery("to")
+        to: DateTime
+    }
+
+    output := {
+        /// 読み始める前の castlist の時刻。
+        @required
+        asOf: DateTime
+
+        /// 絞った組と、組に触れる線の向こうの端のアクター（受けた順）。
+        @required
+        nodes: GraphNodes
+
+        /// 組に触れる線の全部（受けた順）。
+        @required
+        edges: Links
+    }
+
+    errors: [
+        ValidationException
+        Unavailable
+        InternalError
+    ]
+}
+
+/// 図の点 1 つ: 登録の欄と、今の状態と、最新の model と effort。
+structure GraphNode {
+    @required
+    id: ActorId
+
+    /// `<接頭辞>.<番号>`。
+    @required
+    name: String
+
+    @required
+    kind: ActorKind
+
+    /// 出し手。
+    @required
+    issuer: Name
+
+    /// 登録の送り手の時刻。
+    @required
+    sentAt: DateTime
+
+    /// 登録を受けた castlist の時刻。
+    @required
+    receivedAt: DateTime
+
+    /// 送り手の時刻と受けた時刻が 5 分より離れていたか。
+    @required
+    clockSkew: Boolean
+
+    /// 今の状態（GetActor の state と同じ形）。
+    @required
+    state: ActorState
+
+    /// model と effort の最新（受けた順で）。1 つも無ければ無い。
+    currentSettings: Setting
+}
+
+list GraphNodes {
+    member: GraphNode
 }
 
 /// 鍵の付随する id（`種類:値`）から、出し手の中のアクターを引く。答えは問いと同じ順で、引けない物（知らない・鍵でない・出し手が違う）は `actor` が無い。

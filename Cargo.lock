@@ -509,6 +509,7 @@ dependencies = [
 name = "castlist-next"
 version = "0.4.0"
 dependencies = [
+ "askama",
  "aws-smithy-types",
  "axum",
  "bytes",
