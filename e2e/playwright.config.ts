@@ -1,5 +1,8 @@
 // 画面の browser の試験の設定。同じ commit の castlist-server を作り、空いている port と一時の DB で起こして向ける。
-//   CASTLIST_E2E_SERVER   起こす binary（既定は ../target/debug/castlist-server を cargo build してから）
+//   CASTLIST_E2E_SERVER   起こす binary（既定は ../target/debug/castlist-server を cargo build してから）。
+//                         作り直している新しい server（AI-36）なら ../target/debug/castlist-next（cargo build --locked --bin castlist-next）
+//   CASTLIST_E2E_API      試験が API を叩く形（tests/wire.ts）。v1（今の server）か api（新しい server）。既定は、起こす binary の名が
+//                         castlist-next なら api、ほかは v1
 //   CASTLIST_E2E_PORT     待ち受ける port（既定は、空いている port を 1 つ選ぶ）
 //   CASTLIST_E2E_CHANNEL  この機械に入っている browser を使う時の名（chrome など）。無ければ Playwright の Chromium
 // 見本の記録は、tests/seed.setup.ts が API で置く（ほかの試験より先に 1 度だけ）。
@@ -7,7 +10,7 @@ import { defineConfig } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 // 設定は、試験を流す worker の中でも読み直される。port と DB は初めの 1 度だけ決め、環境変数で worker に渡す。
 process.env.CASTLIST_E2E_PORT ??= execFileSync(process.execPath, [
@@ -20,6 +23,7 @@ process.env.CASTLIST_E2E_DB ??= join(mkdtempSync(join(tmpdir(), 'castlist-e2e-')
 const port = Number(process.env.CASTLIST_E2E_PORT);
 const db = process.env.CASTLIST_E2E_DB;
 const server = process.env.CASTLIST_E2E_SERVER;
+process.env.CASTLIST_E2E_API ??= server && basename(server) === 'castlist-next' ? 'api' : 'v1';
 const build = server ? `exec "${server}"` : 'cargo build --locked --bin castlist-server && exec ../target/debug/castlist-server';
 
 export default defineConfig({

@@ -15,6 +15,7 @@ ci/check-sql.sh                                                    # 行を書�
 ci/check-vendor.sh                                                 # 取り込んだ cytoscape が npm の物と同じか（static/vendor/SOURCES.md）
 ci/test-check-release-version.sh                                   # release の tag と版の突き合わせの試験
 (cd e2e && pnpm install --frozen-lockfile && pnpm test)            # 相関図と期間の欄を本物の browser で見る（Playwright。castlist-server を作って空いた port で起こす）
+cargo build --locked --bin castlist-next && (cd e2e && CASTLIST_E2E_SERVER=../target/debug/castlist-next pnpm test)   # 同じ試験を、作り直している新しい server に向ける
 cargo test --locked --release --test load -- --ignored --nocapture # 負荷の試験（50 の客で 10 秒）
 CASTLIST_LISTEN=127.0.0.1:18802 CASTLIST_DB=/tmp/castlist-dev.db cargo run --bin castlist-server   # 手元で起こす（本物の castlist の 8802 とは別の port・別の DB）
 mdbook build docs                                                  # この本を作る
