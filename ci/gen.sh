@@ -24,6 +24,8 @@ sha_for() {
   esac
 }
 MIN_AGE_SECONDS=$((2 * 24 * 60 * 60))
+# つなぎの一時の失敗（github.com や Maven Central への時間切れ）は、少し待って送り直す（AI-36 の台帳 #153）。
+CURL_RETRY="--retry 5 --retry-all-errors --retry-delay 5 --connect-timeout 20"
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 out="$root/crates/castlist-sdk"
@@ -53,7 +55,7 @@ smithy="$cache/smithy-cli-$platform/bin/smithy"
 if [ ! -x "$smithy" ]; then
   mkdir -p "$cache"
   zip="$cache/cli.zip"
-  curl -fsSL -o "$zip" "https://github.com/smithy-lang/smithy/releases/download/$SMITHY_VERSION/smithy-cli-$platform.zip"
+  curl -fsSL $CURL_RETRY -o "$zip" "https://github.com/smithy-lang/smithy/releases/download/$SMITHY_VERSION/smithy-cli-$platform.zip"
   got=$(sha256 "$zip")
   [ "$got" = "$want" ] || ng "Smithy の CLI の digest が違う（$got。$want のはず）"
   unzip -q -o "$zip" -d "$cache"
@@ -70,7 +72,7 @@ for dep in $deps; do
   artifact=${rest%%:*}
   version=${rest#*:}
   pom="https://repo1.maven.org/maven2/$(echo "$group" | tr . /)/$artifact/$version/$artifact-$version.pom"
-  modified=$(curl -fsSI "$pom" | tr -d '\r' | sed -n 's/^[Ll]ast-[Mm]odified: //p')
+  modified=$(curl -fsSI $CURL_RETRY "$pom" | tr -d '\r' | sed -n 's/^[Ll]ast-[Mm]odified: //p')
   [ -n "$modified" ] || ng "$dep の公開の時刻を読めない（$pom）"
   if date -u -d "$modified" +%s >/dev/null 2>&1; then
     published=$(date -u -d "$modified" +%s)
