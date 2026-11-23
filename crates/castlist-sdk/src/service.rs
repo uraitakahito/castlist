@@ -557,7 +557,7 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
     ///
     /// use castlist_sdk::{input, output, error};
     ///
-    /// async fn handler(input: input::GetHealthInput) -> output::GetHealthOutput {
+    /// async fn handler(input: input::GetHealthInput) -> Result<output::GetHealthOutput, error::GetHealthError> {
     ///     todo!()
     /// }
     ///
@@ -635,7 +635,7 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
     ///
     /// use castlist_sdk::{input, output, error};
     ///
-    /// async fn handler(input: input::GetHealthInput) -> Result<output::GetHealthOutput, std::convert::Infallible> {
+    /// async fn handler(input: input::GetHealthInput) -> Result<output::GetHealthOutput, error::GetHealthError> {
     ///     todo!()
     /// }
     ///

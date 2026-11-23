@@ -54,3 +54,92 @@ pub fn ser_get_health_http_response(
         builder.body(body)?
     })
 }
+
+#[allow(clippy::unnecessary_wraps)]
+pub fn ser_get_health_http_error(
+    error: &crate::error::GetHealthError,
+) -> std::result::Result<
+    ::aws_smithy_http_server::response::Response,
+    ::aws_smithy_http_server::protocol::rest_json_1::rejection::ResponseRejection,
+> {
+    Ok({
+        match error {
+            crate::error::GetHealthError::Forbidden(output) => {
+                let payload = crate::protocol_serde::shape_forbidden::ser_forbidden_error(output)?;
+                #[allow(unused_mut)]
+                let mut builder = ::http_1x::Response::builder();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_TYPE,
+                    "application/json",
+                );
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::HeaderName::from_static("x-amzn-errortype"),
+                    "Forbidden",
+                );
+                let content_length = payload.len();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_LENGTH,
+                    content_length,
+                );
+                builder
+                    .status(403)
+                    .body(::aws_smithy_http_server::body::to_boxed(payload))?
+            }
+            crate::error::GetHealthError::PayloadTooLarge(output) => {
+                let payload =
+                    crate::protocol_serde::shape_payload_too_large::ser_payload_too_large_error(
+                        output,
+                    )?;
+                #[allow(unused_mut)]
+                let mut builder = ::http_1x::Response::builder();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_TYPE,
+                    "application/json",
+                );
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::HeaderName::from_static("x-amzn-errortype"),
+                    "PayloadTooLarge",
+                );
+                let content_length = payload.len();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_LENGTH,
+                    content_length,
+                );
+                builder
+                    .status(413)
+                    .body(::aws_smithy_http_server::body::to_boxed(payload))?
+            }
+            crate::error::GetHealthError::Unavailable(output) => {
+                let payload =
+                    crate::protocol_serde::shape_unavailable::ser_unavailable_error(output)?;
+                #[allow(unused_mut)]
+                let mut builder = ::http_1x::Response::builder();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_TYPE,
+                    "application/json",
+                );
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::HeaderName::from_static("x-amzn-errortype"),
+                    "Unavailable",
+                );
+                let content_length = payload.len();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_LENGTH,
+                    content_length,
+                );
+                builder
+                    .status(503)
+                    .body(::aws_smithy_http_server::body::to_boxed(payload))?
+            }
+        }
+    })
+}

@@ -77,6 +77,26 @@ impl
         }
     }
 }
+impl
+    ::aws_smithy_http_server::response::IntoResponse<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+    > for crate::error::GetHealthError
+{
+    fn into_response(self) -> ::aws_smithy_http_server::response::Response {
+        match crate::protocol_serde::shape_get_health::ser_get_health_http_error(&self) {
+            Ok(mut response) => {
+                response.extensions_mut().insert(
+                    ::aws_smithy_http_server::extension::ModeledErrorExtension::new(self.name()),
+                );
+                response
+            }
+            Err(e) => {
+                ::tracing::error!(error = %e, "failed to serialize response");
+                ::aws_smithy_http_server::response::IntoResponse::<::aws_smithy_http_server::protocol::rest_json_1::RestJson1>::into_response(::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(e))
+            }
+        }
+    }
+}
 
 #[allow(unreachable_code, unused_variables)]
 #[cfg(test)]
@@ -117,7 +137,7 @@ mod get_health_test {
                                 version: "".to_owned(),
                                 now: ::aws_smithy_types::DateTime::from_fractional_secs(0, 0_f64),
                             };
-                            output
+                            Ok(output)
                         };
                         sender.send(()).await.expect("receiver dropped early");
                         result

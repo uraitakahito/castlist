@@ -219,7 +219,7 @@
 //!     todo!()
 //! }
 //!
-//! async fn get_health(input: input::GetHealthInput) -> output::GetHealthOutput {
+//! async fn get_health(input: input::GetHealthInput) -> Result<output::GetHealthOutput, error::GetHealthError> {
 //!     todo!()
 //! }
 //!

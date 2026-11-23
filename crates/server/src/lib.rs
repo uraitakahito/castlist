@@ -20,6 +20,7 @@ mod list_settings;
 mod register;
 mod resolve;
 mod rows;
+pub mod runlog;
 pub mod search;
 mod setting;
 mod timeline;
@@ -27,12 +28,14 @@ mod token;
 mod ui;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use axum::Router;
 use axum::extract::Request;
 use axum::http::{HeaderValue, Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
+use castlist_sdk::error::GetHealthError;
 use castlist_sdk::output::GetHealthOutput;
 use castlist_sdk::{Castlist, CastlistConfig};
 
@@ -43,8 +46,37 @@ use crate::generated::Generated;
 /// form は castlist 自身へだけ送れる（一覧の絞りの form は GET で `/` に送る）。今の server（src/lib.rs）と同じ。
 pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
-/// 動かす Router。DB は、どの handler も同じ物を使う。
+/// 1 つの問い合わせにかけてよい長さ。過ぎれば 503 `Unavailable` で返す（今の server と同じ）。
+pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// 本文の上限（axum の既定と同じ 2 MiB）。超えれば 413 `PayloadTooLarge` で返す。
+pub const BODY_LIMIT: usize = 2 * 1024 * 1024;
+
+/// 守りの層の設定。
+#[derive(Clone)]
+pub struct Config {
+    /// 1 つの問い合わせにかけてよい長さ（既定は [`REQUEST_TIMEOUT`]。試験は短くする）。
+    pub timeout: Duration,
+    /// 記録の置き場。あれば、残した記録を読む道 `GET /api/logs` が付く。
+    pub runlog: Option<runlog::RunLog>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            timeout: REQUEST_TIMEOUT,
+            runlog: None,
+        }
+    }
+}
+
+/// 動かす Router（記録を読む道 `GET /api/logs` は無い。試験と、記録の置き場が無い時）。
 pub fn app(db: Arc<Db>) -> Router {
+    app_with(db, Config::default())
+}
+
+/// 動かす Router。DB は、どの handler も同じ物を使う。
+pub fn app_with(db: Arc<Db>, _config: Config) -> Router {
     let generated = Castlist::builder(CastlistConfig::builder().build())
         .get_health(get_health)
         .register_actor({
@@ -108,12 +140,14 @@ pub fn app(db: Arc<Db>) -> Router {
         .layer(middleware::from_fn(stamp))
 }
 
-async fn get_health(_input: castlist_sdk::input::GetHealthInput) -> GetHealthOutput {
-    GetHealthOutput {
+async fn get_health(
+    _input: castlist_sdk::input::GetHealthInput,
+) -> Result<GetHealthOutput, GetHealthError> {
+    Ok(GetHealthOutput {
         status: "ok".to_owned(),
         version: env!("CARGO_PKG_VERSION").to_owned(),
         now: aws_smithy_types::DateTime::from(std::time::SystemTime::now()),
-    }
+    })
 }
 
 /// DB の字の時刻（RFC 3339）を、答えの時刻にする。読めなければ、その訳。

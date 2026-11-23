@@ -221,6 +221,57 @@ pub fn ser_put_event_http_error(
                     .status(500)
                     .body(::aws_smithy_http_server::body::to_boxed(payload))?
             }
+            crate::error::PutEventError::Forbidden(output) => {
+                let payload = crate::protocol_serde::shape_forbidden::ser_forbidden_error(output)?;
+                #[allow(unused_mut)]
+                let mut builder = ::http_1x::Response::builder();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_TYPE,
+                    "application/json",
+                );
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::HeaderName::from_static("x-amzn-errortype"),
+                    "Forbidden",
+                );
+                let content_length = payload.len();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_LENGTH,
+                    content_length,
+                );
+                builder
+                    .status(403)
+                    .body(::aws_smithy_http_server::body::to_boxed(payload))?
+            }
+            crate::error::PutEventError::PayloadTooLarge(output) => {
+                let payload =
+                    crate::protocol_serde::shape_payload_too_large::ser_payload_too_large_error(
+                        output,
+                    )?;
+                #[allow(unused_mut)]
+                let mut builder = ::http_1x::Response::builder();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_TYPE,
+                    "application/json",
+                );
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::HeaderName::from_static("x-amzn-errortype"),
+                    "PayloadTooLarge",
+                );
+                let content_length = payload.len();
+                builder = ::aws_smithy_http::header::set_response_header_if_absent(
+                    builder,
+                    ::http_1x::header::CONTENT_LENGTH,
+                    content_length,
+                );
+                builder
+                    .status(413)
+                    .body(::aws_smithy_http_server::body::to_boxed(payload))?
+            }
         }
     })
 }

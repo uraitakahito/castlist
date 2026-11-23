@@ -13,7 +13,7 @@ impl ::aws_smithy_http_server::operation::OperationShape for GetHealth {
 
     type Input = crate::input::GetHealthInput;
     type Output = crate::output::GetHealthOutput;
-    type Error = std::convert::Infallible;
+    type Error = crate::error::GetHealthError;
 }
 
 impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for GetHealth {

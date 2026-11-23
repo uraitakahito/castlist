@@ -30,8 +30,9 @@ sha2 = { version = "0.11.1", default-features = false }
 # SQL は動く時に組む形（query・query_as）だけを使う。macros は、移行の SQL を埋め込む migrate!() のため（今の server と同じ）。
 sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
 time = { version = "0.3", features = ["formatting", "parsing"] }
-# タイムラインを組む重い計算を、tokio の糸の外（spawn_blocking）で走らせる。binary の起動と待ち受けにも使う。
-tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "net"] }
+# タイムラインを組む重い計算を、tokio の糸の外（spawn_blocking）で走らせる。binary の起動・待ち受け・止める合図・時間切れ・
+# backup の file にも使う（root の crate と同じ features）。
+tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "net", "signal", "fs", "time"] }
 tower = { version = "0.5", features = ["util"] }
 # 記録（root の crate と同じ版と features）。
 tracing = { version = "0.1", default-features = false, features = ["std"] }
