@@ -84,6 +84,13 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 
 - DB は SQLite のまま、表を新しい migrations（`crates/server/migrations/`）で作る。表の作りは今の物を土台にし、決まり（足すだけの trigger・seq・外のキー）を引き継ぐ。
 - id の値（アクターの UUID v7・出来事・線・設定の送り手の id）は変えない（pagetray の送り手と、切り替えをまたいで送り続ける roster の id のため）。新しい id の字の検査は、今の id をみな受ける。
+- 今の DB からの移し（`castlist-next migrate --from <写し> --to <新しい DB>`。`crates/server/src/migrate.rs`）:
+  - 移す元は、今の server の `GET /v1/backup` で取った写し（`VACUUM INTO` の file）。読むだけ（SQLite の URI の `mode=ro&immutable=1`）で開き、書かない。隣に中身のある `-wal` があれば、動いている DB なので断る。時刻の列の名は、表ごとに列を見て決める（0.3 からの `sent_at` と、0.1.x の `at` のどちらも読む）。castlist の 8 つの表が無い file・SQLite でない file・無い file も断る。どれも、移す先を作る前に断る。
+  - 移す先は、無ければ作り、新しい migrations を当ててから、台帳の行（アクター・ラベル・付随する id・線・出来事・model と effort）が 1 つも無いことを見る。あれば断る（2 度目の移しも、移し終えた先なので断る）。移す元と同じ file も断る。
+  - 1 つの transaction の中で、親の表から順（actors・labels・bindings・links・events・models・efforts・settings）に、insert だけで写す。外のキーと足すだけの trigger は効いたまま。`seq`・送り手の id（id の無い頼んだ物の設定も）・`received_at`・`sent_at`（時差の付いた字も、残した字のまま。新しい server は読む時に UTC に直す）・`clock_skew`・`body_hash`・`detail` は字のまま。`seq` をそのまま入れるので、`sqlite_sequence` も続き、移した後の行は次の番号から足される（名の番号も、アクターの最大の次）。
+  - model と effort は名で結び直す（新しい DB の migrations が effort の 5 つ（low・medium・high・xhigh・max）を先に置くので、中の番号は替わりうる）。model と、先に置かれた物の外の effort は `first_seen_at` も写す。先に置かれた 5 つの `first_seen_at` は新しい DB の物になる（行を書き替えないため）。
+  - 写した後、同じ transaction の中で突き合わせる: 表ごとの行の数・中身の digest（意味のある列を 1 行 1 つの JSON の配列にして受けた順に並べた字の SHA-256。model と effort の番号は名に替え、先に置かれた effort の `first_seen_at` は外す）・seq の続き（`sqlite_sequence`。行が無ければ 0）・外のキー（`foreign_key_check`）。1 つでも合わなければ、何も足さずに戻し、1 で終わる。合えば commit し、表ごとの行（`actors 4 → 4 digest … → … ok`）を出して 0 で終わる。引数の誤りは 2。
+  - 起こす前に打つ物で、記録の置き場（`logs/`）は作らない。試験は `crates/server/tests/migrate.rs`（移す元は、同じ workspace の今の server の Router に /v1 の道で書き、`GET /v1/backup` で取る。0.1.x の形は、その写しの列の名を `at` に戻して作る）。
 - 同じ id で同じ本文かを見る写し（`body_hash`）は、新しい本文の形で取る。今の DB から移した行の写しは今の形の物なので、新しい形の本文で同じ id を送り直すと 409 になる。特別な決まり（移した印で 200 にする）は置かない: 送り手の roster は 409 を「もう在るので済んだ」とみなす（今の server でも、送り手の時刻が写しに入るので、送り直しは 409 になる）。段 6c で roster が `Conflict` を済んだと扱い続けることを、この決まりの前提にする。
 - 写しの形（`crates/server/src/body.rs`。替えれば、前に受けた物の送り直しが 409 になる）:
   1. 本文の欄を、定義の名の JSON の物にする。道の id は入れない。出来事は `issuer`・`by`・`type`・`detail`・`sentAt`、線は `issuer`・`type`・`from`・`to`・`sentAt`、model と effort は `issuer`・`by`・`model`・`effort`・`source`・`sentAt`。

@@ -507,7 +507,7 @@ fn siblings(path: &Path) -> Vec<String> {
 // --- 試験 ---
 
 /// 今の DB の写しを移すと、どのアクターも出来事も線も設定も、今の API で読んだ物と同じに新しい API で読める
-/// （id・名・順・居る・推しの幕引き・札・付随する id と鍵・時刻（時差の付いた物は UTC に直して）・時計のずれ）。
+/// （id・名・順・居る・推しの幕引き・ラベル・付随する id と鍵・時刻（時差の付いた物は UTC に直して）・時計のずれ）。
 #[tokio::test]
 async fn a_backup_moves_whole_and_reads_the_same_through_the_new_api() {
     let (old, seeded, from) = backup().await;

@@ -18,6 +18,7 @@ ci/test-check-release-version.sh                                   # release の
 cargo build --locked --bin castlist-next && (cd e2e && CASTLIST_E2E_SERVER=../target/debug/castlist-next pnpm test)   # 同じ試験を、作り直している新しい server に向ける
 cargo test --locked --release --test load -- --ignored --nocapture # 負荷の試験（50 の客で 10 秒。今の server と新しい server の 2 つ）
 CASTLIST_LISTEN=127.0.0.1:18802 CASTLIST_DB=/tmp/castlist-dev.db cargo run --bin castlist-server   # 手元で起こす（本物の castlist の 8802 とは別の port・別の DB）
+cargo run --bin castlist-next -- migrate --from /tmp/castlist-dev-backup.db --to /tmp/castlist-next-dev.db   # 試しの castlist の写し（GET /v1/backup）を新しい DB へ移す（docs/src/next.md の「データ」）
 mdbook build docs                                                  # この本を作る
 ci/gen.sh                                                          # 定義（model/）から server の骨（crates/castlist-sdk/）を作り直す
 ci/gen.sh --check                                                  # 作り直した物と入れてある物が同じか（CI の job model）
@@ -50,7 +51,7 @@ API を Smithy の定義で書き直している間（AI-36）は、今の serve
 | 層 | 中身 | 在り処 |
 |---|---|---|
 | 受け入れ | 本物の binary を空いた port で起こし、HTTP で叩く | `tests/server.rs`（道具は `tests/common/mod.rs`）。新しい server は `crates/server/tests/server.rs`（守りの層の誤りの形・HEAD・本文の上限・backup も。道具は `crates/server/tests/common/server.rs`） |
-| 道筋と DB | 試験ごとに一時の DB を作り、Router を直に呼ぶ。書く接続・読む接続を直に使って、DB の決まり（足すだけ・外のキー・索引）も見る | `tests/api.rs`・`tests/db.rs`・`tests/concurrency.rs`・`tests/search.rs`（監査の検索）・`tests/ui.rs`（画面）（道具は `tests/common/app.rs`）。新しい server は `crates/server/tests/` の `health.rs`・`register.rs`・`actor.rs`・`resolve.rs`・`events.rs`・`links.rs`・`settings.rs`・`lineage.rs`・`search_actors.rs`・`search_rows.rs`・`graph.rs`・`db.rs`・`concurrency.rs`・`ui.rs`・`guard.rs`（守りの層）・`backup.rs`（backup と logs の道）（道具は `crates/server/tests/common/mod.rs`・`common/sample.rs`） |
+| 道筋と DB | 試験ごとに一時の DB を作り、Router を直に呼ぶ。書く接続・読む接続を直に使って、DB の決まり（足すだけ・外のキー・索引）も見る | `tests/api.rs`・`tests/db.rs`・`tests/concurrency.rs`・`tests/search.rs`（監査の検索）・`tests/ui.rs`（画面）（道具は `tests/common/app.rs`）。新しい server は `crates/server/tests/` の `health.rs`・`register.rs`・`actor.rs`・`resolve.rs`・`events.rs`・`links.rs`・`settings.rs`・`lineage.rs`・`search_actors.rs`・`search_rows.rs`・`graph.rs`・`db.rs`・`concurrency.rs`・`ui.rs`・`guard.rs`（守りの層）・`backup.rs`（backup と logs の道）・`migrate.rs`（今の DB からの移し。移す元は今の server の Router に /v1 の道で書いて `GET /v1/backup` で取る。binary の `castlist-next migrate` も打つ）（道具は `crates/server/tests/common/mod.rs`・`common/sample.rs`） |
 | 負荷 | 本物の binary を一時の DB で起こし、50 の客が 10 秒叩く（読む物の 2 割は監査の検索。ふだんは流さない）。CI では一時の DB を memory の上（`TMPDIR=/dev/shm`）に置く（CI の機械の disk の書き込みの詰まりを測らないため） | `tests/load.rs`（CI の job `load`）。新しい server は `crates/server/tests/load.rs`（同じ命令が両方を流す。新しい server の物だけなら `-p castlist-next`） |
 | 単体 | DB に触らない純な関数 | 各 file の `#[cfg(test)]` |
 | browser | 本物の castlist-server を空いた port と一時の DB で起こし、API で見本を置き、Chromium で相関図を開く。点と線の数・押した先・model と effort の絞り・色（明るい・暗い）・console の誤りと CSP の違反が 0・script を切った時の字を見る。一覧とタイムラインの期間の欄（日時の欄で入れた日本時間で絞る・送り直しても同じ値・期間をすぐ選ぶ link）も見る | `e2e/`（Playwright。CI の job `e2e`。Node の依存の弱点は job `advisories` の `pnpm audit`） |
