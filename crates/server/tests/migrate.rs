@@ -828,7 +828,7 @@ async fn a_target_with_actors_is_refused() {
     common::remove_db(&done);
 }
 
-/// 移す元が無い・SQLite の file でない・castlist の DB でない・隣に WAL の残りがある時は断り、移す先を作らない。
+/// 移す元が無い・SQLite の file でない・castlist の DB でない・隣に -wal か -shm がある（大きさは問わない）時は断り、移す先を作らない。
 #[tokio::test]
 async fn a_missing_or_garbage_source_is_refused() {
     let dir = temp_db("garbage");
@@ -860,7 +860,18 @@ async fn a_missing_or_garbage_source_is_refused() {
     tokio::fs::write(with_wal.with_file_name("with-wal.db-wal"), b"x")
         .await
         .unwrap();
-    for source in [&missing, &garbage, &empty, &with_wal] {
+    // 写し（GET /v1/backup）には -wal も -shm も無い。空の物でも、動いている DB の印なので断る。
+    let empty_wal = dir.with_file_name("empty-wal.db");
+    tokio::fs::copy(&from, &empty_wal).await.unwrap();
+    tokio::fs::write(empty_wal.with_file_name("empty-wal.db-wal"), b"")
+        .await
+        .unwrap();
+    let with_shm = dir.with_file_name("with-shm.db");
+    tokio::fs::copy(&from, &with_shm).await.unwrap();
+    tokio::fs::write(with_shm.with_file_name("with-shm.db-shm"), b"")
+        .await
+        .unwrap();
+    for source in [&missing, &garbage, &empty, &with_wal, &empty_wal, &with_shm] {
         let to = dir.with_file_name("new.db");
         let e = migrate::migrate(source, &to)
             .await
@@ -966,4 +977,127 @@ async fn the_binary_migrates_and_prints_the_checks() {
     assert_eq!(names, ["pm.1", "se.1", "se.2", "se.3"]);
     drop(new);
     common::remove_db(&from);
+}
+
+/// 移した id が新しい API の形（アクターは小文字の UUID・送り手の id は空白の無い ASCII の 128 字まで）に合わなければ、
+/// 表と id を出して何も足さずに戻す（新しい API では読めない・送り直せない行になるため）。
+#[tokio::test]
+async fn ids_that_do_not_fit_the_new_api_are_refused() {
+    let old = Old::start().await;
+    seed(&old).await;
+    let se1: String = sqlx::query_scalar("select id from actors where name = 'se.1'")
+        .fetch_one(old.db.read())
+        .await
+        .unwrap();
+    let upper = "01A20A45-C62C-76FA-9F5F-4A4D49204AB8";
+    old.execute(&format!(
+        "insert into actors(id, issuer, kind, prefix, n, name, sent_at, received_at, clock_skew)
+         values('{upper}', 'tpm', 'ai', 'se', 9, 'se.9', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00.000Z', 0)"
+    ))
+    .await;
+    let long = "x".repeat(129);
+    for (table, id) in [("events", "bad id"), ("links", long.as_str())] {
+        let sql = match table {
+            "events" => format!(
+                "insert into events(id, actor_id, type, detail, sent_at, received_at, clock_skew, body_hash)
+                 values('{id}', '{se1}', 'reported_in', '{{}}', '2026-01-01T00:00:00Z', '2099-01-01T00:00:00.000Z', 0, 'x')"
+            ),
+            _ => format!(
+                "insert into links(id, type, from_actor, to_actor, sent_at, received_at, clock_skew, body_hash)
+                 values('{id}', 'continued', '{se1}', '{upper}', '2026-01-01T00:00:00Z', '2099-01-01T00:00:00.000Z', 0, 'x')"
+            ),
+        };
+        old.execute(&sql).await;
+    }
+    old.execute(&format!(
+        "insert into settings(id, actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew, body_hash)
+         values('設定', '{se1}', 50, 100, 'observed', '2026-01-01T00:00:00Z', '2099-01-01T00:00:00.000Z', 0, 'x')"
+    ))
+    .await;
+    let from = temp_db("backup-bad-ids");
+    old.backup(&from).await;
+    let to = temp_db("new-bad-ids");
+    let e = migrate::migrate(&from, &to)
+        .await
+        .expect_err("形の合わない id");
+    let MigrateError::Mismatch(summary) = &e else {
+        panic!("突き合わせの NG でない: {e}");
+    };
+    assert_eq!(
+        summary.bad_ids,
+        [
+            format!("actors: {upper}"),
+            format!("links: {long}"),
+            "events: bad id".to_owned(),
+            "settings: 設定".to_owned(),
+        ],
+        "{summary}"
+    );
+    assert!(summary.tables.iter().all(|t| t.ok()), "{summary}");
+    assert!(e.to_string().contains("events: bad id"), "{e}");
+    // 何も足していない（id の無い頼んだ物の設定は、形を問わない）。
+    assert_eq!(
+        scalars::<i64>(&to, "select count(*) from actors").await,
+        [0]
+    );
+    common::remove_db(&from);
+    common::remove_db(&to);
+}
+
+/// 新しい server は、今の server の DB（移行の 2・3 が新しい migrations に無い）を開かず、何も書かない。
+/// binary も、訳を出して 0 でない数で終わり、DB の隣に記録の置き場も作らない。0.1.x の DB も同じ。
+#[tokio::test]
+async fn the_new_server_refuses_the_current_server_database() {
+    let (_old, _seeded, current) = backup().await;
+    let v0_1 = backup_0_1(&current).await;
+    for path in [&current, &v0_1] {
+        let before = sha256(path);
+        let e = match Db::open(path).await {
+            Ok(_) => panic!("{}: 今の server の DB を開いた", path.display()),
+            Err(e) => e,
+        };
+        assert!(
+            e.to_string().contains("castlist-next migrate"),
+            "{}: {e}",
+            path.display()
+        );
+        assert_eq!(sha256(path), before, "{}", path.display());
+        assert_eq!(siblings(path), Vec::<String>::new(), "{}", path.display());
+
+        let mut child = Command::new(common::server::binary())
+            .env("CASTLIST_DB", path)
+            .env("CASTLIST_LISTEN", "127.0.0.1:0")
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("binary を起こす");
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        let status = loop {
+            if let Some(status) = child.try_wait().unwrap() {
+                break status;
+            }
+            if std::time::Instant::now() > deadline {
+                child.kill().unwrap();
+                panic!("{}: 今の server の DB で起きたまま", path.display());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        };
+        let out = child.wait_with_output().unwrap();
+        let text = format!(
+            "{}{}",
+            String::from_utf8_lossy(&out.stdout),
+            String::from_utf8_lossy(&out.stderr)
+        );
+        assert!(!status.success(), "{text}");
+        assert!(text.contains("castlist-next migrate"), "{text}");
+        assert_eq!(sha256(path), before, "{}", path.display());
+        assert_eq!(siblings(path), Vec::<String>::new(), "{}", path.display());
+        assert!(
+            !path.with_file_name("logs").exists(),
+            "{}: 今の volume に記録の置き場を作った",
+            path.display()
+        );
+    }
+    common::remove_db(&current);
+    common::remove_db(&v0_1);
 }

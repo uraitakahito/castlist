@@ -146,6 +146,8 @@ pub struct Summary {
     pub sequences: Vec<SeqCheck>,
     /// 新しい DB の `pragma foreign_key_check` に出た行（空なら崩れは無い）。
     pub broken: Vec<String>,
+    /// 新しい API の形（ActorId・SenderId）に合わない id（`<表>: <id>`。空なら無い）。
+    pub bad_ids: Vec<String>,
 }
 
 impl Summary {
@@ -154,6 +156,7 @@ impl Summary {
         self.tables.iter().all(TableCheck::ok)
             && self.sequences.iter().all(SeqCheck::ok)
             && self.broken.is_empty()
+            && self.bad_ids.is_empty()
     }
 
     /// 名で表の突き合わせを引く。
