@@ -1,11 +1,26 @@
-# アクターの台帳のサーバー（castlist-server）。crate は 1 つ（API を共にする CLI が無いので、pagetray の crates/api の分けはしない）。
-[package]
-name = "castlist"
+# アクターの台帳のサーバー（castlist-server）。
+# AI-36 の作り直しの間は、新しい server（crates/server。Smithy の定義 model/ から作った骨 crates/castlist-sdk/ を使う）を並べて作る。
+# 切り替えまで、image に入るのは今の server（この crate）だけ。
+[workspace]
+members = [".", "crates/server", "crates/castlist-sdk"]
+# 生成した骨（crates/castlist-sdk/）は手で直さないので、既定の cargo の命令（clippy・test）からは外す。
+# 骨の中の、定義の例から作った試験（protocol の試験）は、CI が `cargo test --locked -p castlist_sdk` で流す。
+# fmt は生成器が整えた物を、CI の `cargo fmt --all --check` が見る（ci/gen.sh は rust-toolchain.toml の rustfmt で整える）。
+default-members = [".", "crates/server"]
+
+[workspace.package]
 # 版はここだけに書く（release の workflow が、この file の初めの `version = "…"` の行を tag と突き合わせる）。
 version = "0.4.0"
 edition = "2024"
 rust-version = "1.100"
 license = "MIT"
+
+[package]
+name = "castlist"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
 publish = false
 
 [[bin]]

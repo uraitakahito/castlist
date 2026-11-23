@@ -24,6 +24,8 @@ jobs:
       # 塞ぐ呼び出し（clippy.toml の disallowed-methods）と、鍵を握ったままの await も、ここで落ちる。
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
+      # 定義の例（@httpRequestTests・@httpResponseTests）から作った、生成した骨の中の試験（protocol の試験）。
+      - run: cargo test --locked -p castlist_sdk
       # 台帳は足すだけ: Rust の source に、行を書き替える・消す SQL が無いか。
       - run: ci/check-sql.sh
       # 見張りが、そういう SQL を本当に当てるか（当てなければ落とす）。
@@ -49,6 +51,21 @@ jobs:
           cp static/vendor/cytoscape-3.35.0.min.js "$RUNNER_TEMP/bad.js"
           echo '//' >>"$RUNNER_TEMP/bad.js"
           ! ci/check-vendor.sh "$RUNNER_TEMP/bad.js"
+  model:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 定義を release の tag と比べるため、tag も取る。
+          fetch-depth: 0
+      # 生成器が作った crate に流す cargo fmt を、rust-toolchain.toml の版にする。
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+      # 定義（model/）から作った骨（crates/castlist-sdk/）が、入れてある物と同じか。
+      # Smithy の CLI は版と digest を固めて取る（JRE を同梱しているので Java は要らない）。生成器は公開から 2 日たった物だけ。
+      - run: ci/gen.sh --check
+      # 定義が、定義の入った最新の release から壊す形に変わっていないか（smithy diff。DANGER 以上で落ちる）。
+      - run: ci/gen.sh --diff
   load:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
@@ -134,6 +151,8 @@ jobs:
         with:
           # 弱点と、crate の license（MIT の castlist と一緒に配れる物か）。
           command: check advisories licenses
+          # workspace の member をみな見る（付けないと、頭の crate（今の server）の依存しか見ない。新しい server は crates/server）。
+          arguments: --workspace
       # 画面の browser の試験（e2e/）の Node の依存の弱点。lock だけを見る（入れない）。
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:

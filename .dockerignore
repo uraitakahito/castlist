@@ -8,6 +8,8 @@
 !build.rs
 !.cargo
 !Cargo.toml
+# workspace の member（今の image には入らないが、Cargo.toml が名指すので build に要る）。
+!crates
 !Cargo.lock
 !clippy.toml
 !rust-toolchain.toml

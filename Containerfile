@@ -4,7 +4,8 @@ FROM docker.io/library/rust:1.100.0-alpine@sha256:8d0e82abfdf9a38071e07cabc5afba
 RUN apk add --no-cache musl-dev
 WORKDIR /src
 COPY . .
-RUN cargo build --release --locked && mkdir /data
+# 作るのは今の server だけ（新しい server の crates/server は、切り替えまで image に入らない）。
+RUN cargo build --release --locked -p castlist && mkdir /data
 
 FROM scratch
 COPY --from=build /src/target/release/castlist-server /castlist-server
