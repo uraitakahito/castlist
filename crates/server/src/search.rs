@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, HashSet};
 use serde_json::Value;
 use sqlx::{FromRow, QueryBuilder, Sqlite, Transaction};
 
-use crate::db::{Db, Link, Ref, inferred_sql};
+use crate::db::{Db, Event, Link, Ref, Setting, inferred_sql};
 
 /// 1 頁の既定。
 pub const LIMIT: i64 = 100;
@@ -132,9 +132,62 @@ pub struct ActorItem {
 }
 
 /// 1 頁と、次の頁があるか。
-pub struct Page {
-    pub rows: Vec<ActorItem>,
+pub struct Page<T> {
+    pub rows: Vec<T>,
     pub more: bool,
+}
+
+/// model と effort の行を探す条件（どれも AND）。時刻は DB に残す字。
+#[derive(Clone, Debug, Default)]
+pub struct SettingQuery {
+    pub model: Option<String>,
+    pub effort: Option<String>,
+    pub source: Option<String>,
+    /// 受けた時刻の窓（両端を含む）。
+    pub from: Option<String>,
+    pub to: Option<String>,
+    /// 見た行が、同じアクターのその前の最新の頼んだ行と、model か effort で違う。
+    pub mismatch: bool,
+    pub skewed: bool,
+    /// 前の頁の最後の seq（無ければ 0）。
+    pub after: i64,
+    pub limit: i64,
+}
+
+/// 出来事を探す条件（どれも AND）。時刻は DB に残す字。
+#[derive(Clone, Debug, Default)]
+pub struct EventQuery {
+    /// 種類（どれか）。空なら絞らない。
+    pub types: Vec<String>,
+    pub actor: Option<String>,
+    /// 受けた時刻の窓（両端を含む）。
+    pub from: Option<String>,
+    pub to: Option<String>,
+    /// detail の決まった欄（reason・source）と等しい。
+    pub reason: Option<String>,
+    pub source: Option<String>,
+    pub skewed: bool,
+    /// 前の頁の最後の seq（無ければ 0）。
+    pub after: i64,
+    pub limit: i64,
+}
+
+/// 探した model と effort の 1 行（アクターの名と、受けた順も）。
+#[derive(Clone, Debug, FromRow)]
+pub struct SettingItem {
+    pub seq: i64,
+    pub actor_name: String,
+    #[sqlx(flatten)]
+    pub setting: Setting,
+}
+
+/// 探した出来事の 1 行（アクターの名と、受けた順も）。
+#[derive(Clone, Debug, FromRow)]
+pub struct EventItem {
+    pub seq: i64,
+    pub actor_name: String,
+    #[sqlx(flatten)]
+    pub event: Event,
 }
 
 /// 線の上下（点と線）。
@@ -355,7 +408,10 @@ pub fn plans() -> Vec<(&'static str, String)> {
 }
 
 /// 条件に合うアクターの 1 頁を、同じ transaction の中で読み、ラベルを付ける。
-async fn actor_page(tx: &mut Transaction<'_, Sqlite>, q: &ActorQuery) -> Result<Page, sqlx::Error> {
+async fn actor_page(
+    tx: &mut Transaction<'_, Sqlite>,
+    q: &ActorQuery,
+) -> Result<Page<ActorItem>, sqlx::Error> {
     let mut builder = q.builder();
     let mut rows: Vec<ActorItem> = builder.build_query_as().fetch_all(&mut **tx).await?;
     let limit = q.limit.and_then(|l| usize::try_from(l).ok());
@@ -380,7 +436,7 @@ async fn actor_page(tx: &mut Transaction<'_, Sqlite>, q: &ActorQuery) -> Result<
 
 impl Db {
     /// アクターを探す（1 つの読む transaction の中で、揃った写しを読む）。
-    pub async fn search_actors(&self, q: &ActorQuery) -> Result<Page, sqlx::Error> {
+    pub async fn search_actors(&self, q: &ActorQuery) -> Result<Page<ActorItem>, sqlx::Error> {
         let mut tx = self.read().begin().await?;
         let page = actor_page(&mut tx, q).await?;
         tx.commit().await?;
@@ -459,5 +515,32 @@ impl Db {
             nodes,
             edges: edges.into_values().collect(),
         }))
+    }
+
+    /// あるアクターの model と effort の全部（受けた順）。アクターが無ければ None。
+    pub async fn actor_settings(&self, _id: &str) -> Result<Option<Vec<SettingItem>>, sqlx::Error> {
+        Err(sqlx::Error::Protocol("まだ無い".to_owned()))
+    }
+
+    /// ある時刻（DB の字）に効いていた model と effort（受けた時刻がそれまでの、seq の最大）。アクターが無ければ None。
+    pub async fn actor_setting_at(
+        &self,
+        _id: &str,
+        _at: &str,
+    ) -> Result<Option<Option<SettingItem>>, sqlx::Error> {
+        Err(sqlx::Error::Protocol("まだ無い".to_owned()))
+    }
+
+    /// model と effort の行を、アクターをまたいで探す。
+    pub async fn search_settings(
+        &self,
+        _q: &SettingQuery,
+    ) -> Result<Page<SettingItem>, sqlx::Error> {
+        Err(sqlx::Error::Protocol("まだ無い".to_owned()))
+    }
+
+    /// 出来事を、アクターをまたいで探す。
+    pub async fn search_events(&self, _q: &EventQuery) -> Result<Page<EventItem>, sqlx::Error> {
+        Err(sqlx::Error::Protocol("まだ無い".to_owned()))
     }
 }

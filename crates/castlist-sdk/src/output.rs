@@ -270,6 +270,81 @@ impl GetLineageOutput {
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]
+pub struct ListActorSettingsOutput {
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// 受けた順。
+    pub settings: ::std::vec::Vec<crate::model::Setting>,
+}
+impl ListActorSettingsOutput {
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 受けた順。
+    pub fn settings(&self) -> &[crate::model::Setting] {
+        use std::ops::Deref;
+        self.settings.deref()
+    }
+}
+impl ListActorSettingsOutput {
+    /// Creates a new builder-style object to manufacture [`ListActorSettingsOutput`](crate::output::ListActorSettingsOutput).
+    pub fn builder() -> crate::output::list_actor_settings_output::Builder {
+        crate::output::list_actor_settings_output::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct GetActorSettingAtOutput {
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// 問いの時刻を、比べた形（UTC・ミリ秒まで）に直した物。
+    pub at: ::aws_smithy_types::DateTime,
+    /// その時に効いていた行。無ければ無い。
+    pub setting: ::std::option::Option<crate::model::Setting>,
+}
+impl GetActorSettingAtOutput {
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 問いの時刻を、比べた形（UTC・ミリ秒まで）に直した物。
+    pub fn at(&self) -> &::aws_smithy_types::DateTime {
+        &self.at
+    }
+    /// その時に効いていた行。無ければ無い。
+    pub fn setting(&self) -> ::std::option::Option<&crate::model::Setting> {
+        self.setting.as_ref()
+    }
+}
+impl GetActorSettingAtOutput {
+    /// Creates a new builder-style object to manufacture [`GetActorSettingAtOutput`](crate::output::GetActorSettingAtOutput).
+    pub fn builder() -> crate::output::get_actor_setting_at_output::Builder {
+        crate::output::get_actor_setting_at_output::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
 pub struct ResolveActorsOutput {
     /// 読み始める前の castlist の時刻。
     pub as_of: ::aws_smithy_types::DateTime,
@@ -355,6 +430,38 @@ impl PutEventOutput {
     /// Creates a new builder-style object to manufacture [`PutEventOutput`](crate::output::PutEventOutput).
     pub fn builder() -> crate::output::put_event_output::Builder {
         crate::output::put_event_output::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct ListEventsOutput {
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+    /// 受けた順。
+    pub events: ::std::vec::Vec<crate::model::EventRow>,
+    /// 次の頁の印。終わりなら無い。
+    pub next_token: ::std::option::Option<::std::string::String>,
+}
+impl ListEventsOutput {
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+    /// 受けた順。
+    pub fn events(&self) -> &[crate::model::EventRow] {
+        use std::ops::Deref;
+        self.events.deref()
+    }
+    /// 次の頁の印。終わりなら無い。
+    pub fn next_token(&self) -> ::std::option::Option<&str> {
+        self.next_token.as_deref()
+    }
+}
+impl ListEventsOutput {
+    /// Creates a new builder-style object to manufacture [`ListEventsOutput`](crate::output::ListEventsOutput).
+    pub fn builder() -> crate::output::list_events_output::Builder {
+        crate::output::list_events_output::Builder::default()
     }
 }
 
@@ -495,6 +602,40 @@ impl PutSettingOutput {
     /// Creates a new builder-style object to manufacture [`PutSettingOutput`](crate::output::PutSettingOutput).
     pub fn builder() -> crate::output::put_setting_output::Builder {
         crate::output::put_setting_output::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct ListSettingsOutput {
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+    /// 受けた順。
+    pub settings: ::std::vec::Vec<crate::model::SettingRow>,
+    /// 次の頁の印。終わりなら無い。
+    pub next_token: ::std::option::Option<::std::string::String>,
+}
+impl ListSettingsOutput {
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+    /// 受けた順。
+    pub fn settings(&self) -> &[crate::model::SettingRow] {
+        use std::ops::Deref;
+        self.settings.deref()
+    }
+    /// 次の頁の印。終わりなら無い。
+    pub fn next_token(&self) -> ::std::option::Option<&str> {
+        self.next_token.as_deref()
+    }
+}
+impl ListSettingsOutput {
+    /// Creates a new builder-style object to manufacture [`ListSettingsOutput`](crate::output::ListSettingsOutput).
+    pub fn builder() -> crate::output::list_settings_output::Builder {
+        crate::output::list_settings_output::Builder::default()
     }
 }
 /// See [`GetHealthOutput`](crate::output::GetHealthOutput).
@@ -1034,6 +1175,157 @@ pub mod get_lineage_output {
         }
     }
 }
+/// See [`ListActorSettingsOutput`](crate::output::ListActorSettingsOutput).
+pub mod list_actor_settings_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `as_of` was not provided but it is required when building `ListActorSettingsOutput`.
+        MissingAsOf,
+        /// `actor_id` was not provided but it is required when building `ListActorSettingsOutput`.
+        MissingActorId,
+        /// `settings` was not provided but it is required when building `ListActorSettingsOutput`.
+        MissingSettings,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingAsOf => write!(f, "`as_of` was not provided but it is required when building `ListActorSettingsOutput`"),
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `ListActorSettingsOutput`"),
+                ConstraintViolation::MissingSettings => write!(f, "`settings` was not provided but it is required when building `ListActorSettingsOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::ListActorSettingsOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListActorSettingsOutput`](crate::output::ListActorSettingsOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) settings: ::std::option::Option<::std::vec::Vec<crate::model::Setting>>,
+    }
+    impl Builder {
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 受けた順。
+        pub fn settings(mut self, input: ::std::vec::Vec<crate::model::Setting>) -> Self {
+            self.settings = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`ListActorSettingsOutput`](crate::output::ListActorSettingsOutput).
+        ///
+        /// The builder fails to construct a [`ListActorSettingsOutput`](crate::output::ListActorSettingsOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::ListActorSettingsOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::ListActorSettingsOutput, ConstraintViolation> {
+            Ok(crate::output::ListActorSettingsOutput {
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                settings: self.settings.ok_or(ConstraintViolation::MissingSettings)?,
+            })
+        }
+    }
+}
+/// See [`GetActorSettingAtOutput`](crate::output::GetActorSettingAtOutput).
+pub mod get_actor_setting_at_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `as_of` was not provided but it is required when building `GetActorSettingAtOutput`.
+        MissingAsOf,
+        /// `actor_id` was not provided but it is required when building `GetActorSettingAtOutput`.
+        MissingActorId,
+        /// `at` was not provided but it is required when building `GetActorSettingAtOutput`.
+        MissingAt,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingAsOf => write!(f, "`as_of` was not provided but it is required when building `GetActorSettingAtOutput`"),
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `GetActorSettingAtOutput`"),
+                ConstraintViolation::MissingAt => write!(f, "`at` was not provided but it is required when building `GetActorSettingAtOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::GetActorSettingAtOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetActorSettingAtOutput`](crate::output::GetActorSettingAtOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) setting: ::std::option::Option<crate::model::Setting>,
+    }
+    impl Builder {
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 問いの時刻を、比べた形（UTC・ミリ秒まで）に直した物。
+        pub fn at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.at = Some(input);
+            self
+        }
+        /// その時に効いていた行。無ければ無い。
+        pub fn setting(mut self, input: ::std::option::Option<crate::model::Setting>) -> Self {
+            self.setting = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`GetActorSettingAtOutput`](crate::output::GetActorSettingAtOutput).
+        ///
+        /// The builder fails to construct a [`GetActorSettingAtOutput`](crate::output::GetActorSettingAtOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::GetActorSettingAtOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::GetActorSettingAtOutput, ConstraintViolation> {
+            Ok(crate::output::GetActorSettingAtOutput {
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                at: self.at.ok_or(ConstraintViolation::MissingAt)?,
+                setting: self.setting,
+            })
+        }
+    }
+}
 /// See [`ResolveActorsOutput`](crate::output::ResolveActorsOutput).
 pub mod resolve_actors_output {
 
@@ -1218,6 +1510,81 @@ pub mod put_event_output {
                     .clock_skew
                     .ok_or(ConstraintViolation::MissingClockSkew)?,
                 status: self.status.ok_or(ConstraintViolation::MissingStatus)?,
+            })
+        }
+    }
+}
+/// See [`ListEventsOutput`](crate::output::ListEventsOutput).
+pub mod list_events_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `as_of` was not provided but it is required when building `ListEventsOutput`.
+        MissingAsOf,
+        /// `events` was not provided but it is required when building `ListEventsOutput`.
+        MissingEvents,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingAsOf => write!(
+                    f,
+                    "`as_of` was not provided but it is required when building `ListEventsOutput`"
+                ),
+                ConstraintViolation::MissingEvents => write!(
+                    f,
+                    "`events` was not provided but it is required when building `ListEventsOutput`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::ListEventsOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListEventsOutput`](crate::output::ListEventsOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) events: ::std::option::Option<::std::vec::Vec<crate::model::EventRow>>,
+        pub(crate) next_token: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        /// 受けた順。
+        pub fn events(mut self, input: ::std::vec::Vec<crate::model::EventRow>) -> Self {
+            self.events = Some(input);
+            self
+        }
+        /// 次の頁の印。終わりなら無い。
+        pub fn next_token(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.next_token = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`ListEventsOutput`](crate::output::ListEventsOutput).
+        ///
+        /// The builder fails to construct a [`ListEventsOutput`](crate::output::ListEventsOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::ListEventsOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::ListEventsOutput, ConstraintViolation> {
+            Ok(crate::output::ListEventsOutput {
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+                events: self.events.ok_or(ConstraintViolation::MissingEvents)?,
+                next_token: self.next_token,
             })
         }
     }
@@ -1477,6 +1844,75 @@ pub mod put_setting_output {
                     .clock_skew
                     .ok_or(ConstraintViolation::MissingClockSkew)?,
                 status: self.status.ok_or(ConstraintViolation::MissingStatus)?,
+            })
+        }
+    }
+}
+/// See [`ListSettingsOutput`](crate::output::ListSettingsOutput).
+pub mod list_settings_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `as_of` was not provided but it is required when building `ListSettingsOutput`.
+        MissingAsOf,
+        /// `settings` was not provided but it is required when building `ListSettingsOutput`.
+        MissingSettings,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingAsOf => write!(f, "`as_of` was not provided but it is required when building `ListSettingsOutput`"),
+                ConstraintViolation::MissingSettings => write!(f, "`settings` was not provided but it is required when building `ListSettingsOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::ListSettingsOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListSettingsOutput`](crate::output::ListSettingsOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) settings: ::std::option::Option<::std::vec::Vec<crate::model::SettingRow>>,
+        pub(crate) next_token: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        /// 受けた順。
+        pub fn settings(mut self, input: ::std::vec::Vec<crate::model::SettingRow>) -> Self {
+            self.settings = Some(input);
+            self
+        }
+        /// 次の頁の印。終わりなら無い。
+        pub fn next_token(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.next_token = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`ListSettingsOutput`](crate::output::ListSettingsOutput).
+        ///
+        /// The builder fails to construct a [`ListSettingsOutput`](crate::output::ListSettingsOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::ListSettingsOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::ListSettingsOutput, ConstraintViolation> {
+            Ok(crate::output::ListSettingsOutput {
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+                settings: self.settings.ok_or(ConstraintViolation::MissingSettings)?,
+                next_token: self.next_token,
             })
         }
     }

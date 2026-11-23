@@ -152,3 +152,44 @@ pub(crate) mod actor_refs_unconstrained {
         }
     }
 }
+pub(crate) mod event_types_unconstrained {
+
+    #[derive(Debug, Clone)]
+    pub(crate) struct EventTypesUnconstrained(pub(crate) std::vec::Vec<::std::string::String>);
+
+    impl From<EventTypesUnconstrained>
+        for crate::constrained::MaybeConstrained<
+            crate::constrained::event_types_constrained::EventTypesConstrained,
+        >
+    {
+        fn from(value: EventTypesUnconstrained) -> Self {
+            Self::Unconstrained(value)
+        }
+    }
+    impl std::convert::TryFrom<EventTypesUnconstrained>
+        for crate::constrained::event_types_constrained::EventTypesConstrained
+    {
+        type Error = crate::model::event_types_internal::ConstraintViolation;
+        fn try_from(value: EventTypesUnconstrained) -> std::result::Result<Self, Self::Error> {
+            let res: ::std::result::Result<
+                ::std::vec::Vec<crate::model::EventType>,
+                (
+                    usize,
+                    crate::model::event_type_internal::ConstraintViolation,
+                ),
+            > = value
+                .0
+                .into_iter()
+                .enumerate()
+                .map(|(idx, inner)| {
+                    inner
+                        .try_into()
+                        .map_err(|inner_violation| (idx, inner_violation))
+                })
+                .collect();
+            let inner =
+                res.map_err(|(idx, inner_violation)| Self::Error::Member(idx, inner_violation))?;
+            Ok(Self(inner))
+        }
+    }
+}

@@ -192,6 +192,82 @@ impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for Get
     }
 }
 
+/// あるアクターの model と effort の行の全部（受けた順）。頁は分けない（1 つのアクターの行は少ない。今の server と同じ）。
+pub struct ListActorSettings;
+
+impl ::aws_smithy_http_server::operation::OperationShape for ListActorSettings {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#ListActorSettings",
+            "ai.castlist",
+            "ListActorSettings",
+        );
+
+    type Input = crate::input::ListActorSettingsInput;
+    type Output = crate::output::ListActorSettingsOutput;
+    type Error = crate::error::ListActorSettingsError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for ListActorSettings {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
+
+/// ある時刻に効いていた model と effort: 受けた時刻（`receivedAt`）がその時刻まで（含む）の行のうち、最新（受けた順で）の 1 つ。 無ければ `setting` が無い。`time` は DB に残す字（UTC・ミリ秒まで。ミリ秒より下は切る）に直して比べ、直した物を `at` で返す。
+pub struct GetActorSettingAt;
+
+impl ::aws_smithy_http_server::operation::OperationShape for GetActorSettingAt {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#GetActorSettingAt",
+            "ai.castlist",
+            "GetActorSettingAt",
+        );
+
+    type Input = crate::input::GetActorSettingAtInput;
+    type Output = crate::output::GetActorSettingAtOutput;
+    type Error = crate::error::GetActorSettingAtError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for GetActorSettingAt {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
+
 /// 鍵の付随する id（`種類:値`）から、出し手の中のアクターを引く。答えは問いと同じ順で、引けない物（知らない・鍵でない・出し手が違う）は `actor` が無い。 1 つでも形の違う参照があれば、全体を 400 で断る。
 pub struct ResolveActors;
 
@@ -268,6 +344,44 @@ impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for Put
     }
 }
 
+/// 出来事を、アクターをまたいで探す（監査の検索）。条件はどれも AND で、無くてもよい。並びは受けた順。 - `type` は重ねれば、どれかの種類（OR）。`actor` はそのアクターの出来事。`from`・`to` は受けた時刻（`receivedAt`）の窓（両端を含む）。 - `reason`・`source` は `detail` の同じ名の欄が、その字と等しい出来事。 - `skewed` は時刻ずれの行。true だけを受ける（false は 400）。 - 頁は受けた順で後ろから続ける（辿る間に行が足されても、元の組に穴も重なりも出ない）。`nextToken` はこの検索の答えの物を渡す（違えば 400）。
+pub struct ListEvents;
+
+impl ::aws_smithy_http_server::operation::OperationShape for ListEvents {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#ListEvents",
+            "ai.castlist",
+            "ListEvents",
+        );
+
+    type Input = crate::input::ListEventsInput;
+    type Output = crate::output::ListEventsOutput;
+    type Error = crate::error::ListEventsError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for ListEvents {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
+
 /// 線を足す。id は送り手が決める。同じ id の扱いは PutEvent と同じ（同じ本文は 200・違えば 409・`from` と `to` を引くより先に見る）。 `from` と `to` は出し手の中の鍵の付随する id で引き、引けなければ 400。同じアクターを指せば 400。 起こされる（`launched` の `to` になる）のは、1 つのアクターに 1 度だけ（2 度目は別の id でも 409）。
 pub struct PutLink;
 
@@ -323,6 +437,44 @@ impl ::aws_smithy_http_server::operation::OperationShape for PutSetting {
 }
 
 impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for PutSetting {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
+
+/// model と effort の行を、アクターをまたいで探す（監査の検索）。条件はどれも AND で、無くてもよい。並びは受けた順。 - `model`・`effort`・`source` はその名・出の行。`from`・`to` は受けた時刻（`receivedAt`）の窓（両端を含む）。 - `mismatch` は、見た（`observed`）行のうち、同じアクターのそれより前の最新の頼んだ（`requested`）行と、model か effort が違う物。 前に頼んだ行の無い見た行は入らない。true だけを受ける（false は 400。絞らないなら付けない）。 - `skewed` は時刻ずれの行。true だけを受ける（false は 400）。 - 頁は受けた順で後ろから続ける（辿る間に行が足されても、元の組に穴も重なりも出ない）。`nextToken` はこの検索の答えの物を渡す（違えば 400）。
+pub struct ListSettings;
+
+impl ::aws_smithy_http_server::operation::OperationShape for ListSettings {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#ListSettings",
+            "ai.castlist",
+            "ListSettings",
+        );
+
+    type Input = crate::input::ListSettingsInput;
+    type Output = crate::output::ListSettingsOutput;
+    type Error = crate::error::ListSettingsError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for ListSettings {
     type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
         ::aws_smithy_http_server::instrumentation::MakeIdentity,
         ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<

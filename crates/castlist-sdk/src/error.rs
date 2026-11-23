@@ -296,6 +296,172 @@ impl ::std::convert::From<crate::error::InternalError> for crate::error::GetLine
     }
 }
 
+/// Error type for the `ListActorSettings` operation.
+/// Each variant represents an error that can occur for the `ListActorSettings` operation.
+#[derive(::std::fmt::Debug)]
+pub enum ListActorSettingsError {
+    /// 名指した物が無い。
+    NotFound(crate::error::NotFound),
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for ListActorSettingsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            ListActorSettingsError::NotFound(_inner) => _inner.fmt(f),
+            ListActorSettingsError::ValidationException(_inner) => _inner.fmt(f),
+            ListActorSettingsError::Unavailable(_inner) => _inner.fmt(f),
+            ListActorSettingsError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl ListActorSettingsError {
+    /// Returns `true` if the error kind is `ListActorSettingsError::NotFound`.
+    pub fn is_not_found(&self) -> bool {
+        matches!(&self, ListActorSettingsError::NotFound(_))
+    }
+    /// Returns `true` if the error kind is `ListActorSettingsError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, ListActorSettingsError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `ListActorSettingsError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, ListActorSettingsError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `ListActorSettingsError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, ListActorSettingsError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            ListActorSettingsError::NotFound(_inner) => _inner.name(),
+            ListActorSettingsError::ValidationException(_inner) => _inner.name(),
+            ListActorSettingsError::Unavailable(_inner) => _inner.name(),
+            ListActorSettingsError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for ListActorSettingsError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            ListActorSettingsError::NotFound(_inner) => Some(_inner),
+            ListActorSettingsError::ValidationException(_inner) => Some(_inner),
+            ListActorSettingsError::Unavailable(_inner) => Some(_inner),
+            ListActorSettingsError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::NotFound> for crate::error::ListActorSettingsError {
+    fn from(variant: crate::error::NotFound) -> crate::error::ListActorSettingsError {
+        Self::NotFound(variant)
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException>
+    for crate::error::ListActorSettingsError
+{
+    fn from(variant: crate::error::ValidationException) -> crate::error::ListActorSettingsError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::ListActorSettingsError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::ListActorSettingsError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::ListActorSettingsError {
+    fn from(variant: crate::error::InternalError) -> crate::error::ListActorSettingsError {
+        Self::InternalError(variant)
+    }
+}
+
+/// Error type for the `GetActorSettingAt` operation.
+/// Each variant represents an error that can occur for the `GetActorSettingAt` operation.
+#[derive(::std::fmt::Debug)]
+pub enum GetActorSettingAtError {
+    /// 名指した物が無い。
+    NotFound(crate::error::NotFound),
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for GetActorSettingAtError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            GetActorSettingAtError::NotFound(_inner) => _inner.fmt(f),
+            GetActorSettingAtError::ValidationException(_inner) => _inner.fmt(f),
+            GetActorSettingAtError::Unavailable(_inner) => _inner.fmt(f),
+            GetActorSettingAtError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl GetActorSettingAtError {
+    /// Returns `true` if the error kind is `GetActorSettingAtError::NotFound`.
+    pub fn is_not_found(&self) -> bool {
+        matches!(&self, GetActorSettingAtError::NotFound(_))
+    }
+    /// Returns `true` if the error kind is `GetActorSettingAtError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, GetActorSettingAtError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `GetActorSettingAtError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, GetActorSettingAtError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `GetActorSettingAtError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, GetActorSettingAtError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            GetActorSettingAtError::NotFound(_inner) => _inner.name(),
+            GetActorSettingAtError::ValidationException(_inner) => _inner.name(),
+            GetActorSettingAtError::Unavailable(_inner) => _inner.name(),
+            GetActorSettingAtError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for GetActorSettingAtError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            GetActorSettingAtError::NotFound(_inner) => Some(_inner),
+            GetActorSettingAtError::ValidationException(_inner) => Some(_inner),
+            GetActorSettingAtError::Unavailable(_inner) => Some(_inner),
+            GetActorSettingAtError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::NotFound> for crate::error::GetActorSettingAtError {
+    fn from(variant: crate::error::NotFound) -> crate::error::GetActorSettingAtError {
+        Self::NotFound(variant)
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException>
+    for crate::error::GetActorSettingAtError
+{
+    fn from(variant: crate::error::ValidationException) -> crate::error::GetActorSettingAtError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::GetActorSettingAtError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::GetActorSettingAtError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::GetActorSettingAtError {
+    fn from(variant: crate::error::InternalError) -> crate::error::GetActorSettingAtError {
+        Self::InternalError(variant)
+    }
+}
+
 /// Error type for the `ResolveActors` operation.
 /// Each variant represents an error that can occur for the `ResolveActors` operation.
 #[derive(::std::fmt::Debug)]
@@ -440,6 +606,73 @@ impl ::std::convert::From<crate::error::Unavailable> for crate::error::PutEventE
 }
 impl ::std::convert::From<crate::error::InternalError> for crate::error::PutEventError {
     fn from(variant: crate::error::InternalError) -> crate::error::PutEventError {
+        Self::InternalError(variant)
+    }
+}
+
+/// Error type for the `ListEvents` operation.
+/// Each variant represents an error that can occur for the `ListEvents` operation.
+#[derive(::std::fmt::Debug)]
+pub enum ListEventsError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for ListEventsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            ListEventsError::ValidationException(_inner) => _inner.fmt(f),
+            ListEventsError::Unavailable(_inner) => _inner.fmt(f),
+            ListEventsError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl ListEventsError {
+    /// Returns `true` if the error kind is `ListEventsError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, ListEventsError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `ListEventsError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, ListEventsError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `ListEventsError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, ListEventsError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            ListEventsError::ValidationException(_inner) => _inner.name(),
+            ListEventsError::Unavailable(_inner) => _inner.name(),
+            ListEventsError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for ListEventsError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            ListEventsError::ValidationException(_inner) => Some(_inner),
+            ListEventsError::Unavailable(_inner) => Some(_inner),
+            ListEventsError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::ListEventsError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::ListEventsError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::ListEventsError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::ListEventsError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::ListEventsError {
+    fn from(variant: crate::error::InternalError) -> crate::error::ListEventsError {
         Self::InternalError(variant)
     }
 }
@@ -602,6 +835,73 @@ impl ::std::convert::From<crate::error::Unavailable> for crate::error::PutSettin
 }
 impl ::std::convert::From<crate::error::InternalError> for crate::error::PutSettingError {
     fn from(variant: crate::error::InternalError) -> crate::error::PutSettingError {
+        Self::InternalError(variant)
+    }
+}
+
+/// Error type for the `ListSettings` operation.
+/// Each variant represents an error that can occur for the `ListSettings` operation.
+#[derive(::std::fmt::Debug)]
+pub enum ListSettingsError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for ListSettingsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            ListSettingsError::ValidationException(_inner) => _inner.fmt(f),
+            ListSettingsError::Unavailable(_inner) => _inner.fmt(f),
+            ListSettingsError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl ListSettingsError {
+    /// Returns `true` if the error kind is `ListSettingsError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, ListSettingsError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `ListSettingsError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, ListSettingsError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `ListSettingsError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, ListSettingsError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            ListSettingsError::ValidationException(_inner) => _inner.name(),
+            ListSettingsError::Unavailable(_inner) => _inner.name(),
+            ListSettingsError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for ListSettingsError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            ListSettingsError::ValidationException(_inner) => Some(_inner),
+            ListSettingsError::Unavailable(_inner) => Some(_inner),
+            ListSettingsError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::ListSettingsError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::ListSettingsError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::ListSettingsError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::ListSettingsError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::ListSettingsError {
+    fn from(variant: crate::error::InternalError) -> crate::error::ListSettingsError {
         Self::InternalError(variant)
     }
 }

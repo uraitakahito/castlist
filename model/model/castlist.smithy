@@ -23,7 +23,21 @@ use smithy.test#httpResponseTests
 @title("castlist")
 service Castlist {
     version: "1.0"
-    operations: [GetHealth, RegisterActor, GetActor, ListActors, GetLineage, ResolveActors, PutEvent, PutLink, PutSetting]
+    operations: [
+        GetHealth
+        RegisterActor
+        GetActor
+        ListActors
+        GetLineage
+        ListActorSettings
+        GetActorSettingAt
+        ResolveActors
+        PutEvent
+        ListEvents
+        PutLink
+        PutSetting
+        ListSettings
+    ]
 }
 
 /// 動いているかと、castlist の今の時刻（送り手が、自分の時計との差を測る）。
@@ -789,6 +803,432 @@ string LineageDirection
 @range(min: 1, max: 20)
 integer LineageDepth
 
+/// あるアクターの model と effort の行の全部（受けた順）。頁は分けない（1 つのアクターの行は少ない。今の server と同じ）。
+@readonly
+@http(method: "GET", uri: "/api/actors/{actorId}/settings")
+@httpRequestTests([
+    {
+        id: "ListActorSettingsRequest"
+        documentation: "引数は無い"
+        protocol: restJson1
+        method: "GET"
+        uri: "/api/actors/019abcde-0000-7000-8000-000000000001/settings"
+        params: { actorId: "019abcde-0000-7000-8000-000000000001" }
+    }
+])
+@httpResponseTests([
+    {
+        id: "ListActorSettingsResponse"
+        documentation: "行は GetActor の model と effort と同じ形（登録の時に頼んだ物には id が無い）"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"asOf":"2026-11-24T00:00:02Z","actorId":"019abcde-0000-7000-8000-000000000001","settings":[{"actorId":"019abcde-0000-7000-8000-000000000001","model":"claude-opus-5-5","effort":"high","source":"requested","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false},{"id":"t-1","actorId":"019abcde-0000-7000-8000-000000000001","model":"claude-sonnet-5","effort":"high","source":"observed","sentAt":"2026-11-24T00:00:01Z","receivedAt":"2026-11-24T00:00:02Z","clockSkew":false}]}"""
+        bodyMediaType: "application/json"
+        params: {
+            asOf: 1795478402
+            actorId: "019abcde-0000-7000-8000-000000000001"
+            settings: [
+                {
+                    actorId: "019abcde-0000-7000-8000-000000000001"
+                    model: "claude-opus-5-5"
+                    effort: "high"
+                    source: "requested"
+                    sentAt: 1795478400
+                    receivedAt: 1795478401
+                    clockSkew: false
+                }
+                {
+                    id: "t-1"
+                    actorId: "019abcde-0000-7000-8000-000000000001"
+                    model: "claude-sonnet-5"
+                    effort: "high"
+                    source: "observed"
+                    sentAt: 1795478401
+                    receivedAt: 1795478402
+                    clockSkew: false
+                }
+            ]
+        }
+    }
+])
+operation ListActorSettings {
+    input := {
+        @required
+        @httpLabel
+        actorId: ActorId
+    }
+
+    output := {
+        /// 読み始める前の castlist の時刻。
+        @required
+        asOf: DateTime
+
+        @required
+        actorId: ActorId
+
+        /// 受けた順。
+        @required
+        settings: Settings
+    }
+
+    errors: [
+        NotFound
+        ValidationException
+        Unavailable
+        InternalError
+    ]
+}
+
+/// ある時刻に効いていた model と effort: 受けた時刻（`receivedAt`）がその時刻まで（含む）の行のうち、最新（受けた順で）の 1 つ。
+/// 無ければ `setting` が無い。`time` は DB に残す字（UTC・ミリ秒まで。ミリ秒より下は切る）に直して比べ、直した物を `at` で返す。
+@readonly
+@http(method: "GET", uri: "/api/actors/{actorId}/settings/at")
+@httpRequestTests([
+    {
+        id: "GetActorSettingAtRequest"
+        documentation: "時刻は引数 time"
+        protocol: restJson1
+        method: "GET"
+        uri: "/api/actors/019abcde-0000-7000-8000-000000000001/settings/at"
+        queryParams: ["time=2026-11-24T00:00:01Z"]
+        params: { actorId: "019abcde-0000-7000-8000-000000000001", time: 1795478401 }
+    }
+])
+@httpResponseTests([
+    {
+        id: "GetActorSettingAtResponse"
+        documentation: "その時に効いていた 1 行"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"asOf":"2026-11-24T00:00:02Z","actorId":"019abcde-0000-7000-8000-000000000001","at":"2026-11-24T00:00:01Z","setting":{"actorId":"019abcde-0000-7000-8000-000000000001","model":"claude-opus-5-5","effort":"high","source":"requested","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false}}"""
+        bodyMediaType: "application/json"
+        params: {
+            asOf: 1795478402
+            actorId: "019abcde-0000-7000-8000-000000000001"
+            at: 1795478401
+            setting: {
+                actorId: "019abcde-0000-7000-8000-000000000001"
+                model: "claude-opus-5-5"
+                effort: "high"
+                source: "requested"
+                sentAt: 1795478400
+                receivedAt: 1795478401
+                clockSkew: false
+            }
+        }
+    }
+    {
+        id: "GetActorSettingAtResponseNone"
+        documentation: "その時までに行が無ければ setting が無い"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"asOf":"2026-11-24T00:00:02Z","actorId":"019abcde-0000-7000-8000-000000000001","at":"2000-01-01T00:00:00Z"}"""
+        bodyMediaType: "application/json"
+        params: {
+            asOf: 1795478402
+            actorId: "019abcde-0000-7000-8000-000000000001"
+            at: 946684800
+        }
+    }
+])
+operation GetActorSettingAt {
+    input := {
+        @required
+        @httpLabel
+        actorId: ActorId
+
+        /// 効いていた物を引く時刻。
+        @required
+        @httpQuery("time")
+        time: DateTime
+    }
+
+    output := {
+        /// 読み始める前の castlist の時刻。
+        @required
+        asOf: DateTime
+
+        @required
+        actorId: ActorId
+
+        /// 問いの時刻を、比べた形（UTC・ミリ秒まで）に直した物。
+        @required
+        at: DateTime
+
+        /// その時に効いていた行。無ければ無い。
+        setting: Setting
+    }
+
+    errors: [
+        NotFound
+        ValidationException
+        Unavailable
+        InternalError
+    ]
+}
+
+/// model と effort の行を、アクターをまたいで探す（監査の検索）。条件はどれも AND で、無くてもよい。並びは受けた順。
+/// - `model`・`effort`・`source` はその名・出の行。`from`・`to` は受けた時刻（`receivedAt`）の窓（両端を含む）。
+/// - `mismatch` は、見た（`observed`）行のうち、同じアクターのそれより前の最新の頼んだ（`requested`）行と、model か effort が違う物。
+///   前に頼んだ行の無い見た行は入らない。true だけを受ける（false は 400。絞らないなら付けない）。
+/// - `skewed` は時刻ずれの行。true だけを受ける（false は 400）。
+/// - 頁は受けた順で後ろから続ける（辿る間に行が足されても、元の組に穴も重なりも出ない）。`nextToken` はこの検索の答えの物を渡す（違えば 400）。
+@readonly
+@paginated(inputToken: "nextToken", outputToken: "nextToken", pageSize: "maxResults", items: "settings")
+@http(method: "GET", uri: "/api/settings")
+@httpRequestTests([
+    {
+        id: "ListSettingsRequest"
+        documentation: "引数の名は camelCase"
+        protocol: restJson1
+        method: "GET"
+        uri: "/api/settings"
+        queryParams: [
+            "model=claude-opus-5-5"
+            "effort=high"
+            "source=observed"
+            "from=2026-11-24T00:00:00Z"
+            "to=2026-11-25T00:00:00Z"
+            "mismatch=true"
+            "skewed=true"
+            "maxResults=10"
+            "nextToken=abc"
+        ]
+        params: {
+            model: "claude-opus-5-5"
+            effort: "high"
+            source: "observed"
+            from: 1795478400
+            to: 1795564800
+            mismatch: true
+            skewed: true
+            maxResults: 10
+            nextToken: "abc"
+        }
+    }
+])
+@httpResponseTests([
+    {
+        id: "ListSettingsResponse"
+        documentation: "行は model と effort の形にアクターの名を足した物"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"asOf":"2026-11-24T00:00:02Z","settings":[{"id":"t-1","actorId":"019abcde-0000-7000-8000-000000000001","actorName":"se.1","model":"claude-sonnet-5","effort":"high","source":"observed","sentAt":"2026-11-24T00:00:01Z","receivedAt":"2026-11-24T00:00:02Z","clockSkew":false}],"nextToken":"abc"}"""
+        bodyMediaType: "application/json"
+        params: {
+            asOf: 1795478402
+            settings: [
+                {
+                    id: "t-1"
+                    actorId: "019abcde-0000-7000-8000-000000000001"
+                    actorName: "se.1"
+                    model: "claude-sonnet-5"
+                    effort: "high"
+                    source: "observed"
+                    sentAt: 1795478401
+                    receivedAt: 1795478402
+                    clockSkew: false
+                }
+            ]
+            nextToken: "abc"
+        }
+    }
+])
+operation ListSettings {
+    input := {
+        @httpQuery("model")
+        model: Name
+
+        @httpQuery("effort")
+        effort: Name
+
+        /// `requested`（頼んだ）か `observed`（見た）。
+        @httpQuery("source")
+        source: SettingSource
+
+        /// 受けた時刻の窓の始め（含む）。
+        @httpQuery("from")
+        from: DateTime
+
+        /// 受けた時刻の窓の終わり（含む）。
+        @httpQuery("to")
+        to: DateTime
+
+        /// 見た物が、その前に頼んだ物と違う行（true だけ）。
+        @httpQuery("mismatch")
+        mismatch: Boolean
+
+        /// 時刻ずれの行（true だけ）。
+        @httpQuery("skewed")
+        skewed: Boolean
+
+        /// 1 頁の数（既定 100）。
+        @httpQuery("maxResults")
+        maxResults: MaxResults
+
+        /// 前の答えの `nextToken`。
+        @httpQuery("nextToken")
+        nextToken: NextToken
+    }
+
+    output := {
+        /// 読み始める前の castlist の時刻。
+        @required
+        asOf: DateTime
+
+        /// 受けた順。
+        @required
+        settings: SettingRows
+
+        /// 次の頁の印。終わりなら無い。
+        nextToken: NextToken
+    }
+
+    errors: [
+        ValidationException
+        Unavailable
+        InternalError
+    ]
+}
+
+/// 出来事を、アクターをまたいで探す（監査の検索）。条件はどれも AND で、無くてもよい。並びは受けた順。
+/// - `type` は重ねれば、どれかの種類（OR）。`actor` はそのアクターの出来事。`from`・`to` は受けた時刻（`receivedAt`）の窓（両端を含む）。
+/// - `reason`・`source` は `detail` の同じ名の欄が、その字と等しい出来事。
+/// - `skewed` は時刻ずれの行。true だけを受ける（false は 400）。
+/// - 頁は受けた順で後ろから続ける（辿る間に行が足されても、元の組に穴も重なりも出ない）。`nextToken` はこの検索の答えの物を渡す（違えば 400）。
+@readonly
+@paginated(inputToken: "nextToken", outputToken: "nextToken", pageSize: "maxResults", items: "events")
+@http(method: "GET", uri: "/api/events")
+@httpRequestTests([
+    {
+        id: "ListEventsRequest"
+        documentation: "引数の名は camelCase。type は重ねられる"
+        protocol: restJson1
+        method: "GET"
+        uri: "/api/events"
+        queryParams: [
+            "type=model_unreadable"
+            "type=closed"
+            "actor=019abcde-0000-7000-8000-000000000001"
+            "from=2026-11-24T00:00:00Z"
+            "to=2026-11-25T00:00:00Z"
+            "reason=timeout"
+            "source=clear"
+            "skewed=true"
+            "maxResults=10"
+            "nextToken=abc"
+        ]
+        params: {
+            type: ["model_unreadable", "closed"]
+            actor: "019abcde-0000-7000-8000-000000000001"
+            from: 1795478400
+            to: 1795564800
+            reason: "timeout"
+            source: "clear"
+            skewed: true
+            maxResults: 10
+            nextToken: "abc"
+        }
+    }
+])
+@httpResponseTests([
+    {
+        id: "ListEventsResponse"
+        documentation: "行は出来事の形にアクターの名を足した物"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"asOf":"2026-11-24T00:00:02Z","events":[{"id":"e-1","actorId":"019abcde-0000-7000-8000-000000000001","actorName":"se.1","type":"model_unreadable","detail":{"reason":"timeout"},"sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false}]}"""
+        bodyMediaType: "application/json"
+        params: {
+            asOf: 1795478402
+            events: [
+                {
+                    id: "e-1"
+                    actorId: "019abcde-0000-7000-8000-000000000001"
+                    actorName: "se.1"
+                    type: "model_unreadable"
+                    detail: { reason: "timeout" }
+                    sentAt: 1795478400
+                    receivedAt: 1795478401
+                    clockSkew: false
+                }
+            ]
+        }
+    }
+])
+operation ListEvents {
+    input := {
+        /// 出来事の種類。重ねれば、どれか。
+        @httpQuery("type")
+        type: EventTypes
+
+        /// このアクターの出来事。
+        @httpQuery("actor")
+        actor: ActorId
+
+        /// 受けた時刻の窓の始め（含む）。
+        @httpQuery("from")
+        from: DateTime
+
+        /// 受けた時刻の窓の終わり（含む）。
+        @httpQuery("to")
+        to: DateTime
+
+        /// `detail.reason` がこの字と等しい。
+        @httpQuery("reason")
+        reason: Text
+
+        /// `detail.source` がこの字と等しい。
+        @httpQuery("source")
+        source: Text
+
+        /// 時刻ずれの行（true だけ）。
+        @httpQuery("skewed")
+        skewed: Boolean
+
+        /// 1 頁の数（既定 100）。
+        @httpQuery("maxResults")
+        maxResults: MaxResults
+
+        /// 前の答えの `nextToken`。
+        @httpQuery("nextToken")
+        nextToken: NextToken
+    }
+
+    output := {
+        /// 読み始める前の castlist の時刻。
+        @required
+        asOf: DateTime
+
+        /// 受けた順。
+        @required
+        events: EventRows
+
+        /// 次の頁の印。終わりなら無い。
+        nextToken: NextToken
+    }
+
+    errors: [
+        ValidationException
+        Unavailable
+        InternalError
+    ]
+}
+
+list EventTypes {
+    member: EventType
+}
+
 /// 鍵の付随する id（`種類:値`）から、出し手の中のアクターを引く。答えは問いと同じ順で、引けない物（知らない・鍵でない・出し手が違う）は `actor` が無い。
 /// 1 つでも形の違う参照があれば、全体を 400 で断る。
 @http(method: "POST", uri: "/api/resolve")
@@ -1249,6 +1689,17 @@ list Events {
     member: Event
 }
 
+/// 探した出来事の 1 行（出来事の欄に、アクターの名を足した物）。
+structure EventRow with [EventFields] {
+    /// アクターの名（`<接頭辞>.<番号>`）。
+    @required
+    actorName: String
+}
+
+list EventRows {
+    member: EventRow
+}
+
 /// model と effort 1 つ（欄は SettingFields）。
 structure Setting with [SettingFields] {}
 
@@ -1282,6 +1733,17 @@ structure SettingFields {
 
 list Settings {
     member: Setting
+}
+
+/// 探した model と effort の 1 行（model と effort の欄に、アクターの名を足した物）。
+structure SettingRow with [SettingFields] {
+    /// アクターの名（`<接頭辞>.<番号>`）。
+    @required
+    actorName: String
+}
+
+list SettingRows {
+    member: SettingRow
 }
 
 /// 線 1 つ（欄は LinkFields）。

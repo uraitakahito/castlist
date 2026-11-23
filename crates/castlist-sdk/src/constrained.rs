@@ -39,6 +39,21 @@ pub(crate) mod label_filters_constrained {
         }
     }
 }
+pub(crate) mod event_types_constrained {
+
+    #[derive(Debug, Clone)]
+    pub(crate) struct EventTypesConstrained(pub(crate) std::vec::Vec<crate::model::EventType>);
+
+    impl crate::constrained::Constrained for EventTypesConstrained {
+        type Unconstrained =
+            crate::unconstrained::event_types_unconstrained::EventTypesUnconstrained;
+    }
+    impl ::std::convert::From<EventTypesConstrained> for ::std::vec::Vec<::std::string::String> {
+        fn from(v: EventTypesConstrained) -> Self {
+            v.0.into_iter().map(|item| item.into()).collect()
+        }
+    }
+}
 
 /*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.

@@ -3,6 +3,7 @@
 //! 定義（model/）から作った骨（crates/castlist-sdk/）に処理（handler）を入れ、守りの層を前に掛ける。
 //! 手の道（画面・backup・logs）は、この後の PR で同じ Router に足す。
 mod actor;
+mod actor_settings;
 mod body;
 pub mod db;
 mod errors;
@@ -11,6 +12,8 @@ mod generated;
 mod lineage;
 mod link;
 mod list_actors;
+mod list_events;
+mod list_settings;
 mod register;
 mod resolve;
 mod rows;
@@ -49,6 +52,22 @@ pub fn app(db: Arc<Db>) -> Router {
         .get_lineage({
             let db = db.clone();
             move |input| lineage::get_lineage(db.clone(), input)
+        })
+        .list_actor_settings({
+            let db = db.clone();
+            move |input| actor_settings::list_actor_settings(db.clone(), input)
+        })
+        .get_actor_setting_at({
+            let db = db.clone();
+            move |input| actor_settings::get_actor_setting_at(db.clone(), input)
+        })
+        .list_settings({
+            let db = db.clone();
+            move |input| list_settings::list_settings(db.clone(), input)
+        })
+        .list_events({
+            let db = db.clone();
+            move |input| list_events::list_events(db.clone(), input)
         })
         .resolve_actors({
             let db = db.clone();

@@ -7,7 +7,7 @@ use castlist_sdk::output::ListActorsOutput;
 
 use crate::db::{self, Db, Ref};
 use crate::errors::Failure;
-use crate::search::{ActorQuery, LIMIT, Page, Sort};
+use crate::search::{ActorItem, ActorQuery, LIMIT, Page, Sort};
 use crate::{datetime, rows, stored_time};
 
 const OPERATION: &str = "ListActors";
@@ -120,7 +120,7 @@ fn order_name(desc: bool) -> &'static str {
 
 /// 次の頁の印（終わりなら無い）: 種類・sort・order・最後の行の並べる値と seq を改行で繋ぎ、16 進にした字。
 /// 中は読まずに、前の答えの物をそのまま渡してもらう。ほかの条件は結ばない（今の server と同じ）。
-fn next_token(query: &ActorQuery, page: &Page) -> Option<String> {
+fn next_token(query: &ActorQuery, page: &Page<ActorItem>) -> Option<String> {
     page.more.then(|| page.rows.last()).flatten().map(|last| {
         [
             TOKEN_KIND,
@@ -173,7 +173,7 @@ mod tests {
     #[test]
     fn a_token_reads_back_and_a_broken_or_other_one_is_refused() {
         let page = Page {
-            rows: vec![crate::search::ActorItem {
+            rows: vec![ActorItem {
                 seq: 7,
                 id: "a".into(),
                 name: "se.1".into(),

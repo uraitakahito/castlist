@@ -177,9 +177,13 @@
 //!    let config = CastlistConfig::builder().build();
 //!    let app = Castlist::builder(config)
 //!        .get_actor(get_actor)
+//!        .get_actor_setting_at(get_actor_setting_at)
 //!        .get_health(get_health)
 //!        .get_lineage(get_lineage)
 //!        .list_actors(list_actors)
+//!        .list_actor_settings(list_actor_settings)
+//!        .list_events(list_events)
+//!        .list_settings(list_settings)
 //!        .put_event(put_event)
 //!        .put_link(put_link)
 //!        .put_setting(put_setting)
@@ -206,6 +210,10 @@
 //!     todo!()
 //! }
 //!
+//! async fn get_actor_setting_at(input: input::GetActorSettingAtInput) -> Result<output::GetActorSettingAtOutput, error::GetActorSettingAtError> {
+//!     todo!()
+//! }
+//!
 //! async fn get_health(input: input::GetHealthInput) -> output::GetHealthOutput {
 //!     todo!()
 //! }
@@ -215,6 +223,18 @@
 //! }
 //!
 //! async fn list_actors(input: input::ListActorsInput) -> Result<output::ListActorsOutput, error::ListActorsError> {
+//!     todo!()
+//! }
+//!
+//! async fn list_actor_settings(input: input::ListActorSettingsInput) -> Result<output::ListActorSettingsOutput, error::ListActorSettingsError> {
+//!     todo!()
+//! }
+//!
+//! async fn list_events(input: input::ListEventsInput) -> Result<output::ListEventsOutput, error::ListEventsError> {
+//!     todo!()
+//! }
+//!
+//! async fn list_settings(input: input::ListSettingsInput) -> Result<output::ListSettingsOutput, error::ListSettingsError> {
 //!     todo!()
 //! }
 //!
