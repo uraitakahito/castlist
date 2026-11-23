@@ -45,6 +45,10 @@ tracing-subscriber = { version = "0.3", default-features = false, features = ["s
 # アクターの id（UUID v7）。
 uuid = { version = "1", default-features = false, features = ["std", "v7"] }
 
+[dev-dependencies]
+# 移す試験（tests/migrate.rs）が、今の server（repo の頭の crate）の DB と /v1 の道で、移す元の DB を作る。
+castlist = { path = "../.." }
+
 [lints.clippy]
 await_holding_lock = "deny"
 disallowed_methods = "deny"

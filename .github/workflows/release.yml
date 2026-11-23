@@ -6,6 +6,10 @@ name: release
 #   - push: check が通った時だけ動く。渡された file（確かめたその image）を、作り直さずに置き、release に digest と中身の一覧を書く
 # とする。確かめが 1 つでも落ちれば、push は動かず、何も外に出ない。image は手で出さない（docs/src/release.md の「release を出す」）。
 # castlist に CLI は無いので、release に付ける file も無い。
+#
+# 作り直しの間（AI-36）は、tag に「-rc.」の付く物（v<版>-rc.<n>）だけ、新しい server の Containerfile.next で作り、
+# 新しい API の形で動くかを見て、GitHub の pre-release にする。ほかの tag は、今までどおり Containerfile で作る。
+# どちらも、確かめと置く job の分け方・tag と版と CHANGELOG の突き合わせ・main の上にあるかは同じ。
 on:
   push:
     tags: ["v*"]
@@ -31,11 +35,21 @@ jobs:
         run: |
           ci/check-release-version.sh "$GITHUB_REF_NAME"
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "tag が main の上に無い" >&2; exit 1; }
+      # rc（tag に「-rc.」が付く）は新しい server の image（Containerfile.next）と、新しい API の形の smoke。
+      - name: 作る image を決める
+        id: kind
+        run: |
+          case "$GITHUB_REF_NAME" in
+            *-rc.*) echo "containerfile=Containerfile.next" >> "$GITHUB_OUTPUT"; echo "smoke=api" >> "$GITHUB_OUTPUT" ;;
+            *) echo "containerfile=Containerfile" >> "$GITHUB_OUTPUT"; echo "smoke=v1" >> "$GITHUB_OUTPUT" ;;
+          esac
       # 出どころの記録（provenance・SBOM）は付けない。付ける時は、中身を見てから。
       # label は、もう public な値の 3 つだけ（ci/check-image.sh が名を突き合わせる）。ARG・--build-arg・--secret は使わない。
       - name: image を作る
+        env:
+          CONTAINERFILE: ${{ steps.kind.outputs.containerfile }}
         run: |
-          docker build --provenance=false --sbom=false -f Containerfile -t castlist:release \
+          docker build --provenance=false --sbom=false -f "$CONTAINERFILE" -t castlist:release \
             --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             --label "org.opencontainers.image.version=${GITHUB_REF_NAME#v}" \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
@@ -52,7 +66,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/out"
           ci/check-image.sh castlist:release | tee "$RUNNER_TEMP/out/image-report.md"
       - name: 空の image の中で起き、答え、断るべき物を断り、止めて起こし直せるか
-        run: ci/smoke-image.sh castlist:release
+        env:
+          SMOKE: ${{ steps.kind.outputs.smoke }}
+        run: ci/smoke-image.sh castlist:release "$SMOKE"
       - name: 確かめた image を file にする
         id: save
         run: |
@@ -113,10 +129,15 @@ jobs:
             echo
             echo "digest: \`$DIGEST\`"
             echo
+            case "$GITHUB_REF_NAME" in
+              *-rc.*) echo "rc: 作り直している新しい server（Containerfile.next。API は /api の下）の image。切り替えの前の試し。"; echo ;;
+            esac
             echo "変えたことは [CHANGELOG.md]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/CHANGELOG.md)。動かし方は [動かす](https://uraitakahito.github.io/castlist/run.html)。"
             echo
             cat out/image-report.md
           } > notes.md
           cat notes.md >> "$GITHUB_STEP_SUMMARY"
-          # 付ける file は無い（image は ghcr.io に置いた物だけ）。
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+          # 付ける file は無い（image は ghcr.io に置いた物だけ）。rc（tag に「-rc.」が付く）は pre-release にする。
+          prerelease=()
+          case "$GITHUB_REF_NAME" in *-rc.*) prerelease=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag "${prerelease[@]}"

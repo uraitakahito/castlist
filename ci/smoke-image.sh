@@ -2,14 +2,29 @@
 # image が、空の image の中で起き、/healthz に答え、外の Host と browser からの書き込みを断り、
 # 画面（一覧・タイムライン・相関図）と CSS と script が CSP の決まりどおりに出て、止める合図で自分から終わり、
 # 起こし直しても答えるかを見る。
-# 使い方: ci/smoke-image.sh <image>（repo の checkout の中で打つ。配る cytoscape を static/vendor/ の物と突き合わせる）
+# 使い方: ci/smoke-image.sh <image> [v1|api]（repo の checkout の中で打つ。配る cytoscape を static/vendor/ の物と突き合わせる）
+#   v1（既定）: 今の server の image（Containerfile）。API は /v1 の下
+#   api: 新しい server の image（Containerfile.next。rc の release）。API は /api の下で、断る答えは restJson1 の形
+#        （X-Amzn-Errortype）。登録して出来事を足し、読み返し、起こし直した後も同じ物が読めるかも見る
 # container の名は smoke-castlist にする（castlist の設定の「PM だけ」の match（--name castlist など）に当てないため）。
+# 手元で流す時は、名と port を SMOKE_NAME・SMOKE_PORT で替えられる（既定は smoke-castlist と 18802）。
 set -euo pipefail
 
-image=${1:?使い方: ci/smoke-image.sh <image>}
+usage='使い方: ci/smoke-image.sh <image> [v1|api]'
+image=${1:?$usage}
+mode=${2:-v1}
+case "$mode" in
+  v1) api=/v1 ;;
+  api) api=/api ;;
+  *)
+    echo "$usage" >&2
+    exit 2
+    ;;
+esac
 here=$(cd "$(dirname "$0")" && pwd)
-name=smoke-castlist
-url=http://127.0.0.1:18802
+name=${SMOKE_NAME:-smoke-castlist}
+port=${SMOKE_PORT:-18802}
+url=http://127.0.0.1:$port
 tmp=${RUNNER_TEMP:-/tmp}
 
 up() {
@@ -21,12 +36,20 @@ up() {
 }
 trap 'docker logs "$name" || true; docker rm -f "$name" >/dev/null 2>&1 || true; docker volume rm "$name-data" >/dev/null 2>&1 || true' EXIT
 
-docker run -d --name "$name" -p 127.0.0.1:18802:8080 -v "$name-data:/data" "$image"
+docker run -d --name "$name" -p "127.0.0.1:$port:8080" -v "$name-data:/data" "$image"
 up | tee "$tmp/healthz.json"
 grep -q '"status":"ok"' "$tmp/healthz.json"
 code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 test "$(code -H 'Host: evil.example' "$url/healthz")" = 403
-test "$(code -X POST -H 'Origin: https://evil.example' --data '{}' "$url/v1/actors")" = 403
+test "$(code -X POST -H 'Origin: https://evil.example' --data '{}' "$url$api/actors")" = 403
+if [ "$mode" = api ]; then
+  # 断る答えは、生成した層の誤りと同じ restJson1 の形（header に型の名・本文は JSON の message）。
+  for header in 'Host: evil.example' 'Origin: https://evil.example'; do
+    curl -s -D "$tmp/forbidden-head.txt" -o "$tmp/forbidden.json" -X POST -H "$header" --data '{}' "$url/api/actors"
+    tr -d '\r' <"$tmp/forbidden-head.txt" | grep -qix 'x-amzn-errortype: forbidden'
+    jq -e '.message | length > 0' "$tmp/forbidden.json" >/dev/null
+  done
+fi
 # 画面: 一覧に CSP が付き（src/lib.rs の CSP と同じ字）、inline の script と style が無く、castlist の CSS を読む。
 csp="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 curl -fsS -D "$tmp/head.txt" -o "$tmp/index.html" "$url/"
@@ -63,7 +86,7 @@ if [ "$scripts" != "$want_scripts" ]; then
   echo "NG: 相関図の script が、castlist の配る 2 つでない: $scripts" >&2
   exit 1
 fi
-grep -qF 'data-src="/v1/graph"' "$tmp/network.html"
+grep -qF "data-src=\"$api/graph\"" "$tmp/network.html"
 # 相関図の script（network.js）と cytoscape: JavaScript の型で、中身がある。cytoscape は static/vendor/ の物と同じ字。
 curl -fsS -D "$tmp/network-js-head.txt" -o "$tmp/network.js" "$url/static/network.js"
 tr -d '\r' <"$tmp/network-js-head.txt" | grep -qi '^content-type: application/javascript'
@@ -76,6 +99,25 @@ cmp -s "$tmp/cytoscape.js" "$here/../static/vendor/cytoscape-3.35.0.min.js" || {
   echo "NG: 配る cytoscape が static/vendor/cytoscape-3.35.0.min.js と違う" >&2
   exit 1
 }
+# 新しい server: 書いて読み返す（画面の確かめは空の DB を前にするので、その後に書く）。
+if [ "$mode" = api ]; then
+  # 登録（201）・出来事（201、同じ本文の送り直しは 200）・GetActor に出来事が付く。
+  json='Content-Type: application/json'
+  sent=2026-01-01T00:00:00Z
+  register="{\"issuer\":\"smoke\",\"kind\":\"ai\",\"namePrefix\":\"se\",\"bindings\":[{\"type\":\"claude.session\",\"value\":\"smoke-1\"}],\"sentAt\":\"$sent\"}"
+  test "$(curl -s -o "$tmp/actor.json" -w '%{http_code}' -X POST -H "$json" --data "$register" "$url/api/actors")" = 201
+  jq -e '.actor.name == "se.1" and .created == true' "$tmp/actor.json" >/dev/null
+  actor=$(jq -r '.actor.id' "$tmp/actor.json")
+  event="{\"issuer\":\"smoke\",\"by\":\"claude.session:smoke-1\",\"type\":\"entered\",\"detail\":{\"source\":\"smoke\"},\"sentAt\":\"$sent\"}"
+  test "$(code -X PUT -H "$json" --data "$event" "$url/api/events/smoke-e-1")" = 201
+  test "$(code -X PUT -H "$json" --data "$event" "$url/api/events/smoke-e-1")" = 200
+  read_back() {
+    curl -fsS -o "$tmp/read.json" "$url/api/actors/$actor"
+    jq -e '.name == "se.1" and .state.present == true and [.events[].id] == ["smoke-e-1"] and .events[0].detail.source == "smoke"' \
+      "$tmp/read.json" >/dev/null
+  }
+  read_back
+fi
 # 止める合図（SIGTERM）で、自分から終わるか（PID 1 は受け口が無いと合図を無視する）。
 docker stop "$name"
 test "$(docker inspect -f '{{.State.ExitCode}}' "$name")" = 0
@@ -93,8 +135,10 @@ up
 docker logs "$name" >"$logs" 2>&1
 grep -q 'previous: no stop mark (.*; last alive 20' "$logs"
 # 残した記録は、止めずに読める。起こし直す前の問い合わせの行も、時刻つきで残っている。
-curl -fsS -o "$logs" "$url/v1/logs"
+curl -fsS -o "$logs" "$url$api/logs"
 grep -q ' start version=' "$logs"
 grep -q 'uri=/healthz' "$logs"
 rm -f "$logs"
-echo "image は動く: $image"
+# 新しい server: 起こし直した後も、volume の DB に書いた物が読める。
+if [ "$mode" = api ]; then read_back; fi
+echo "image は動く（${mode}）: ${image}"

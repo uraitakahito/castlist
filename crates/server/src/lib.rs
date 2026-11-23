@@ -19,6 +19,7 @@ mod link;
 mod list_actors;
 mod list_events;
 mod list_settings;
+pub mod migrate;
 mod register;
 mod resolve;
 mod rows;
