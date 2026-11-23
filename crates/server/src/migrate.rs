@@ -185,9 +185,18 @@ impl fmt::Display for Summary {
             writeln!(f, "seq {} {} → {} {}", s.table, s.old, s.new, mark(s.ok()))?;
         }
         if self.broken.is_empty() {
-            writeln!(f, "foreign_key_check ok")
+            writeln!(f, "foreign_key_check ok")?;
         } else {
-            writeln!(f, "foreign_key_check NG: {}", self.broken.join("・"))
+            writeln!(f, "foreign_key_check NG: {}", self.broken.join("・"))?;
+        }
+        if self.bad_ids.is_empty() {
+            writeln!(f, "ids ok")
+        } else {
+            writeln!(
+                f,
+                "ids NG（新しい API の形に合わない）: {}",
+                self.bad_ids.join("・")
+            )
         }
     }
 }
@@ -261,10 +270,8 @@ pub async fn verify(from: &Path, to: &Path) -> Result<Summary, MigrateError> {
         .map_err(MigrateError::Target)?;
     attach(&mut conn, from).await?;
     let summary = summarize(&mut conn, &old_time, &new_time).await;
-    sqlx::query("detach database old")
-        .execute(&mut conn)
-        .await?;
-    conn.close().await?;
+    detach(&mut conn).await;
+    let _ = conn.close().await;
     summary
 }
 
@@ -275,15 +282,16 @@ async fn inspect_source(from: &Path) -> Result<TimeColumns, MigrateError> {
         Ok(_) => return Err(source(from, "file でない")),
         Err(e) => return Err(source(from, &format!("読めない（{e}）"))),
     }
-    let wal = from.with_file_name(format!(
-        "{}-wal",
-        from.file_name().unwrap_or_default().to_string_lossy()
-    ));
-    if tokio::fs::metadata(&wal).await.is_ok_and(|m| m.len() > 0) {
-        return Err(source(
-            from,
-            "隣に WAL の残り（-wal）がある。動いている DB でなく、GET /v1/backup の写しを渡す",
-        ));
+    // GET /v1/backup の写しには -wal も -shm も無い。あれば（空でも）動いている DB か、その残りなので断る。
+    let name = from.file_name().unwrap_or_default().to_string_lossy();
+    for suffix in ["-wal", "-shm"] {
+        let beside = from.with_file_name(format!("{name}{suffix}"));
+        if tokio::fs::try_exists(&beside).await.unwrap_or(true) {
+            return Err(source(
+                from,
+                &format!("隣に {suffix} がある。動いている DB でなく、GET /v1/backup の写しを渡す"),
+            ));
+        }
     }
     let mut conn = SqliteConnection::connect_with(
         &SqliteConnectOptions::new()
@@ -408,10 +416,16 @@ async fn copy(db: &Db, from: &Path, old_time: &TimeColumns) -> Result<Summary, M
         }
     }
     .await;
-    sqlx::query("detach database old")
-        .execute(&mut *conn)
-        .await?;
+    detach(&mut conn).await;
     result
+}
+
+/// 移す元を外す。commit の後に外せなくても、移した結果（commit した物）は替えない: 落ちたことを記録に書くだけにする
+/// （接続は閉じれば外れる。ここで誤りにすると、移し終えたのに 1 で終わり、2 度目の移しは「空でない」で断られる）。
+async fn detach(conn: &mut SqliteConnection) {
+    if let Err(e) = sqlx::query("detach database old").execute(&mut *conn).await {
+        tracing::warn!("migrate: detach old failed: {e}");
+    }
 }
 
 /// 列の式（送り手の時刻の列は、その DB の名に読み替える）。
@@ -546,8 +560,22 @@ async fn summarize(
             format!("{table} の rowid {rowid}（{parent} を指す）")
         })
         .collect();
+    summary.bad_ids = sqlx::query_scalar(AssertSqlSafe(BAD_IDS))
+        .fetch_all(&mut *conn)
+        .await?;
     Ok(summary)
 }
+
+/// 移す先（main）の id のうち、新しい API の形に合わない物（`<表>: <id>`。表の順・受けた順）。
+/// アクターは ActorId（小文字の 16 進の UUID）、送り手の id は SenderId（`^[\x21-\x7E]{1,128}$`。設定の id は無くてもよい）。
+/// 合わない行は、新しい API で引けず、送り直しも形の誤りで断られるので、移さない。
+const BAD_IDS: &str = "select label from (
+       select 1 as k, seq, 'actors: ' || id as label from main.actors
+         where length(id) <> 36 or id not glob '[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'
+       union all select 2, seq, 'links: ' || id from main.links where (length(id) not between 1 and 128 or id glob '*[^!-~]*')
+       union all select 3, seq, 'events: ' || id from main.events where (length(id) not between 1 and 128 or id glob '*[^!-~]*')
+       union all select 4, seq, 'settings: ' || id from main.settings where id is not null and (length(id) not between 1 and 128 or id glob '*[^!-~]*'))
+     order by k, seq";
 
 /// 1 つの表の行の数と、行ごとの JSON の字（改行で区切る）の SHA-256（小文字の 16 進）。
 async fn digest(

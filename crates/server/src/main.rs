@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
 
-use castlist_next::db::Db;
+use castlist_next::db::{Db, OpenError};
 use castlist_next::runlog::{self, RunLog};
 use castlist_next::{Config, REQUEST_TIMEOUT, app_with};
 use tokio::signal::unix::{SignalKind, signal};
@@ -26,6 +26,11 @@ async fn main() -> ExitCode {
     }
     let path = std::env::var("CASTLIST_DB").unwrap_or_else(|_| "/data/castlist.db".to_owned());
     let path = Path::new(&path);
+    // 今の server の DB（今の volume）なら、記録の置き場も作らずに止める（その volume に何も書かない）。
+    if let Err(e @ OpenError::Current(_)) = castlist_next::db::refuse_current(path).await {
+        eprintln!("castlist: {e}");
+        return ExitCode::FAILURE;
+    }
     // 記録の置き場は DB の隣の logs/。DB を開く前に用意する（開けなかった訳も残すため）。
     let log = RunLog::beside(path);
     runlog::init(&log);

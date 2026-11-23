@@ -10,8 +10,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use serde_json::json;
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteRow};
-use sqlx::{FromRow, Sqlite, SqlitePool, Transaction};
+use sqlx::migrate::Migrator;
+use sqlx::sqlite::{
+    SqliteConnectOptions, SqliteConnection, SqliteJournalMode, SqlitePoolOptions, SqliteRow,
+};
+use sqlx::{Connection, FromRow, Sqlite, SqlitePool, Transaction};
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
@@ -337,6 +340,8 @@ pub enum OpenError {
     Migrate(sqlx::migrate::MigrateError),
     /// 外のキーの崩れた行がある（表と rowid と、指す先の表）。
     ForeignKey(Vec<String>),
+    /// 今の server（か別の版）の移行を当てた DB（新しい migrations に無い・中身の違う移行の版）。何も書かずに断る。
+    Current(Vec<i64>),
 }
 
 impl fmt::Display for OpenError {
@@ -348,6 +353,16 @@ impl fmt::Display for OpenError {
                 f,
                 "外のキーの崩れた行があるので開かない: {}",
                 rows.join("・")
+            ),
+            OpenError::Current(versions) => write!(
+                f,
+                "今の server の DB（新しい server の migrations に無い・中身の違う移行 {} を当ててある）。開かずに止める。\
+                 castlist-next migrate で新しい volume へ移す",
+                versions
+                    .iter()
+                    .map(i64::to_string)
+                    .collect::<Vec<_>>()
+                    .join("・")
             ),
         }
     }
@@ -401,9 +416,62 @@ fn sent_text(t: OffsetDateTime) -> Result<String, WriteError> {
 
 // --- 開く ---
 
+/// 新しい server の移行（crates/server/migrations/）。
+static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
+
+/// `path` が、今の server（か別の版）の移行を当てた DB なら [`OpenError::Current`] で断る。読むだけ
+/// （`immutable`）で開き、DB にも隣の -wal・-shm にも書かない。file が無い・移行の表が無い時は通す（開く時に作る）。
+/// 移行の表の版のうち、新しい migrations に無い物か、中身の写し（checksum）が違う物があれば断る
+/// （今の server の DB は 0002・0003 が無く、0001 も中身が違う。sqlx の移行に任せると、断る前に DB を WAL にする）。
+pub async fn refuse_current(path: &Path) -> Result<(), OpenError> {
+    if !tokio::fs::try_exists(path).await.unwrap_or(false) {
+        return Ok(());
+    }
+    let mut conn = SqliteConnection::connect_with(
+        &SqliteConnectOptions::new()
+            .filename(path)
+            .read_only(true)
+            .immutable(true),
+    )
+    .await
+    .map_err(OpenError::Db)?;
+    let applied: Result<Vec<(i64, Vec<u8>)>, sqlx::Error> = async {
+        let has: i64 = sqlx::query_scalar(
+            "select count(*) from sqlite_master where type = 'table' and name = '_sqlx_migrations'",
+        )
+        .fetch_one(&mut conn)
+        .await?;
+        if has == 0 {
+            return Ok(Vec::new());
+        }
+        sqlx::query_as("select version, checksum from _sqlx_migrations order by version")
+            .fetch_all(&mut conn)
+            .await
+    }
+    .await;
+    let _ = conn.close().await;
+    let foreign: Vec<i64> = applied
+        .map_err(OpenError::Db)?
+        .into_iter()
+        .filter(|(version, checksum)| {
+            !MIGRATOR
+                .iter()
+                .any(|m| m.version == *version && m.checksum.as_ref() == checksum.as_slice())
+        })
+        .map(|(version, _)| version)
+        .collect();
+    if foreign.is_empty() {
+        Ok(())
+    } else {
+        Err(OpenError::Current(foreign))
+    }
+}
+
 impl Db {
     /// 開き、移行し、外のキーの崩れが無いかを見る。崩れがあれば開かない。
+    /// 今の server の DB は、何も書かずに断る（[`refuse_current`]）。
     pub async fn open(path: &Path) -> Result<Self, OpenError> {
+        refuse_current(path).await?;
         // どの接続にも: 外のキーを効かせ、置き換え（REPLACE）が行を消す時も trigger を動かす。
         // 一時の物は memory に置く（動かす image には /tmp が無い）。
         let options = SqliteConnectOptions::new()
@@ -420,10 +488,7 @@ impl Db {
             .connect_with(options.clone())
             .await
             .map_err(OpenError::Db)?;
-        sqlx::migrate!("./migrations")
-            .run(&write)
-            .await
-            .map_err(OpenError::Migrate)?;
+        MIGRATOR.run(&write).await.map_err(OpenError::Migrate)?;
         let broken: Vec<(String, Option<i64>, String)> =
             sqlx::query_as("select \"table\", rowid, parent from pragma_foreign_key_check")
                 .fetch_all(&write)
