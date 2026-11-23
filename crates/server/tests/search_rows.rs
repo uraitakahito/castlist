@@ -148,6 +148,25 @@ async fn a_missing_or_wrong_time_is_400() {
     }
 }
 
+/// 答えの at（RFC 3339）は 0001 年からしか書けないので、0000 年の time は 400 で断る（答えを書けずに崩れた 400 にしない）。
+#[tokio::test]
+async fn a_time_in_year_0_is_a_400_validation_exception() {
+    let s = sample().await;
+    let se1 = s.id("se.1");
+    let message = invalid(
+        &s.app,
+        &format!("/api/actors/{se1}/settings/at?time=0000-01-01T00:00:00Z"),
+    )
+    .await;
+    assert!(message.contains("time"), "{message}");
+    let answer = ok(
+        &s.app,
+        &format!("/api/actors/{se1}/settings/at?time=0001-01-01T00:00:00Z"),
+    )
+    .await;
+    assert_eq!(answer["at"], "0001-01-01T00:00:00Z", "{answer}");
+}
+
 // --- ListSettings ---
 
 #[tokio::test]
