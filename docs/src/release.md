@@ -12,12 +12,13 @@ image は public で、だれでも取って中を見られる。**出すのは 
 8. Product Manager に、[動かす](run.md) の 1 行（初めてなら「初めて起こす」、2 度目からは「版を上げる」）を送る。castlist を起こすのは Product Manager だけ。
 
 - 出した tag は打ち直さない（digest が変わり、書き留めた値と合わなくなる）。直す時は、次の版を出す。
+- **rc（作り直しの間。AI-36）**: tag に `-rc.` の付く物（`v<版>-rc.<n>`。`Cargo.toml` の版も `CHANGELOG.md` の節も `<版>-rc.<n>`）は、新しい server の `Containerfile.next` で作り、`ci/smoke-image.sh <image> api`（新しい API の形）で確かめ、GitHub の pre-release にする。ほかの tag は、今までどおり `Containerfile` の今の server。確かめと置く job の分け方・版と CHANGELOG の突き合わせ・main の上にあるか・同じ tag を置き直さないことは、どちらも同じ。rc の image の中の binary も `/castlist-server`（`castlist-next` を、この名で置く）で、環境変数・port・volume も同じなので、[動かす](run.md) の命令はそのまま使える。今の DB を移す時は、同じ image に `migrate --from <写し> --to <新しい DB>` を付けて起こす（[新しい API の形](next.md) の「データ」）。
 - **機微な物が出てしまった時**: GitHub の package の画面で、その版を消す。秘密なら、すぐ替える（消しても、pull した人の手元には残る前提で動く）。直して次の版を出し、`ci/` の決まりに、同じ物を止める形を足す。
 - **置いた時から public**: この repo は public で、image に repo を指す label を付けて置くので、package は初めの release から、だれでも pull できる（pagetray の v0.2.0 で確かめた。private の間に人が見る、という段は無い）。人が見られるのは、tag を打つ前だけ。だから、3 の確かめを push の前に置いてあり、決まりを緩める PR（`ci/` の file・`.dockerignore`・`Containerfile`）は、よく見てから merge する。
 
 ## image に入る物
 
-image は外に出す物なので、入ってよい物を決めてあり、CI（job `image` と release の `check`。どちらも `ci/check-image.sh`）が毎回確かめる。1 つでも違えば落ちる。
+image は外に出す物なので、入ってよい物を決めてあり、CI（job `image` と release の `check`。どちらも `ci/check-image.sh`）が毎回確かめる。1 つでも違えば落ちる。rc の image（`Containerfile.next`）も同じ決まりで、CI の job `image-next` が毎回確かめる。
 
 | 見る物 | 決まり | 書いてある所 |
 |---|---|---|
@@ -25,7 +26,7 @@ image は外に出す物なので、入ってよい物を決めてあり、CI（
 | image の file | binary 1 つ（`castlist-server`）と、空の `/data` だけ。layer は 2 枚 | `ci/image-contents.txt` |
 | 設定 | 環境変数は DB の path と待ち受けの 2 つだけ。label は `org.opencontainers.image.source`・`version`・`revision` だけ。開ける port は 8080 だけ | `ci/check-image.sh` の頭 |
 | binary の中の字 | home の path・mail の形・秘密の鍵や token の頭が無い。gitleaks も掛ける（source にも） | `ci/scan-binary.sh`・`ci/strings-deny.txt`・`ci/strings-allow.txt` |
-| 動くか | 空の image の中で起き、外の Host と browser からの書き込みを断り、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せる | `ci/smoke-image.sh` |
+| 動くか | 空の image の中で起き、外の Host と browser からの書き込みを断り、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せる。rc の image は、新しい API（`/api`）で登録と出来事を書いて読み返し、断る答えが restJson1 の形で、起こし直した後も書いた物が読める | `ci/smoke-image.sh`（rc は `api` を付ける） |
 
 - binary には、画面の template・CSS・script と、取り込んだ cytoscape（MIT。`static/vendor/`）が埋め込まれる。cytoscape は npm の物と同じかを `ci/check-vendor.sh` が見る。
 - build に秘密は要らない。`Containerfile` に `ARG` を書かず、`--build-arg`・`--secret` を使わない。label は、release の workflow が `--label` で付ける 3 つだけ。
