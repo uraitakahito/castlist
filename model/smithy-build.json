@@ -17,6 +17,7 @@
       "moduleVersion": "0.0.0",
       "moduleDescription": "castlist の定義（model/）から smithy-rs が作った server の骨。ci/gen.sh で作り直す。手で直さない。",
       "moduleAuthors": ["castlist"],
+      "license": "MIT",
       "codegen": {"http-1x": true, "publicConstrainedTypes": false}
     }
   }

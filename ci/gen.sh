@@ -2,6 +2,8 @@
 # 定義（model/）から、server の骨（crates/castlist-sdk/）を作り直す。生成した物は repo に入れ、手で直さない。
 #   ci/gen.sh           作り直して crates/castlist-sdk/ を置き換える
 #   ci/gen.sh --check   作り直した物と、入れてある物が同じかを見る（CI が流す）。違えば exit 1
+#   ci/gen.sh --diff    定義を、定義の入った最新の release の tag（v*）と比べ、壊す変わり（DANGER 以上）があれば exit 1（CI が流す）。
+#                       定義の入った tag がまだ無ければ、比べずに通す
 # 要る物: curl・unzip・shasum か sha256sum。Smithy の CLI は JRE を同梱しているので、Java は要らない。
 # 生成器の版は model/smithy-build.json に書く。公開から 2 日たっていない Maven の物は使わない（crate と pnpm と同じ決まり）。
 # macOS の bash（3.2）でも動く書き方にする。
@@ -23,7 +25,13 @@ MIN_AGE_SECONDS=$((2 * 24 * 60 * 60))
 root=$(cd "$(dirname "$0")/.." && pwd)
 out="$root/crates/castlist-sdk"
 check=false
-[ "${1:-}" = "--check" ] && check=true
+diff_mode=false
+case "${1:-}" in
+  --check) check=true ;;
+  --diff) diff_mode=true ;;
+  "") ;;
+  *) echo "使い方: ci/gen.sh [--check|--diff]" >&2; exit 2 ;;
+esac
 
 ng() {
   echo "NG: $*" >&2
@@ -69,7 +77,25 @@ for dep in $deps; do
   [ $((now - published)) -ge $MIN_AGE_SECONDS ] || ng "$dep は公開から 2 日たっていない（$modified）"
 done
 
-# 3. 作る。
+# 3. 壊す変わりを見る（--diff）。
+if $diff_mode; then
+  base=""
+  for tag in $(git -C "$root" tag --list 'v*' --sort=-version:refname); do
+    if git -C "$root" cat-file -e "$tag:model/smithy-build.json" 2>/dev/null; then
+      base=$tag
+      break
+    fi
+  done
+  if [ -z "$base" ]; then
+    echo "定義の入った release の tag がまだ無いので、比べない"
+    exit 0
+  fi
+  (cd "$root/model" && "$smithy" diff --mode git --old "$base" --severity DANGER) || ng "定義が $base から壊す形に変わった（上の DANGER・ERROR）"
+  echo "定義は $base から壊す形に変わっていない"
+  exit 0
+fi
+
+# 4. 作る。
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 cp -R "$root/model/." "$work/"

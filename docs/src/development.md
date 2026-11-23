@@ -17,9 +17,22 @@ ci/test-check-release-version.sh                                   # release の
 cargo test --locked --release --test load -- --ignored --nocapture # 負荷の試験（50 の客で 10 秒）
 CASTLIST_LISTEN=127.0.0.1:18802 CASTLIST_DB=/tmp/castlist-dev.db cargo run --bin castlist-server   # 手元で起こす（本物の castlist の 8802 とは別の port・別の DB）
 mdbook build docs                                                  # この本を作る
+ci/gen.sh                                                          # 定義（model/）から server の骨（crates/castlist-sdk/）を作り直す
+ci/gen.sh --check                                                  # 作り直した物と入れてある物が同じか（CI の job model）
+ci/gen.sh --diff                                                   # 定義が、定義の入った最新の release から壊す形に変わっていないか（CI の job model）
 ```
 
 手元で起こすのは、試しの castlist だけにする。本物の castlist の container を起こす・止める・volume を消すのは Product Manager だけ。
+
+## 定義と生成（作り直しの間）
+
+API を Smithy の定義で書き直している間（AI-36）は、今の server（`src/`）の隣に、新しい server（`crates/server`）を並べて作る。切り替えまで image に入るのは今の server だけ。
+
+- 定義は `model/model/*.smithy`。`ai.common`（`common.smithy`）は pagetray と共に使う形（誤り・時刻・ページ送り）で、pagetray と roster は、この repo の release の tag で固めて取る。
+- 骨（`crates/castlist-sdk/`）は `ci/gen.sh` が作る。**手で直さない**。定義を替えたら `ci/gen.sh` を流し、作り直した物も同じ commit に入れる。fmt と clippy の外（`Cargo.toml` の `exclude`）。
+- 生成器の版は `model/smithy-build.json`（Maven の物）と `ci/gen.sh`（Smithy の CLI と digest）に書く。公開から 2 日たっていない Maven の物は `ci/gen.sh` が断る。
+- 新しい server の試験は `crates/server/tests/`。定義に書く例（`@httpRequestTests`・`@httpResponseTests`）は wire の形を止める試験で、生成した骨の試験になる（試験用の handler を使うので、処理の正しさは見ない）。処理を引っ張る試験は、本物の handler を入れた Router に要求を通す振る舞いの試験で、処理より先に書く（下の節）。
+- 生成した service は `crates/server/src/generated.rs` の包みで axum の Router の fallback に入れ、守りの層をその前に掛ける。
 
 ## 試験を先に書く
 

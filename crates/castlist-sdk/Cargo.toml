@@ -5,6 +5,7 @@ version = "0.0.0"
 authors = ["castlist"]
 description = "castlist の定義（model/）から smithy-rs が作った server の骨。ci/gen.sh で作り直す。手で直さない。"
 edition = "2021"
+license = "MIT"
 
 [package.metadata.smithy]
 codegen-version = "19bbb483f75eb86ee31bff59eae19c5d9fb669a7"

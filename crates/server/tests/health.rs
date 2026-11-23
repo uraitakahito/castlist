@@ -12,7 +12,10 @@ async fn health_says_ok_with_the_version_and_the_time_of_castlist() {
     assert_eq!(json["status"], "ok");
     assert_eq!(json["version"], env!("CARGO_PKG_VERSION"));
     let now = json["now"].as_str().expect(&body);
-    assert!(now.ends_with('Z') && now.len() >= 20, "RFC 3339 の UTC: {now}");
+    assert!(
+        now.ends_with('Z') && now.len() >= 20,
+        "RFC 3339 の UTC: {now}"
+    );
 }
 
 #[tokio::test]

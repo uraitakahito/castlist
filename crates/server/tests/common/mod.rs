@@ -14,5 +14,8 @@ pub async fn send(request: Request<Body>) -> (StatusCode, String) {
 }
 
 pub fn get(path: &str) -> Request<Body> {
-    Request::get(path).header("host", "127.0.0.1:8802").body(Body::empty()).unwrap()
+    Request::get(path)
+        .header("host", "127.0.0.1:8802")
+        .body(Body::empty())
+        .unwrap()
 }
