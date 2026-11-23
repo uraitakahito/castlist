@@ -33,6 +33,39 @@ impl GetHealthOutput {
         crate::output::get_health_output::Builder::default()
     }
 }
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct RegisterActorOutput {
+    /// アクターを指す時の短い形。
+    pub actor: crate::model::ActorSummary,
+    /// 新しく作ったか。
+    pub created: bool,
+    /// 新しく作れば 201、鍵が既にあれば 200。
+    pub status: i32,
+}
+impl RegisterActorOutput {
+    /// アクターを指す時の短い形。
+    pub fn actor(&self) -> &crate::model::ActorSummary {
+        &self.actor
+    }
+    /// 新しく作ったか。
+    pub fn created(&self) -> bool {
+        self.created
+    }
+    /// 新しく作れば 201、鍵が既にあれば 200。
+    pub fn status(&self) -> i32 {
+        self.status
+    }
+}
+impl RegisterActorOutput {
+    /// Creates a new builder-style object to manufacture [`RegisterActorOutput`](crate::output::RegisterActorOutput).
+    pub fn builder() -> crate::output::register_actor_output::Builder {
+        crate::output::register_actor_output::Builder::default()
+    }
+}
 /// See [`GetHealthOutput`](crate::output::GetHealthOutput).
 pub mod get_health_output {
 
@@ -110,6 +143,78 @@ pub mod get_health_output {
                 status: self.status.ok_or(ConstraintViolation::MissingStatus)?,
                 version: self.version.ok_or(ConstraintViolation::MissingVersion)?,
                 now: self.now.ok_or(ConstraintViolation::MissingNow)?,
+            })
+        }
+    }
+}
+/// See [`RegisterActorOutput`](crate::output::RegisterActorOutput).
+pub mod register_actor_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `actor` was not provided but it is required when building `RegisterActorOutput`.
+        MissingActor,
+        /// `created` was not provided but it is required when building `RegisterActorOutput`.
+        MissingCreated,
+        /// `status` was not provided but it is required when building `RegisterActorOutput`.
+        MissingStatus,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActor => write!(f, "`actor` was not provided but it is required when building `RegisterActorOutput`"),
+                ConstraintViolation::MissingCreated => write!(f, "`created` was not provided but it is required when building `RegisterActorOutput`"),
+                ConstraintViolation::MissingStatus => write!(f, "`status` was not provided but it is required when building `RegisterActorOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::RegisterActorOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`RegisterActorOutput`](crate::output::RegisterActorOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) actor: ::std::option::Option<crate::model::ActorSummary>,
+        pub(crate) created: ::std::option::Option<bool>,
+        pub(crate) status: ::std::option::Option<i32>,
+    }
+    impl Builder {
+        /// アクターを指す時の短い形。
+        pub fn actor(mut self, input: crate::model::ActorSummary) -> Self {
+            self.actor = Some(input);
+            self
+        }
+        /// 新しく作ったか。
+        pub fn created(mut self, input: bool) -> Self {
+            self.created = Some(input);
+            self
+        }
+        /// 新しく作れば 201、鍵が既にあれば 200。
+        pub fn status(mut self, input: i32) -> Self {
+            self.status = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`RegisterActorOutput`](crate::output::RegisterActorOutput).
+        ///
+        /// The builder fails to construct a [`RegisterActorOutput`](crate::output::RegisterActorOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::RegisterActorOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::RegisterActorOutput, ConstraintViolation> {
+            Ok(crate::output::RegisterActorOutput {
+                actor: self.actor.ok_or(ConstraintViolation::MissingActor)?,
+                created: self.created.ok_or(ConstraintViolation::MissingCreated)?,
+                status: self.status.ok_or(ConstraintViolation::MissingStatus)?,
             })
         }
     }

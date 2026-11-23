@@ -15,7 +15,12 @@ aws-smithy-types = "1.9.4"
 bytes = "1"
 http-body = "1"
 http-body-util = "0.1"
+# SQL は動く時に組む形（query・query_as）だけを使う。macros は、移行の SQL を埋め込む migrate!() のため（今の server と同じ）。
+sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
+time = { version = "0.3", features = ["formatting", "parsing"] }
 tower = { version = "0.5", features = ["util"] }
+# アクターの id（UUID v7）。
+uuid = { version = "1", default-features = false, features = ["std", "v7"] }
 
 [dev-dependencies]
 serde_json = "1"

@@ -516,8 +516,11 @@ dependencies = [
  "http-body",
  "http-body-util",
  "serde_json",
+ "sqlx",
+ "time",
  "tokio",
  "tower 0.5.3",
+ "uuid",
 ]
 
 [[package]]
@@ -531,6 +534,7 @@ dependencies = [
  "aws-smithy-runtime-api",
  "aws-smithy-schema",
  "aws-smithy-types",
+ "bytes",
  "futures-util",
  "http 1.5.0",
  "http-body",
@@ -539,6 +543,7 @@ dependencies = [
  "mime",
  "pin-project-lite",
  "pretty_assertions",
+ "regex",
  "tokio",
  "tower 0.4.13",
  "tracing",

@@ -2,7 +2,11 @@
 //!
 //! 定義（model/）から作った骨（crates/castlist-sdk/）に処理（handler）を入れ、守りの層を前に掛ける。
 //! 手の道（画面・backup・logs）は、この後の PR で同じ Router に足す。
+pub mod db;
 mod generated;
+mod register;
+
+use std::sync::Arc;
 
 use axum::Router;
 use axum::extract::Request;
@@ -12,12 +16,14 @@ use axum::response::{IntoResponse, Response};
 use castlist_sdk::output::GetHealthOutput;
 use castlist_sdk::{Castlist, CastlistConfig};
 
+use crate::db::Db;
 use crate::generated::Generated;
 
-/// 動かす Router。
-pub fn app() -> Router {
+/// 動かす Router。DB は、どの handler も同じ物を使う。
+pub fn app(db: Arc<Db>) -> Router {
     let generated = Castlist::builder(CastlistConfig::builder().build())
         .get_health(get_health)
+        .register_actor(move |input| register::register(db.clone(), input))
         .build()
         .expect("どの操作にも handler がある");
     Router::new()

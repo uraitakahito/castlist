@@ -37,3 +37,43 @@ impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for Get
         ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
     }
 }
+
+/// アクターを登録する。鍵（`bindings` の初めの物）が出し手（`issuer`）の中に既にあれば、そのアクターを返す（200・`created` は false）。 無ければ新しく作る（201）。id は castlist が出す（UUID v7）。名は `<nameprefix>
+/// .&lt;番号&gt;`（番号は出し手と接頭辞ごとに 1 から）。 既にあった時は、`kind`・`namePrefix`・`labels` を見ず、変わった鍵でない付随する id と、変わった頼んだ model と effort だけを足す。
+/// </nameprefix>
+pub struct RegisterActor;
+
+impl ::aws_smithy_http_server::operation::OperationShape for RegisterActor {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#RegisterActor",
+            "ai.castlist",
+            "RegisterActor",
+        );
+
+    type Input = crate::input::RegisterActorInput;
+    type Output = crate::output::RegisterActorOutput;
+    type Error = crate::error::RegisterActorError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for RegisterActor {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
