@@ -2,17 +2,28 @@
 use std::sync::Arc;
 
 use aws_smithy_types::{Document, Number};
-use castlist_sdk::error::{GetActorError, NotFound, Unavailable};
+use castlist_sdk::error::{GetActorError, NotFound};
 use castlist_sdk::input::GetActorInput;
 use castlist_sdk::model::{ActorBinding, ActorState, Event, Link, Setting};
 use castlist_sdk::output::GetActorOutput;
 
 use crate::db::{self, Db};
-use crate::{datetime, unavailable};
+use crate::errors::Failure;
+
+const OPERATION: &str = "GetActor";
+
+/// DB の字の時刻を、答えの時刻にする（読めなければ中の失敗）。
+fn datetime(s: &str) -> Result<aws_smithy_types::DateTime, Failure> {
+    crate::datetime(s).map_err(|e| Failure::data(OPERATION, &e))
+}
 
 pub async fn get_actor(db: Arc<Db>, input: GetActorInput) -> Result<GetActorOutput, GetActorError> {
     let as_of = datetime(&db::now())?;
-    let Some(detail) = db.actor(&input.actor_id).await.map_err(unavailable)? else {
+    let Some(detail) = db
+        .actor(&input.actor_id)
+        .await
+        .map_err(|e| Failure::db(OPERATION, e))?
+    else {
         return Err(NotFound {
             message: format!("アクター {} は無い", input.actor_id),
         }
@@ -64,7 +75,7 @@ pub async fn get_actor(db: Arc<Db>, input: GetActorInput) -> Result<GetActorOutp
     })
 }
 
-fn bindings(rows: Vec<db::Binding>) -> Result<Vec<ActorBinding>, Unavailable> {
+fn bindings(rows: Vec<db::Binding>) -> Result<Vec<ActorBinding>, Failure> {
     rows.into_iter()
         .map(|b| {
             Ok(ActorBinding {
@@ -79,9 +90,12 @@ fn bindings(rows: Vec<db::Binding>) -> Result<Vec<ActorBinding>, Unavailable> {
         .collect()
 }
 
-fn event(e: db::Event) -> Result<Event, Unavailable> {
-    let detail = serde_json::from_str(&e.detail).map_err(|err| Unavailable {
-        message: format!("出来事 {} の detail が読めない: {err}", e.id),
+fn event(e: db::Event) -> Result<Event, Failure> {
+    let detail = serde_json::from_str(&e.detail).map_err(|err| {
+        Failure::data(
+            OPERATION,
+            &format!("出来事 {} の detail が読めない: {err}", e.id),
+        )
     })?;
     Ok(Event {
         sent_at: datetime(&e.sent_at)?,
@@ -94,7 +108,7 @@ fn event(e: db::Event) -> Result<Event, Unavailable> {
     })
 }
 
-fn setting(s: db::Setting) -> Result<Setting, Unavailable> {
+fn setting(s: db::Setting) -> Result<Setting, Failure> {
     Ok(Setting {
         sent_at: datetime(&s.sent_at)?,
         received_at: datetime(&s.received_at)?,
@@ -107,7 +121,7 @@ fn setting(s: db::Setting) -> Result<Setting, Unavailable> {
     })
 }
 
-fn links(rows: Vec<db::Link>) -> Result<Vec<Link>, Unavailable> {
+fn links(rows: Vec<db::Link>) -> Result<Vec<Link>, Failure> {
     rows.into_iter()
         .map(|l| {
             Ok(Link {

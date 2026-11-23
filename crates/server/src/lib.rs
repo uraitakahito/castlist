@@ -16,7 +16,6 @@ use axum::extract::Request;
 use axum::http::{Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
-use castlist_sdk::error::Unavailable;
 use castlist_sdk::output::GetHealthOutput;
 use castlist_sdk::{Castlist, CastlistConfig};
 
@@ -51,24 +50,12 @@ async fn get_health(_input: castlist_sdk::input::GetHealthInput) -> GetHealthOut
     }
 }
 
-/// DB の字の時刻（RFC 3339）を、答えの時刻にする。読めない字は DB の誤り。
-fn datetime(s: &str) -> Result<aws_smithy_types::DateTime, Unavailable> {
+/// DB の字の時刻（RFC 3339）を、答えの時刻にする。読めなければ、その訳。
+fn datetime(s: &str) -> Result<aws_smithy_types::DateTime, String> {
     time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339)
         .ok()
         .and_then(|t| aws_smithy_types::DateTime::from_nanos(t.unix_timestamp_nanos()).ok())
-        .ok_or_else(|| Unavailable {
-            message: format!("DB の時刻が読めない: {s}"),
-        })
-}
-
-/// 読めない訳を、503 の答えにする。
-fn unavailable(e: sqlx::Error) -> Unavailable {
-    Unavailable {
-        message: match e {
-            sqlx::Error::PoolTimedOut => "混んでいる。少し待ってから送り直す".to_owned(),
-            e => format!("DB の誤り: {e}"),
-        },
-    }
+        .ok_or_else(|| format!("DB の時刻が読めない: {s}"))
 }
 
 /// host（castlist を動かす機械）の中からの要求だけを受ける（今の castlist の Host と Origin の守り）。

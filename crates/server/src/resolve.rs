@@ -6,8 +6,11 @@ use castlist_sdk::input::ResolveActorsInput;
 use castlist_sdk::model::{ActorSummary, Resolution};
 use castlist_sdk::output::ResolveActorsOutput;
 
+use crate::datetime;
 use crate::db::{self, Db, Ref};
-use crate::{datetime, unavailable};
+use crate::errors::Failure;
+
+const OPERATION: &str = "ResolveActors";
 
 pub async fn resolve(
     db: Arc<Db>,
@@ -25,11 +28,11 @@ pub async fn resolve(
             }
         })
         .collect();
-    let as_of = datetime(&db::now())?;
+    let as_of = datetime(&db::now()).map_err(|e| Failure::data(OPERATION, &e))?;
     let found = db
         .resolve(&input.issuer, &refs)
         .await
-        .map_err(unavailable)?;
+        .map_err(|e| Failure::db(OPERATION, e))?;
     Ok(ResolveActorsOutput {
         as_of,
         results: input
