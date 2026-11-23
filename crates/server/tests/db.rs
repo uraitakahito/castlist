@@ -1,7 +1,7 @@
 //! DB の決まりの試験: 移行・足すだけ・外のキー・接続の設定。書く接続と読む接続を直に使う。
 mod common;
 
-use castlist_next::db::Db;
+use castlist_next::db::{Db, LOOKUPS};
 use common::{App, ai, at, remove_db, temp_db};
 use serde_json::json;
 use sqlx::sqlite::SqliteConnectOptions;
@@ -267,4 +267,44 @@ async fn opening_again_keeps_the_rows_and_does_not_migrate_twice() {
     assert_eq!((actors, migrations), (1, 1));
     db.close().await;
     remove_db(&path);
+}
+
+#[tokio::test]
+async fn lookups_use_an_index_and_do_not_scan_a_big_table() {
+    let (app, _) = filled().await;
+    let names: Vec<&str> = LOOKUPS.iter().map(|(name, _)| *name).collect();
+    for want in [
+        "resolve",
+        "actor",
+        "labels",
+        "bindings",
+        "current_bindings",
+        "events",
+        "settings",
+        "current_settings",
+        "links_in",
+        "links_out",
+        "state",
+    ] {
+        assert!(names.contains(&want), "{want} が LOOKUPS に無い: {names:?}");
+    }
+    for (name, sql) in LOOKUPS {
+        let plan: Vec<(i64, i64, i64, String)> =
+            sqlx::query_as(sqlx::AssertSqlSafe(format!("explain query plan {sql}")))
+                .fetch_all(app.db.read())
+                .await
+                .unwrap_or_else(|e| panic!("{name}: {e}"));
+        let details: Vec<&str> = plan.iter().map(|row| row.3.as_str()).collect();
+        // 計画の字は表の別名（a・e など）で出るので、端から読んでよい物の方を名指す:
+        // 小さな master（models・efforts を別名なしで）だけ。
+        let scans: Vec<&&str> = details
+            .iter()
+            .filter(|d| {
+                d.strip_prefix("SCAN ")
+                    .and_then(|rest| rest.split_whitespace().next())
+                    .is_some_and(|target| !["models", "efforts", "CONSTANT"].contains(&target))
+            })
+            .collect();
+        assert!(scans.is_empty(), "{name} が端から読む: {details:?}\n{sql}");
+    }
 }

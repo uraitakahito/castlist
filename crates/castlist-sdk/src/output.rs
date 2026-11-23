@@ -66,6 +66,161 @@ impl RegisterActorOutput {
         crate::output::register_actor_output::Builder::default()
     }
 }
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct GetActorOutput {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub id: ::std::string::String,
+    /// `&lt;接頭辞&gt;.&lt;番号&gt;`。
+    pub name: ::std::string::String,
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+    pub kind: ::std::string::String,
+    /// 出し手。
+    pub issuer: ::std::string::String,
+    /// 登録の送り手の時刻。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 登録を受けた castlist の時刻。
+    pub received_at: ::aws_smithy_types::DateTime,
+    /// 送り手の時刻と受けた時刻が 5 分より離れていたか。
+    pub clock_skew: bool,
+    /// 札（登録の時に書いた物）。
+    pub labels: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    /// 付随する id の全部（受けた順）。
+    pub bindings: ::std::vec::Vec<crate::model::ActorBinding>,
+    /// 種類ごとの最新（種類の順）。
+    pub current_bindings: ::std::vec::Vec<crate::model::ActorBinding>,
+    /// 出来事の全部（受けた順）。
+    pub events: ::std::vec::Vec<crate::model::Event>,
+    /// model と effort の全部（受けた順）。
+    pub settings: ::std::vec::Vec<crate::model::Setting>,
+    /// model と effort の最新（受けた順で）。1 つも無ければ無い。
+    pub current_settings: ::std::option::Option<crate::model::Setting>,
+    /// このアクターへの線（受けた順）。
+    pub links_in: ::std::vec::Vec<crate::model::Link>,
+    /// このアクターからの線（受けた順）。
+    pub links_out: ::std::vec::Vec<crate::model::Link>,
+    /// 今の状態。
+    pub state: crate::model::ActorState,
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+}
+impl GetActorOutput {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn id(&self) -> &str {
+        use std::ops::Deref;
+        self.id.deref()
+    }
+    /// `&lt;接頭辞&gt;.&lt;番号&gt;`。
+    pub fn name(&self) -> &str {
+        use std::ops::Deref;
+        self.name.deref()
+    }
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+    pub fn kind(&self) -> &str {
+        use std::ops::Deref;
+        self.kind.deref()
+    }
+    /// 出し手。
+    pub fn issuer(&self) -> &str {
+        use std::ops::Deref;
+        self.issuer.deref()
+    }
+    /// 登録の送り手の時刻。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 登録を受けた castlist の時刻。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    /// 送り手の時刻と受けた時刻が 5 分より離れていたか。
+    pub fn clock_skew(&self) -> bool {
+        self.clock_skew
+    }
+    /// 札（登録の時に書いた物）。
+    pub fn labels(
+        &self,
+    ) -> &::std::collections::HashMap<::std::string::String, ::std::string::String> {
+        &self.labels
+    }
+    /// 付随する id の全部（受けた順）。
+    pub fn bindings(&self) -> &[crate::model::ActorBinding] {
+        use std::ops::Deref;
+        self.bindings.deref()
+    }
+    /// 種類ごとの最新（種類の順）。
+    pub fn current_bindings(&self) -> &[crate::model::ActorBinding] {
+        use std::ops::Deref;
+        self.current_bindings.deref()
+    }
+    /// 出来事の全部（受けた順）。
+    pub fn events(&self) -> &[crate::model::Event] {
+        use std::ops::Deref;
+        self.events.deref()
+    }
+    /// model と effort の全部（受けた順）。
+    pub fn settings(&self) -> &[crate::model::Setting] {
+        use std::ops::Deref;
+        self.settings.deref()
+    }
+    /// model と effort の最新（受けた順で）。1 つも無ければ無い。
+    pub fn current_settings(&self) -> ::std::option::Option<&crate::model::Setting> {
+        self.current_settings.as_ref()
+    }
+    /// このアクターへの線（受けた順）。
+    pub fn links_in(&self) -> &[crate::model::Link] {
+        use std::ops::Deref;
+        self.links_in.deref()
+    }
+    /// このアクターからの線（受けた順）。
+    pub fn links_out(&self) -> &[crate::model::Link] {
+        use std::ops::Deref;
+        self.links_out.deref()
+    }
+    /// 今の状態。
+    pub fn state(&self) -> &crate::model::ActorState {
+        &self.state
+    }
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+}
+impl GetActorOutput {
+    /// Creates a new builder-style object to manufacture [`GetActorOutput`](crate::output::GetActorOutput).
+    pub fn builder() -> crate::output::get_actor_output::Builder {
+        crate::output::get_actor_output::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct ResolveActorsOutput {
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+    /// 問いと同じ順。
+    pub results: ::std::vec::Vec<crate::model::Resolution>,
+}
+impl ResolveActorsOutput {
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+    /// 問いと同じ順。
+    pub fn results(&self) -> &[crate::model::Resolution] {
+        use std::ops::Deref;
+        self.results.deref()
+    }
+}
+impl ResolveActorsOutput {
+    /// Creates a new builder-style object to manufacture [`ResolveActorsOutput`](crate::output::ResolveActorsOutput).
+    pub fn builder() -> crate::output::resolve_actors_output::Builder {
+        crate::output::resolve_actors_output::Builder::default()
+    }
+}
 /// See [`GetHealthOutput`](crate::output::GetHealthOutput).
 pub mod get_health_output {
 
@@ -215,6 +370,295 @@ pub mod register_actor_output {
                 actor: self.actor.ok_or(ConstraintViolation::MissingActor)?,
                 created: self.created.ok_or(ConstraintViolation::MissingCreated)?,
                 status: self.status.ok_or(ConstraintViolation::MissingStatus)?,
+            })
+        }
+    }
+}
+/// See [`GetActorOutput`](crate::output::GetActorOutput).
+pub mod get_actor_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `id` was not provided but it is required when building `GetActorOutput`.
+        MissingId,
+        /// `name` was not provided but it is required when building `GetActorOutput`.
+        MissingName,
+        /// `kind` was not provided but it is required when building `GetActorOutput`.
+        MissingKind,
+        /// `issuer` was not provided but it is required when building `GetActorOutput`.
+        MissingIssuer,
+        /// `sent_at` was not provided but it is required when building `GetActorOutput`.
+        MissingSentAt,
+        /// `received_at` was not provided but it is required when building `GetActorOutput`.
+        MissingReceivedAt,
+        /// `clock_skew` was not provided but it is required when building `GetActorOutput`.
+        MissingClockSkew,
+        /// `labels` was not provided but it is required when building `GetActorOutput`.
+        MissingLabels,
+        /// `bindings` was not provided but it is required when building `GetActorOutput`.
+        MissingBindings,
+        /// `current_bindings` was not provided but it is required when building `GetActorOutput`.
+        MissingCurrentBindings,
+        /// `events` was not provided but it is required when building `GetActorOutput`.
+        MissingEvents,
+        /// `settings` was not provided but it is required when building `GetActorOutput`.
+        MissingSettings,
+        /// `links_in` was not provided but it is required when building `GetActorOutput`.
+        MissingLinksIn,
+        /// `links_out` was not provided but it is required when building `GetActorOutput`.
+        MissingLinksOut,
+        /// `state` was not provided but it is required when building `GetActorOutput`.
+        MissingState,
+        /// `as_of` was not provided but it is required when building `GetActorOutput`.
+        MissingAsOf,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingId => write!(f, "`id` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingName => write!(f, "`name` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingKind => write!(f, "`kind` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingReceivedAt => write!(f, "`received_at` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingClockSkew => write!(f, "`clock_skew` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingLabels => write!(f, "`labels` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingBindings => write!(f, "`bindings` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingCurrentBindings => write!(f, "`current_bindings` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingEvents => write!(f, "`events` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingSettings => write!(f, "`settings` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingLinksIn => write!(f, "`links_in` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingLinksOut => write!(f, "`links_out` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingState => write!(f, "`state` was not provided but it is required when building `GetActorOutput`"),
+                ConstraintViolation::MissingAsOf => write!(f, "`as_of` was not provided but it is required when building `GetActorOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::GetActorOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetActorOutput`](crate::output::GetActorOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) name: ::std::option::Option<::std::string::String>,
+        pub(crate) kind: ::std::option::Option<::std::string::String>,
+        pub(crate) issuer: ::std::option::Option<::std::string::String>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) clock_skew: ::std::option::Option<bool>,
+        pub(crate) labels: ::std::option::Option<
+            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        >,
+        pub(crate) bindings: ::std::option::Option<::std::vec::Vec<crate::model::ActorBinding>>,
+        pub(crate) current_bindings:
+            ::std::option::Option<::std::vec::Vec<crate::model::ActorBinding>>,
+        pub(crate) events: ::std::option::Option<::std::vec::Vec<crate::model::Event>>,
+        pub(crate) settings: ::std::option::Option<::std::vec::Vec<crate::model::Setting>>,
+        pub(crate) current_settings: ::std::option::Option<crate::model::Setting>,
+        pub(crate) links_in: ::std::option::Option<::std::vec::Vec<crate::model::Link>>,
+        pub(crate) links_out: ::std::option::Option<::std::vec::Vec<crate::model::Link>>,
+        pub(crate) state: ::std::option::Option<crate::model::ActorState>,
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn id(mut self, input: ::std::string::String) -> Self {
+            self.id = Some(input);
+            self
+        }
+        /// `&lt;接頭辞&gt;.&lt;番号&gt;`。
+        pub fn name(mut self, input: ::std::string::String) -> Self {
+            self.name = Some(input);
+            self
+        }
+        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+        pub fn kind(mut self, input: ::std::string::String) -> Self {
+            self.kind = Some(input);
+            self
+        }
+        /// 出し手。
+        pub fn issuer(mut self, input: ::std::string::String) -> Self {
+            self.issuer = Some(input);
+            self
+        }
+        /// 登録の送り手の時刻。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 登録を受けた castlist の時刻。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        /// 送り手の時刻と受けた時刻が 5 分より離れていたか。
+        pub fn clock_skew(mut self, input: bool) -> Self {
+            self.clock_skew = Some(input);
+            self
+        }
+        /// 札（登録の時に書いた物）。
+        pub fn labels(
+            mut self,
+            input: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        ) -> Self {
+            self.labels = Some(input);
+            self
+        }
+        /// 付随する id の全部（受けた順）。
+        pub fn bindings(mut self, input: ::std::vec::Vec<crate::model::ActorBinding>) -> Self {
+            self.bindings = Some(input);
+            self
+        }
+        /// 種類ごとの最新（種類の順）。
+        pub fn current_bindings(
+            mut self,
+            input: ::std::vec::Vec<crate::model::ActorBinding>,
+        ) -> Self {
+            self.current_bindings = Some(input);
+            self
+        }
+        /// 出来事の全部（受けた順）。
+        pub fn events(mut self, input: ::std::vec::Vec<crate::model::Event>) -> Self {
+            self.events = Some(input);
+            self
+        }
+        /// model と effort の全部（受けた順）。
+        pub fn settings(mut self, input: ::std::vec::Vec<crate::model::Setting>) -> Self {
+            self.settings = Some(input);
+            self
+        }
+        /// model と effort の最新（受けた順で）。1 つも無ければ無い。
+        pub fn current_settings(
+            mut self,
+            input: ::std::option::Option<crate::model::Setting>,
+        ) -> Self {
+            self.current_settings = input;
+            self
+        }
+        /// このアクターへの線（受けた順）。
+        pub fn links_in(mut self, input: ::std::vec::Vec<crate::model::Link>) -> Self {
+            self.links_in = Some(input);
+            self
+        }
+        /// このアクターからの線（受けた順）。
+        pub fn links_out(mut self, input: ::std::vec::Vec<crate::model::Link>) -> Self {
+            self.links_out = Some(input);
+            self
+        }
+        /// 今の状態。
+        pub fn state(mut self, input: crate::model::ActorState) -> Self {
+            self.state = Some(input);
+            self
+        }
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`GetActorOutput`](crate::output::GetActorOutput).
+        ///
+        /// The builder fails to construct a [`GetActorOutput`](crate::output::GetActorOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::GetActorOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::GetActorOutput, ConstraintViolation> {
+            Ok(crate::output::GetActorOutput {
+                id: self.id.ok_or(ConstraintViolation::MissingId)?,
+                name: self.name.ok_or(ConstraintViolation::MissingName)?,
+                kind: self.kind.ok_or(ConstraintViolation::MissingKind)?,
+                issuer: self.issuer.ok_or(ConstraintViolation::MissingIssuer)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                clock_skew: self
+                    .clock_skew
+                    .ok_or(ConstraintViolation::MissingClockSkew)?,
+                labels: self.labels.ok_or(ConstraintViolation::MissingLabels)?,
+                bindings: self.bindings.ok_or(ConstraintViolation::MissingBindings)?,
+                current_bindings: self
+                    .current_bindings
+                    .ok_or(ConstraintViolation::MissingCurrentBindings)?,
+                events: self.events.ok_or(ConstraintViolation::MissingEvents)?,
+                settings: self.settings.ok_or(ConstraintViolation::MissingSettings)?,
+                current_settings: self.current_settings,
+                links_in: self.links_in.ok_or(ConstraintViolation::MissingLinksIn)?,
+                links_out: self.links_out.ok_or(ConstraintViolation::MissingLinksOut)?,
+                state: self.state.ok_or(ConstraintViolation::MissingState)?,
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+            })
+        }
+    }
+}
+/// See [`ResolveActorsOutput`](crate::output::ResolveActorsOutput).
+pub mod resolve_actors_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `as_of` was not provided but it is required when building `ResolveActorsOutput`.
+        MissingAsOf,
+        /// `results` was not provided but it is required when building `ResolveActorsOutput`.
+        MissingResults,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingAsOf => write!(f, "`as_of` was not provided but it is required when building `ResolveActorsOutput`"),
+                ConstraintViolation::MissingResults => write!(f, "`results` was not provided but it is required when building `ResolveActorsOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::ResolveActorsOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ResolveActorsOutput`](crate::output::ResolveActorsOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) results: ::std::option::Option<::std::vec::Vec<crate::model::Resolution>>,
+    }
+    impl Builder {
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        /// 問いと同じ順。
+        pub fn results(mut self, input: ::std::vec::Vec<crate::model::Resolution>) -> Self {
+            self.results = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`ResolveActorsOutput`](crate::output::ResolveActorsOutput).
+        ///
+        /// The builder fails to construct a [`ResolveActorsOutput`](crate::output::ResolveActorsOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::ResolveActorsOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::ResolveActorsOutput, ConstraintViolation> {
+            Ok(crate::output::ResolveActorsOutput {
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+                results: self.results.ok_or(ConstraintViolation::MissingResults)?,
             })
         }
     }

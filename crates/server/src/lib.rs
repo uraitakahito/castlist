@@ -2,10 +2,12 @@
 //!
 //! 定義（model/）から作った骨（crates/castlist-sdk/）に処理（handler）を入れ、守りの層を前に掛ける。
 //! 手の道（画面・backup・logs）は、この後の PR で同じ Router に足す。
+mod actor;
 pub mod db;
 mod errors;
 mod generated;
 mod register;
+mod resolve;
 
 use std::sync::Arc;
 
@@ -24,7 +26,15 @@ use crate::generated::Generated;
 pub fn app(db: Arc<Db>) -> Router {
     let generated = Castlist::builder(CastlistConfig::builder().build())
         .get_health(get_health)
-        .register_actor(move |input| register::register(db.clone(), input))
+        .register_actor({
+            let db = db.clone();
+            move |input| register::register(db.clone(), input)
+        })
+        .get_actor({
+            let db = db.clone();
+            move |input| actor::get_actor(db.clone(), input)
+        })
+        .resolve_actors(move |input| resolve::resolve(db.clone(), input))
         .build()
         .expect("どの操作にも handler がある");
     Router::new()
@@ -38,6 +48,14 @@ async fn get_health(_input: castlist_sdk::input::GetHealthInput) -> GetHealthOut
         version: env!("CARGO_PKG_VERSION").to_owned(),
         now: aws_smithy_types::DateTime::from(std::time::SystemTime::now()),
     }
+}
+
+/// DB の字の時刻（RFC 3339）を、答えの時刻にする。読めなければ、その訳。
+fn datetime(s: &str) -> Result<aws_smithy_types::DateTime, String> {
+    time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339)
+        .ok()
+        .and_then(|t| aws_smithy_types::DateTime::from_nanos(t.unix_timestamp_nanos()).ok())
+        .ok_or_else(|| format!("DB の時刻が読めない: {s}"))
 }
 
 /// host（castlist を動かす機械）の中からの要求だけを受ける（今の castlist の Host と Origin の守り）。

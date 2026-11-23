@@ -67,6 +67,154 @@ impl ::std::convert::From<crate::error::InternalError> for crate::error::Registe
     }
 }
 
+/// Error type for the `GetActor` operation.
+/// Each variant represents an error that can occur for the `GetActor` operation.
+#[derive(::std::fmt::Debug)]
+pub enum GetActorError {
+    /// 名指した物が無い。
+    NotFound(crate::error::NotFound),
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for GetActorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            GetActorError::NotFound(_inner) => _inner.fmt(f),
+            GetActorError::ValidationException(_inner) => _inner.fmt(f),
+            GetActorError::Unavailable(_inner) => _inner.fmt(f),
+            GetActorError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl GetActorError {
+    /// Returns `true` if the error kind is `GetActorError::NotFound`.
+    pub fn is_not_found(&self) -> bool {
+        matches!(&self, GetActorError::NotFound(_))
+    }
+    /// Returns `true` if the error kind is `GetActorError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, GetActorError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `GetActorError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, GetActorError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `GetActorError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, GetActorError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            GetActorError::NotFound(_inner) => _inner.name(),
+            GetActorError::ValidationException(_inner) => _inner.name(),
+            GetActorError::Unavailable(_inner) => _inner.name(),
+            GetActorError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for GetActorError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            GetActorError::NotFound(_inner) => Some(_inner),
+            GetActorError::ValidationException(_inner) => Some(_inner),
+            GetActorError::Unavailable(_inner) => Some(_inner),
+            GetActorError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::NotFound> for crate::error::GetActorError {
+    fn from(variant: crate::error::NotFound) -> crate::error::GetActorError {
+        Self::NotFound(variant)
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::GetActorError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::GetActorError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::GetActorError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::GetActorError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::GetActorError {
+    fn from(variant: crate::error::InternalError) -> crate::error::GetActorError {
+        Self::InternalError(variant)
+    }
+}
+
+/// Error type for the `ResolveActors` operation.
+/// Each variant represents an error that can occur for the `ResolveActors` operation.
+#[derive(::std::fmt::Debug)]
+pub enum ResolveActorsError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for ResolveActorsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            ResolveActorsError::ValidationException(_inner) => _inner.fmt(f),
+            ResolveActorsError::Unavailable(_inner) => _inner.fmt(f),
+            ResolveActorsError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl ResolveActorsError {
+    /// Returns `true` if the error kind is `ResolveActorsError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, ResolveActorsError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `ResolveActorsError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, ResolveActorsError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `ResolveActorsError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, ResolveActorsError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            ResolveActorsError::ValidationException(_inner) => _inner.name(),
+            ResolveActorsError::Unavailable(_inner) => _inner.name(),
+            ResolveActorsError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for ResolveActorsError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            ResolveActorsError::ValidationException(_inner) => Some(_inner),
+            ResolveActorsError::Unavailable(_inner) => Some(_inner),
+            ResolveActorsError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::ResolveActorsError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::ResolveActorsError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::ResolveActorsError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::ResolveActorsError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::ResolveActorsError {
+    fn from(variant: crate::error::InternalError) -> crate::error::ResolveActorsError {
+        Self::InternalError(variant)
+    }
+}
+
 /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
@@ -184,6 +332,42 @@ impl InternalError {
     /// Creates a new builder-style object to manufacture [`InternalError`](crate::error::InternalError).
     pub fn builder() -> crate::error::internal_error::Builder {
         crate::error::internal_error::Builder::default()
+    }
+}
+
+/// 名指した物が無い。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct NotFound {
+    #[allow(missing_docs)] // documentation missing in model
+    pub message: ::std::string::String,
+}
+impl NotFound {
+    /// Returns the error message.
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+    #[doc(hidden)]
+    /// Returns the error name.
+    pub fn name(&self) -> &'static str {
+        "NotFound"
+    }
+}
+impl ::std::fmt::Display for NotFound {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        ::std::write!(f, "NotFound")?;
+        {
+            ::std::write!(f, ": {}", &self.message)?;
+        }
+        Ok(())
+    }
+}
+impl ::std::error::Error for NotFound {}
+impl NotFound {
+    /// Creates a new builder-style object to manufacture [`NotFound`](crate::error::NotFound).
+    pub fn builder() -> crate::error::not_found::Builder {
+        crate::error::not_found::Builder::default()
     }
 }
 /// See [`ValidationException`](crate::error::ValidationException).
@@ -354,6 +538,61 @@ pub mod internal_error {
             self,
         ) -> Result<crate::error::InternalError, ConstraintViolation> {
             Ok(crate::error::InternalError {
+                message: self.message.ok_or(ConstraintViolation::MissingMessage)?,
+            })
+        }
+    }
+}
+/// See [`NotFound`](crate::error::NotFound).
+pub mod not_found {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `message` was not provided but it is required when building `NotFound`.
+        MissingMessage,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingMessage => write!(
+                    f,
+                    "`message` was not provided but it is required when building `NotFound`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::error::NotFound {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`NotFound`](crate::error::NotFound).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) message: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn message(mut self, input: ::std::string::String) -> Self {
+            self.message = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`NotFound`](crate::error::NotFound).
+        ///
+        /// The builder fails to construct a [`NotFound`](crate::error::NotFound) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::error::NotFound, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::error::NotFound, ConstraintViolation> {
+            Ok(crate::error::NotFound {
                 message: self.message.ok_or(ConstraintViolation::MissingMessage)?,
             })
         }

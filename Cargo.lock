@@ -542,6 +542,8 @@ dependencies = [
  "http-body-util",
  "hyper",
  "mime",
+ "nom",
+ "percent-encoding",
  "pin-project-lite",
  "pretty_assertions",
  "regex",
