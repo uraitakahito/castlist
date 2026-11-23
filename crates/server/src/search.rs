@@ -1,8 +1,9 @@
-//! 監査の検索（ListActors と GetLineage）の DB の所。読む接続の 1 つの transaction の中で、揃った写しを読む。
+//! 監査の検索（ListActors・GetLineage・ListActorSettings・GetActorSettingAt・ListSettings・ListEvents）の DB の所。
+//! 読む接続の 1 つの transaction の中で、揃った写しを読む。
 //!
 //! - 時刻の条件は、どれも castlist が受けた時刻（`received_at`）で比べる。問いの時刻は DB に残す字（[`crate::db::stamp`]）に直して渡す。
 //!   「最新」は seq の大きい方。
-//! - 頁は keyset で分ける（並べる値と seq を後ろから続ける）。辿る間に足されたアクターでは、穴も重なりも出ない。
+//! - 頁は keyset で分ける（並べる値と seq か、seq だけを後ろから続ける）。辿る間に足されたアクターでは、穴も重なりも出ない。
 //!   ただし並べる値（初めの登場・最後の退場）は出来事で動くので、もう出したアクターが辿る間に退場すると、次の頁で出直すことがある。
 //! - SQL は決まった欠片を繋ぎ、値は bind するだけ（[`plans`] の試験が、索引で引くことを見る）。今の server（src/search.rs）の SQL と同じ。
 use std::collections::{BTreeMap, HashSet};
@@ -55,6 +56,31 @@ const LINEAGE_UP: &str =
 const LINEAGE_DOWN: &str =
     "select seq, id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links
      where from_actor = ?1 and (?2 is null or type = ?2) order by seq";
+
+/// model と effort の行（名に直し、アクターの名と受けた順も）。
+macro_rules! setting_row {
+    () => {
+        "select s.seq, s.id, s.actor_id, a.name as actor_name, m.name as model, f.name as effort,
+                s.source, s.sent_at, s.received_at, s.clock_skew
+         from settings s join actors a on a.id = s.actor_id
+         join models m on m.id = s.model_id join efforts f on f.id = s.effort_id"
+    };
+}
+/// あるアクターの model と effort の全部（受けた順）と、ある時に効いていた物（受けた時刻がそれまでの、seq の最大）。
+const ACTOR_SETTINGS: &str = concat!(setting_row!(), " where s.actor_id = ?1 order by s.seq");
+const ACTOR_SETTINGS_AT: &str = concat!(
+    setting_row!(),
+    " where s.actor_id = ?1 and s.received_at <= ?2 order by s.seq desc limit 1"
+);
+/// 見た行が、同じアクターのその前の最新の頼んだ行と、model か effort で違う（前に頼んだ行が無ければ入らない）。
+const MISMATCH: &str = " and s.source = 'observed'
+     and coalesce((select r.model_id != s.model_id or r.effort_id != s.effort_id from settings r
+                   where r.actor_id = s.actor_id and r.source = 'requested' and r.seq < s.seq
+                   order by r.seq desc limit 1), 0)";
+/// 出来事の行（アクターの名と受けた順も）。
+const EVENT_ROW: &str = "select e.seq, e.id, e.actor_id, a.name as actor_name, e.type, e.detail,
+            e.sent_at, e.received_at, e.clock_skew
+     from events e join actors a on a.id = e.actor_id";
 
 /// アクターの一覧の並べ方。
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -319,6 +345,76 @@ impl ActorQuery {
     }
 }
 
+impl SettingQuery {
+    fn builder(&self) -> QueryBuilder<Sqlite> {
+        let mut q = QueryBuilder::new(concat!(setting_row!(), " where s.seq > "));
+        q.push_bind(self.after);
+        if let Some(model) = &self.model {
+            q.push(" and s.model_id = (select id from models where name = ")
+                .push_bind(model.clone())
+                .push(")");
+        }
+        if let Some(effort) = &self.effort {
+            q.push(" and s.effort_id = (select id from efforts where name = ")
+                .push_bind(effort.clone())
+                .push(")");
+        }
+        if let Some(source) = &self.source {
+            q.push(" and s.source = ").push_bind(source.clone());
+        }
+        if let Some(from) = &self.from {
+            q.push(" and s.received_at >= ").push_bind(from.clone());
+        }
+        if let Some(to) = &self.to {
+            q.push(" and s.received_at <= ").push_bind(to.clone());
+        }
+        if self.mismatch {
+            q.push(MISMATCH);
+        }
+        if self.skewed {
+            q.push(" and s.clock_skew = 1");
+        }
+        // 次の頁があるかを見るため、1 つ多く読む。
+        q.push(" order by s.seq limit ").push_bind(self.limit + 1);
+        q
+    }
+}
+
+impl EventQuery {
+    fn builder(&self) -> QueryBuilder<Sqlite> {
+        let mut q = QueryBuilder::new(format!("{EVENT_ROW} where e.seq > "));
+        q.push_bind(self.after);
+        if !self.types.is_empty() {
+            q.push(" and e.type in (select value from json_each(")
+                .push_bind(Value::from(self.types.clone()).to_string())
+                .push("))");
+        }
+        if let Some(actor) = &self.actor {
+            q.push(" and e.actor_id = ").push_bind(actor.clone());
+        }
+        if let Some(from) = &self.from {
+            q.push(" and e.received_at >= ").push_bind(from.clone());
+        }
+        if let Some(to) = &self.to {
+            q.push(" and e.received_at <= ").push_bind(to.clone());
+        }
+        if let Some(reason) = &self.reason {
+            q.push(" and json_extract(e.detail, '$.reason') = ")
+                .push_bind(reason.clone());
+        }
+        if let Some(source) = &self.source {
+            q.push(" and json_extract(e.detail, '$.source') = ")
+                .push_bind(source.clone());
+        }
+        if self.skewed {
+            q.push(" and e.clock_skew = 1");
+        }
+        // 次の頁があるかを見るため、1 つ多く読む。
+        q.push(" order by e.seq limit ").push_bind(self.limit + 1);
+        q
+    }
+}
+
 /// 検索の SQL（名と SQL）。試験が `explain query plan` で、大きな表を端から読まないかを見る。
 /// 条件を 1 つずつと、全部を重ねた物。値は bind するので、ここでは仮の値を入れる。
 pub fn plans() -> Vec<(&'static str, String)> {
@@ -331,6 +427,22 @@ pub fn plans() -> Vec<(&'static str, String)> {
     fn binding() -> Option<(Ref, String)> {
         Some((Ref::parse("t:v"), "at".into()))
     }
+    let settings = |f: fn(&mut SettingQuery)| {
+        let mut q = SettingQuery {
+            limit: LIMIT,
+            ..SettingQuery::default()
+        };
+        f(&mut q);
+        q.builder().into_string()
+    };
+    let events = |f: fn(&mut EventQuery)| {
+        let mut q = EventQuery {
+            limit: LIMIT,
+            ..EventQuery::default()
+        };
+        f(&mut q);
+        q.builder().into_string()
+    };
     let actors = |f: fn(&mut ActorQuery)| {
         let mut q = ActorQuery {
             limit: Some(LIMIT),
@@ -404,7 +516,67 @@ pub fn plans() -> Vec<(&'static str, String)> {
         ("lineage_kind", ACTOR_KIND.to_owned()),
         ("lineage_up", LINEAGE_UP.to_owned()),
         ("lineage_down", LINEAGE_DOWN.to_owned()),
+        ("actor_settings", ACTOR_SETTINGS.to_owned()),
+        ("actor_settings_at", ACTOR_SETTINGS_AT.to_owned()),
+        ("settings", settings(|_| ())),
+        ("settings_model", settings(|q| q.model = x())),
+        ("settings_effort", settings(|q| q.effort = x())),
+        ("settings_source", settings(|q| q.source = x())),
+        ("settings_window", settings(|q| (q.from, q.to) = (x(), x()))),
+        ("settings_mismatch", settings(|q| q.mismatch = true)),
+        ("settings_skewed", settings(|q| q.skewed = true)),
+        (
+            "settings_all",
+            settings(|q| {
+                *q = SettingQuery {
+                    model: x(),
+                    effort: x(),
+                    source: x(),
+                    from: x(),
+                    to: x(),
+                    mismatch: true,
+                    skewed: true,
+                    after: 1,
+                    limit: LIMIT,
+                }
+            }),
+        ),
+        ("events", events(|_| ())),
+        ("events_types", events(|q| q.types = vec!["x".into(); 2])),
+        ("events_actor", events(|q| q.actor = x())),
+        ("events_window", events(|q| (q.from, q.to) = (x(), x()))),
+        (
+            "events_detail",
+            events(|q| (q.reason, q.source) = (x(), x())),
+        ),
+        ("events_skewed", events(|q| q.skewed = true)),
+        (
+            "events_all",
+            events(|q| {
+                *q = EventQuery {
+                    types: vec!["x".into(); 2],
+                    actor: x(),
+                    from: x(),
+                    to: x(),
+                    reason: x(),
+                    source: x(),
+                    skewed: true,
+                    after: 1,
+                    limit: LIMIT,
+                }
+            }),
+        ),
     ]
+}
+
+/// 1 つ多く読んだ行を、頁に切る（limit が無ければ全部）。
+fn page<T>(mut rows: Vec<T>, limit: Option<i64>) -> Page<T> {
+    let limit = limit.and_then(|l| usize::try_from(l).ok());
+    let more = limit.is_some_and(|l| rows.len() > l);
+    if let Some(l) = limit {
+        rows.truncate(l);
+    }
+    Page { rows, more }
 }
 
 /// 条件に合うアクターの 1 頁を、同じ transaction の中で読み、ラベルを付ける。
@@ -413,12 +585,8 @@ async fn actor_page(
     q: &ActorQuery,
 ) -> Result<Page<ActorItem>, sqlx::Error> {
     let mut builder = q.builder();
-    let mut rows: Vec<ActorItem> = builder.build_query_as().fetch_all(&mut **tx).await?;
-    let limit = q.limit.and_then(|l| usize::try_from(l).ok());
-    let more = limit.is_some_and(|l| rows.len() > l);
-    if let Some(l) = limit {
-        rows.truncate(l);
-    }
+    let rows: Vec<ActorItem> = builder.build_query_as().fetch_all(&mut **tx).await?;
+    let Page { mut rows, more } = page(rows, q.limit);
     let ids = Value::from(rows.iter().map(|a| a.id.clone()).collect::<Vec<_>>()).to_string();
     let labels: Vec<(String, String, String)> = sqlx::query_as(ACTOR_LABELS)
         .bind(ids)
@@ -453,11 +621,7 @@ impl Db {
         kind: Option<&str>,
     ) -> Result<Option<Lineage>, sqlx::Error> {
         let mut tx = self.read().begin().await?;
-        let found: Option<String> = sqlx::query_scalar(ACTOR_KIND)
-            .bind(id)
-            .fetch_optional(&mut *tx)
-            .await?;
-        if found.is_none() {
+        if !actor_exists(&mut tx, id).await? {
             return Ok(None);
         }
         let mut seen: HashSet<String> = HashSet::from([id.to_owned()]);
@@ -517,30 +681,64 @@ impl Db {
         }))
     }
 
-    /// あるアクターの model と effort の全部（受けた順）。アクターが無ければ None。
-    pub async fn actor_settings(&self, _id: &str) -> Result<Option<Vec<SettingItem>>, sqlx::Error> {
-        Err(sqlx::Error::Protocol("まだ無い".to_owned()))
+    /// あるアクターの model と effort の全部（受けた順）。アクターが無ければ None。1 つの読む transaction の中で読む。
+    pub async fn actor_settings(&self, id: &str) -> Result<Option<Vec<SettingItem>>, sqlx::Error> {
+        let mut tx = self.read().begin().await?;
+        if !actor_exists(&mut tx, id).await? {
+            return Ok(None);
+        }
+        let rows = sqlx::query_as(ACTOR_SETTINGS)
+            .bind(id)
+            .fetch_all(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        Ok(Some(rows))
     }
 
     /// ある時刻（DB の字）に効いていた model と effort（受けた時刻がそれまでの、seq の最大）。アクターが無ければ None。
     pub async fn actor_setting_at(
         &self,
-        _id: &str,
-        _at: &str,
+        id: &str,
+        at: &str,
     ) -> Result<Option<Option<SettingItem>>, sqlx::Error> {
-        Err(sqlx::Error::Protocol("まだ無い".to_owned()))
+        let mut tx = self.read().begin().await?;
+        if !actor_exists(&mut tx, id).await? {
+            return Ok(None);
+        }
+        let row = sqlx::query_as(ACTOR_SETTINGS_AT)
+            .bind(id)
+            .bind(at)
+            .fetch_optional(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        Ok(Some(row))
     }
 
-    /// model と effort の行を、アクターをまたいで探す。
+    /// model と effort の行を、アクターをまたいで探す（受けた順）。
     pub async fn search_settings(
         &self,
-        _q: &SettingQuery,
+        q: &SettingQuery,
     ) -> Result<Page<SettingItem>, sqlx::Error> {
-        Err(sqlx::Error::Protocol("まだ無い".to_owned()))
+        let mut tx = self.read().begin().await?;
+        let rows = q.builder().build_query_as().fetch_all(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(page(rows, Some(q.limit)))
     }
 
-    /// 出来事を、アクターをまたいで探す。
-    pub async fn search_events(&self, _q: &EventQuery) -> Result<Page<EventItem>, sqlx::Error> {
-        Err(sqlx::Error::Protocol("まだ無い".to_owned()))
+    /// 出来事を、アクターをまたいで探す（受けた順）。
+    pub async fn search_events(&self, q: &EventQuery) -> Result<Page<EventItem>, sqlx::Error> {
+        let mut tx = self.read().begin().await?;
+        let rows = q.builder().build_query_as().fetch_all(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(page(rows, Some(q.limit)))
     }
+}
+
+/// アクターがあるか。
+async fn actor_exists(tx: &mut Transaction<'_, Sqlite>, id: &str) -> Result<bool, sqlx::Error> {
+    let kind: Option<String> = sqlx::query_scalar(ACTOR_KIND)
+        .bind(id)
+        .fetch_optional(&mut **tx)
+        .await?;
+    Ok(kind.is_some())
 }

@@ -49,6 +49,12 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 - `launchedBy` と道のアクターの id は `ActorId` の形（UUID）だけを受ける。形の違う id は 400（今の server は、線の上下では 404、`launched_by` では空の答え）。
 - `GetLineage`（`GET /api/actors/{actorId}/lineage`）: 点を引く所も、線を辿る所と同じ 1 つの読む transaction で読む（今の server は 2 つに分けていた）。答えの欄は `asOf`・`actorId`・`nodes`（一覧の行 `ActorRow`）・`edges`（GetActor の線と同じ形）。
 - 一覧の行（`ActorRow`）は、今の server の一覧の欄を camelCase にした物（`firstEnteredAt`・`lastExitedAt`・`lastExitType`・`present`・`inferred`・`model`・`effort`・`url`）。無い値は欄ごと無い（今の server は null）。
+- `ListActorSettings`（`GET /api/actors/{actorId}/settings`）: そのアクターの model と effort の全部を受けた順に返し、頁は分けない（1 つのアクターの行は少ない。今の server と同じ）。行は GetActor の model と effort と同じ形（`Setting`。アクターの名は付けない）。
+- `GetActorSettingAt`（`GET /api/actors/{actorId}/settings/at?time=…`）: 今の server は `at` の有る無しで答えの形が変わったので、道を分けた。`time` は要る（無ければ 400）。受けた時刻が `time` まで（含む）の行の最新（seq で）1 つを `setting` に、比べた形（UTC・ミリ秒まで）に直した `time` を `at` に返す。行が無ければ `setting` は欄ごと無い（今の server は null）。
+- `ListSettings`（`GET /api/settings`）と `ListEvents`（`GET /api/events`）: 条件はどれも AND で、無くてもよい（今の server と同じ）。並びは受けた順（seq）。`mismatch` と `skewed` は true だけを受け、false は 400（`ListActors` の `skewed` と同じ訳）。`mismatch` は、見た行のうち、同じアクターのそれより前（seq で）の最新の頼んだ行と model か effort が違う物（前に頼んだ行が無ければ入らない）。`type` は重ねれば OR で、10 種の外は生成した層が 400。`actor` は `ActorId` の形だけ（今の server は空でない 256 字の何でも）。`reason`・`source` は `detail` の同じ名の欄と等しい物（空でない 256 字まで）。
+- `ListSettings` と `ListEvents` の頁の印は、検索の種類と最後の行の seq を 16 進にした字。崩れた物・ほかの検索の物（`ListActors` の物も）は 400。ほかの条件は結ばない（今の server と同じ）。
+- 探した行は、出来事と model と effort の欄（mixin の `EventFields`・`SettingFields`）に `actorName` を足した形（`EventRow`・`SettingRow`）。今の server の model と effort の行にあった `model_id`・`effort_id`（中の番号）は出さない。
+- 読む操作は、どれも 1 つの読む transaction の中で読む（今の server の `ListSettings`・`ListEvents` は transaction を張らずに 1 つの SQL で読んでいた）。`asOf` は読み始める前に取る。
 
 ## データ
 

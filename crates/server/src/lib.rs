@@ -19,6 +19,7 @@ mod resolve;
 mod rows;
 pub mod search;
 mod setting;
+mod token;
 
 use std::sync::Arc;
 
@@ -112,6 +113,15 @@ fn stored_time(name: &str, t: &aws_smithy_types::DateTime) -> Result<String, Str
         .filter(|t| (0..=9999).contains(&t.year()))
         .map(db::stamp)
         .ok_or_else(|| format!("{name} は 0000 年から 9999 年までの時刻"))
+}
+
+/// true だけを受ける絞り（付けなければ絞らない）。false は、絞らないのか逆に絞るのかが読めないので断る（その訳）。
+fn only_true(name: &str, value: Option<bool>) -> Result<bool, String> {
+    match value {
+        None => Ok(false),
+        Some(true) => Ok(true),
+        Some(false) => Err(format!("{name} は true だけ（絞らないなら付けない）")),
+    }
 }
 
 /// 送り手の時刻を、time の時刻にする。扱えなければ、その訳。
