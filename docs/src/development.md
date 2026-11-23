@@ -56,7 +56,7 @@ API を Smithy の定義で書き直している間（AI-36）は、今の serve
 | 単体 | DB に触らない純な関数 | 各 file の `#[cfg(test)]` |
 | browser | 本物の castlist-server を空いた port と一時の DB で起こし、API で見本を置き、Chromium で相関図を開く。点と線の数・押した先・model と effort の絞り・色（明るい・暗い）・console の誤りと CSP の違反が 0・script を切った時の字を見る。一覧とタイムラインの期間の欄（日時の欄で入れた日本時間で絞る・送り直しても同じ値・期間をすぐ選ぶ link）も見る | `e2e/`（Playwright。CI の job `e2e`。Node の依存の弱点は job `advisories` の `pnpm audit`） |
 | 終わり方と記録 | 本物の binary を、試験ごとの空の folder の DB で起こす。止める合図・合図なしの切断・DB を開けない、の後に起こし直して、前回の終わり方の行を見る。問い合わせの行が記録の file にだけ残ること・多く問い合わせた後の `logs/` の大きさが上限の内であること・読む道 `GET /v1/logs` も見る | `tests/runlog.rs`（書き手と印の単体は `src/runlog.rs`）。新しい server は `crates/server/tests/runlog.rs`（読む道は `GET /api/logs`。書き手と印の単体は `crates/server/src/runlog.rs`） |
-| image | 空の image の中で起き、断るべき物を断り、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せて、前回の終わり方を次の起動で出す | `ci/smoke-image.sh`（CI の job `image` と release の `check`） |
+| image | 空の image の中で起き、断るべき物を断り、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せて、前回の終わり方を次の起動で出す | `ci/smoke-image.sh`（CI の job `image` と release の `check`）。rc の image（`Containerfile.next`。新しい server）は `ci/smoke-image.sh <image> api` で、新しい API で書いて読み返し、起こし直した後も読めるかも見る（CI の job `image-next` と、rc の release の `check`） |
 | release の版 | tag と `Cargo.toml` の版・`CHANGELOG.md` の節の突き合わせを、通る形と落ちる形で打つ | `ci/test-check-release-version.sh`（CI の job `test`） |
 
 ## 待たせない書き方
