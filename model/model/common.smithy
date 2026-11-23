@@ -80,3 +80,8 @@ structure ActorSummary {
     @required
     kind: ActorKind
 }
+
+/// 付随する id を指す参照: `種類:値`。初めの `:` で分ける（種類は `:` を持たないので、値に `:` があってよい）。
+/// 種類は英小文字・数字・`-`・`.` で 64 字まで。値は空でなく、制御文字（Unicode の Cc）の無い、256 字まで。
+@pattern("^[a-z0-9.-]{1,64}:[^\\x00-\\x1F\\x7F-\\x9F]{1,256}$")
+string ActorRef

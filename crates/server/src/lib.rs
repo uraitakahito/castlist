@@ -2,10 +2,12 @@
 //!
 //! 定義（model/）から作った骨（crates/castlist-sdk/）に処理（handler）を入れ、守りの層を前に掛ける。
 //! 手の道（画面・backup・logs）は、この後の PR で同じ Router に足す。
+mod actor;
 pub mod db;
 mod errors;
 mod generated;
 mod register;
+mod resolve;
 
 use std::sync::Arc;
 
@@ -14,6 +16,7 @@ use axum::extract::Request;
 use axum::http::{Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
+use castlist_sdk::error::Unavailable;
 use castlist_sdk::output::GetHealthOutput;
 use castlist_sdk::{Castlist, CastlistConfig};
 
@@ -24,7 +27,15 @@ use crate::generated::Generated;
 pub fn app(db: Arc<Db>) -> Router {
     let generated = Castlist::builder(CastlistConfig::builder().build())
         .get_health(get_health)
-        .register_actor(move |input| register::register(db.clone(), input))
+        .register_actor({
+            let db = db.clone();
+            move |input| register::register(db.clone(), input)
+        })
+        .get_actor({
+            let db = db.clone();
+            move |input| actor::get_actor(db.clone(), input)
+        })
+        .resolve_actors(move |input| resolve::resolve(db.clone(), input))
         .build()
         .expect("どの操作にも handler がある");
     Router::new()
@@ -37,6 +48,26 @@ async fn get_health(_input: castlist_sdk::input::GetHealthInput) -> GetHealthOut
         status: "ok".to_owned(),
         version: env!("CARGO_PKG_VERSION").to_owned(),
         now: aws_smithy_types::DateTime::from(std::time::SystemTime::now()),
+    }
+}
+
+/// DB の字の時刻（RFC 3339）を、答えの時刻にする。読めない字は DB の誤り。
+fn datetime(s: &str) -> Result<aws_smithy_types::DateTime, Unavailable> {
+    time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339)
+        .ok()
+        .and_then(|t| aws_smithy_types::DateTime::from_nanos(t.unix_timestamp_nanos()).ok())
+        .ok_or_else(|| Unavailable {
+            message: format!("DB の時刻が読めない: {s}"),
+        })
+}
+
+/// 読めない訳を、503 の答えにする。
+fn unavailable(e: sqlx::Error) -> Unavailable {
+    Unavailable {
+        message: match e {
+            sqlx::Error::PoolTimedOut => "混んでいる。少し待ってから送り直す".to_owned(),
+            e => format!("DB の誤り: {e}"),
+        },
     }
 }
 

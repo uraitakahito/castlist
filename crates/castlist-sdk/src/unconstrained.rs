@@ -77,3 +77,37 @@ pub(crate) mod bindings_unconstrained {
         }
     }
 }
+pub(crate) mod actor_refs_unconstrained {
+
+    #[derive(Debug, Clone)]
+    pub(crate) struct ActorRefsUnconstrained(pub(crate) std::vec::Vec<::std::string::String>);
+
+    impl From<ActorRefsUnconstrained>
+        for crate::constrained::MaybeConstrained<crate::model::ActorRefs>
+    {
+        fn from(value: ActorRefsUnconstrained) -> Self {
+            Self::Unconstrained(value)
+        }
+    }
+    impl std::convert::TryFrom<ActorRefsUnconstrained> for crate::model::ActorRefs {
+        type Error = crate::model::actor_refs_internal::ConstraintViolation;
+        fn try_from(value: ActorRefsUnconstrained) -> std::result::Result<Self, Self::Error> {
+            let res: ::std::result::Result<
+                ::std::vec::Vec<crate::model::ActorRef>,
+                (usize, crate::model::actor_ref_internal::ConstraintViolation),
+            > = value
+                .0
+                .into_iter()
+                .enumerate()
+                .map(|(idx, inner)| {
+                    inner
+                        .try_into()
+                        .map_err(|inner_violation| (idx, inner_violation))
+                })
+                .collect();
+            let inner =
+                res.map_err(|(idx, inner_violation)| Self::Error::Member(idx, inner_violation))?;
+            Self::try_from(inner)
+        }
+    }
+}

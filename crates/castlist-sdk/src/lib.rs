@@ -176,8 +176,10 @@
 //! pub async fn main() {
 //!    let config = CastlistConfig::builder().build();
 //!    let app = Castlist::builder(config)
+//!        .get_actor(get_actor)
 //!        .get_health(get_health)
 //!        .register_actor(register_actor)
+//!        .resolve_actors(resolve_actors)
 //!        .build()
 //!        .expect("failed to build an instance of Castlist");
 //!
@@ -195,11 +197,19 @@
 //!
 //! use castlist_sdk::{input, output, error};
 //!
+//! async fn get_actor(input: input::GetActorInput) -> Result<output::GetActorOutput, error::GetActorError> {
+//!     todo!()
+//! }
+//!
 //! async fn get_health(input: input::GetHealthInput) -> output::GetHealthOutput {
 //!     todo!()
 //! }
 //!
 //! async fn register_actor(input: input::RegisterActorInput) -> Result<output::RegisterActorOutput, error::RegisterActorError> {
+//!     todo!()
+//! }
+//!
+//! async fn resolve_actors(input: input::ResolveActorsInput) -> Result<output::ResolveActorsOutput, error::ResolveActorsError> {
 //!     todo!()
 //! }
 //!

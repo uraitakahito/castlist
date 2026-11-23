@@ -81,6 +81,63 @@ impl RegisterActorInput {
         crate::input::register_actor_input::Builder::default()
     }
 }
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct GetActorInput {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+}
+impl GetActorInput {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+}
+impl crate::constrained::Constrained for crate::input::GetActorInput {
+    type Unconstrained = crate::input::get_actor_input_internal::Builder;
+}
+impl GetActorInput {
+    /// Creates a new builder-style object to manufacture [`GetActorInput`](crate::input::GetActorInput).
+    pub fn builder() -> crate::input::get_actor_input::Builder {
+        crate::input::get_actor_input::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct ResolveActorsInput {
+    /// 出し手。鍵は出し手の中で引く。
+    pub issuer: ::std::string::String,
+    /// 引く参照（1 から 100 個）。
+    pub refs: ::std::vec::Vec<::std::string::String>,
+}
+impl ResolveActorsInput {
+    /// 出し手。鍵は出し手の中で引く。
+    pub fn issuer(&self) -> &str {
+        use std::ops::Deref;
+        self.issuer.deref()
+    }
+    /// 引く参照（1 から 100 個）。
+    pub fn refs(&self) -> &[::std::string::String] {
+        use std::ops::Deref;
+        self.refs.deref()
+    }
+}
+impl crate::constrained::Constrained for crate::input::ResolveActorsInput {
+    type Unconstrained = crate::input::resolve_actors_input_internal::Builder;
+}
+impl ResolveActorsInput {
+    /// Creates a new builder-style object to manufacture [`ResolveActorsInput`](crate::input::ResolveActorsInput).
+    pub fn builder() -> crate::input::resolve_actors_input::Builder {
+        crate::input::resolve_actors_input::Builder::default()
+    }
+}
 /// See [`GetHealthInput`](crate::input::GetHealthInput).
 pub(crate) mod get_health_input_internal {
 
@@ -527,6 +584,381 @@ pub mod register_actor_input {
                 bindings: self.bindings.ok_or(ConstraintViolation::MissingBindings)?,
                 sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
                 settings: self.settings,
+            })
+        }
+    }
+}
+/// See [`GetActorInput`](crate::input::GetActorInput).
+pub(crate) mod get_actor_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `GetActorInput`.
+        MissingActorId,
+        /// Constraint violation occurred building member `actor_id` when building `GetActorInput`.
+        #[doc(hidden)]
+        ActorId(crate::model::actor_id_internal::ConstraintViolation),
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `GetActorInput`"),
+                ConstraintViolation::ActorId(_) => write!(f, "constraint violation occurred building member `actor_id` when building `GetActorInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingActorId => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/actorId' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/actorId",
+                                            },
+            ConstraintViolation::ActorId(inner) => inner.as_validation_exception_field(path + "/actorId"),
+        }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::GetActorInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::GetActorInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetActorInput`](crate::input::GetActorInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) actor_id:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorId>>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub(crate) fn set_actor_id(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorId>,
+            >,
+        ) -> Self {
+            self.actor_id = Some(input.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`GetActorInput`](crate::input::GetActorInput).
+        ///
+        /// The builder fails to construct a [`GetActorInput`](crate::input::GetActorInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::GetActorInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::GetActorInput, ConstraintViolation> {
+            Ok(crate::input::GetActorInput {
+                actor_id: self
+                    .actor_id
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::ActorId))
+                    .transpose()?
+                    .map(|v: crate::model::ActorId| v.into())
+                    .ok_or(ConstraintViolation::MissingActorId)?,
+            })
+        }
+    }
+}
+/// See [`GetActorInput`](crate::input::GetActorInput).
+pub mod get_actor_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `GetActorInput`.
+        MissingActorId,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(
+                    f,
+                    "`actor_id` was not provided but it is required when building `GetActorInput`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::GetActorInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetActorInput`](crate::input::GetActorInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`GetActorInput`](crate::input::GetActorInput).
+        ///
+        /// The builder fails to construct a [`GetActorInput`](crate::input::GetActorInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::GetActorInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::GetActorInput, ConstraintViolation> {
+            Ok(crate::input::GetActorInput {
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+            })
+        }
+    }
+}
+/// See [`ResolveActorsInput`](crate::input::ResolveActorsInput).
+pub(crate) mod resolve_actors_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `issuer` was not provided but it is required when building `ResolveActorsInput`.
+        MissingIssuer,
+        /// Constraint violation occurred building member `issuer` when building `ResolveActorsInput`.
+        #[doc(hidden)]
+        Issuer(crate::model::name_internal::ConstraintViolation),
+        /// `refs` was not provided but it is required when building `ResolveActorsInput`.
+        MissingRefs,
+        /// Constraint violation occurred building member `refs` when building `ResolveActorsInput`.
+        #[doc(hidden)]
+        Refs(crate::model::actor_refs_internal::ConstraintViolation),
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `ResolveActorsInput`"),
+                ConstraintViolation::Issuer(_) => write!(f, "constraint violation occurred building member `issuer` when building `ResolveActorsInput`"),
+                ConstraintViolation::MissingRefs => write!(f, "`refs` was not provided but it is required when building `ResolveActorsInput`"),
+                ConstraintViolation::Refs(_) => write!(f, "constraint violation occurred building member `refs` when building `ResolveActorsInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingIssuer => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/issuer' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/issuer",
+                                            },
+            ConstraintViolation::Issuer(inner) => inner.as_validation_exception_field(path + "/issuer"),
+            ConstraintViolation::MissingRefs => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/refs' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/refs",
+                                            },
+            ConstraintViolation::Refs(inner) => inner.as_validation_exception_field(path + "/refs"),
+        }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::ResolveActorsInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::ResolveActorsInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ResolveActorsInput`](crate::input::ResolveActorsInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) issuer:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) refs:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorRefs>>,
+    }
+    impl Builder {
+        /// 出し手。鍵は出し手の中で引く。
+        pub(crate) fn set_issuer(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        ) -> Self {
+            self.issuer = Some(input.into());
+            self
+        }
+        /// 引く参照（1 から 100 個）。
+        pub(crate) fn set_refs(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorRefs>,
+            >,
+        ) -> Self {
+            self.refs = Some(input.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`ResolveActorsInput`](crate::input::ResolveActorsInput).
+        ///
+        /// The builder fails to construct a [`ResolveActorsInput`](crate::input::ResolveActorsInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::ResolveActorsInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::ResolveActorsInput, ConstraintViolation> {
+            Ok(crate::input::ResolveActorsInput {
+                issuer: self
+                    .issuer
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Issuer))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into())
+                    .ok_or(ConstraintViolation::MissingIssuer)?,
+                refs: self
+                    .refs
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Refs))
+                    .transpose()?
+                    .map(|v: crate::model::ActorRefs| v.into())
+                    .ok_or(ConstraintViolation::MissingRefs)?,
+            })
+        }
+    }
+}
+/// See [`ResolveActorsInput`](crate::input::ResolveActorsInput).
+pub mod resolve_actors_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `issuer` was not provided but it is required when building `ResolveActorsInput`.
+        MissingIssuer,
+        /// `refs` was not provided but it is required when building `ResolveActorsInput`.
+        MissingRefs,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `ResolveActorsInput`"),
+                ConstraintViolation::MissingRefs => write!(f, "`refs` was not provided but it is required when building `ResolveActorsInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::ResolveActorsInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ResolveActorsInput`](crate::input::ResolveActorsInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) issuer: ::std::option::Option<::std::string::String>,
+        pub(crate) refs: ::std::option::Option<::std::vec::Vec<::std::string::String>>,
+    }
+    impl Builder {
+        /// 出し手。鍵は出し手の中で引く。
+        pub fn issuer(mut self, input: ::std::string::String) -> Self {
+            self.issuer = Some(input);
+            self
+        }
+        /// 引く参照（1 から 100 個）。
+        pub fn refs(mut self, input: ::std::vec::Vec<::std::string::String>) -> Self {
+            self.refs = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`ResolveActorsInput`](crate::input::ResolveActorsInput).
+        ///
+        /// The builder fails to construct a [`ResolveActorsInput`](crate::input::ResolveActorsInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::ResolveActorsInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::ResolveActorsInput, ConstraintViolation> {
+            Ok(crate::input::ResolveActorsInput {
+                issuer: self.issuer.ok_or(ConstraintViolation::MissingIssuer)?,
+                refs: self.refs.ok_or(ConstraintViolation::MissingRefs)?,
             })
         }
     }

@@ -83,6 +83,16 @@ impl App {
         )
     }
 
+    /// `GET`。答えの本文は JSON に読む（読めなければ Null）。
+    pub async fn get(&self, uri: &str) -> (StatusCode, HeaderMap, Value) {
+        let (status, headers, body) = self.send(get(uri)).await;
+        (
+            status,
+            headers,
+            serde_json::from_str(&body).unwrap_or(Value::Null),
+        )
+    }
+
     /// アクターを登録し、答え（actor・created）を返す。
     pub async fn register(&self, body: &Value) -> Value {
         let (status, _, answer) = self.post("/api/actors", body).await;
@@ -110,6 +120,73 @@ impl App {
             .fetch_all(self.db.read())
             .await
             .unwrap_or_else(|e| panic!("{sql}: {e}"))
+    }
+
+    /// 出来事を 1 つ、書く接続で直に置く（出来事の道はまだ無い）。受けた時刻は castlist の今。
+    pub async fn event(&self, id: &str, actor: &str, kind: &str, detail: &str) {
+        self.event_at(id, actor, kind, detail, &castlist_next::db::now())
+            .await;
+    }
+
+    /// 出来事を 1 つ、受けた時刻（送り手の時刻も同じ）を決めて直に置く。
+    pub async fn event_at(&self, id: &str, actor: &str, kind: &str, detail: &str, now: &str) {
+        sqlx::query(
+            "insert into events(id, actor_id, type, detail, sent_at, received_at, clock_skew, body_hash)
+             values(?1, ?2, ?3, ?4, ?5, ?5, 0, 'x')",
+        )
+        .bind(id)
+        .bind(actor)
+        .bind(kind)
+        .bind(detail)
+        .bind(now)
+        .execute(self.db.write())
+        .await
+        .unwrap_or_else(|e| panic!("出来事 {id}: {e}"));
+    }
+
+    /// 線を 1 つ、書く接続で直に置く（線の道はまだ無い）。
+    pub async fn link(&self, id: &str, kind: &str, from: &str, to: &str) {
+        let now = castlist_next::db::now();
+        sqlx::query(
+            "insert into links(id, type, from_actor, to_actor, sent_at, received_at, clock_skew, body_hash)
+             values(?1, ?2, ?3, ?4, ?5, ?5, 0, 'x')",
+        )
+        .bind(id)
+        .bind(kind)
+        .bind(from)
+        .bind(to)
+        .bind(&now)
+        .execute(self.db.write())
+        .await
+        .unwrap_or_else(|e| panic!("線 {id}: {e}"));
+    }
+
+    /// 見た model と effort を 1 つ、書く接続で直に置く（設定の道はまだ無い）。知らない名は一覧に足す。
+    pub async fn observed(&self, id: &str, actor: &str, model: &str, effort: &str) {
+        let now = castlist_next::db::now();
+        for (table, name) in [("models", model), ("efforts", effort)] {
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "insert into {table}(name, first_seen_at) values(?1, ?2) on conflict(name) do nothing"
+            )))
+            .bind(name)
+            .bind(&now)
+            .execute(self.db.write())
+            .await
+            .unwrap_or_else(|e| panic!("{table} {name}: {e}"));
+        }
+        sqlx::query(
+            "insert into settings(id, actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew, body_hash)
+             values(?1, ?2, (select id from models where name = ?3), (select id from efforts where name = ?4),
+                    'observed', ?5, ?5, 0, 'x')",
+        )
+        .bind(id)
+        .bind(actor)
+        .bind(model)
+        .bind(effort)
+        .bind(&now)
+        .execute(self.db.write())
+        .await
+        .unwrap_or_else(|e| panic!("設定 {id}: {e}"));
     }
 
     /// 書く接続で SQL を 1 つ流す（試験の見本を直に置く）。

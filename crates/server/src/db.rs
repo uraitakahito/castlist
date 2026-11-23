@@ -23,10 +23,14 @@ pub const HEAVY_READS: u32 = 2;
 /// 送り手の時刻と castlist の時計が、これより離れていれば clock_skew を立てる（ちょうどなら立てない）。
 pub const SKEW: time::Duration = time::Duration::minutes(5);
 
+// --- 引き当てと見る SQL（試験が LOOKUPS で、索引を使うかを見る） ---
+
 /// 鍵の付随する id から、アクターを引く。
 const RESOLVE: &str =
     "select a.id, a.name, a.kind from bindings b join actors a on a.id = b.actor_id
      where b.issuer = ?1 and b.type = ?2 and b.value = ?3 and b.is_key = 1";
+/// 引き当てと見る SQL（名と SQL）。試験が `explain query plan` で、大きな表を端から読まないかを見る。
+pub const LOOKUPS: &[(&str, &str)] = &[];
 
 /// どの表の最新の received_at より前にならないよう、表ごとの最新（seq の大きい方）を見る。
 const CLOCK: &str = "select max(t) from (
@@ -70,6 +74,95 @@ pub struct ActorRef {
     pub id: String,
     pub name: String,
     pub kind: String,
+}
+
+/// アクターの行。
+#[derive(Clone, Debug, FromRow)]
+pub struct Actor {
+    pub id: String,
+    pub name: String,
+    pub kind: String,
+    pub issuer: String,
+    pub sent_at: String,
+    pub received_at: String,
+    pub clock_skew: bool,
+}
+
+/// 付随する id の行。
+#[derive(Clone, Debug, FromRow)]
+pub struct Binding {
+    pub issuer: String,
+    #[sqlx(rename = "type")]
+    pub kind: String,
+    pub value: String,
+    pub is_key: bool,
+    pub sent_at: String,
+    pub received_at: String,
+}
+
+/// 出来事の行。detail は JSON の物の字。
+#[derive(Clone, Debug, FromRow)]
+pub struct Event {
+    pub id: String,
+    pub actor_id: String,
+    #[sqlx(rename = "type")]
+    pub kind: String,
+    pub detail: String,
+    pub sent_at: String,
+    pub received_at: String,
+    pub clock_skew: bool,
+}
+
+/// model と effort の行（名に直した物）。id は送り手の物で、登録の時に頼んだ物には無い。
+#[derive(Clone, Debug, FromRow)]
+pub struct Setting {
+    pub id: Option<String>,
+    pub actor_id: String,
+    pub model: String,
+    pub effort: String,
+    pub source: String,
+    pub sent_at: String,
+    pub received_at: String,
+    pub clock_skew: bool,
+}
+
+/// 線の行。
+#[derive(Clone, Debug, FromRow)]
+pub struct Link {
+    pub id: String,
+    #[sqlx(rename = "type")]
+    pub kind: String,
+    pub from_actor: String,
+    pub to_actor: String,
+    pub sent_at: String,
+    pub received_at: String,
+    pub clock_skew: bool,
+}
+
+/// 今の状態（view の actor_state と、推しの停止か）。
+#[derive(Clone, Debug, FromRow)]
+pub struct State {
+    pub presence: Option<String>,
+    pub present: bool,
+    pub inferred: bool,
+    pub entered_at: Option<String>,
+    pub exited_at: Option<String>,
+}
+
+/// 1 つのアクターの全部。
+#[derive(Clone, Debug)]
+pub struct ActorDetail {
+    pub actor: Actor,
+    /// 鍵の順。
+    pub labels: Vec<(String, String)>,
+    pub bindings: Vec<Binding>,
+    pub current_bindings: Vec<Binding>,
+    pub events: Vec<Event>,
+    pub settings: Vec<Setting>,
+    pub current_settings: Option<Setting>,
+    pub links_in: Vec<Link>,
+    pub links_out: Vec<Link>,
+    pub state: State,
 }
 
 /// 書けない訳。
@@ -410,6 +503,24 @@ impl Db {
         }
         tx.commit().await?;
         Ok((actor, created))
+    }
+}
+
+// --- 読む ---
+
+impl Db {
+    /// 鍵の付随する id から、出し手の中のアクターを引く（引けなければ None）。答えは問いと同じ順。
+    pub async fn resolve(
+        &self,
+        _issuer: &str,
+        _refs: &[Ref],
+    ) -> Result<Vec<Option<ActorRef>>, sqlx::Error> {
+        Err(sqlx::Error::Protocol("まだ引けない".to_owned()))
+    }
+
+    /// 1 つのアクターの全部（無ければ None）。1 つの読む transaction の中で、揃った写しを読む。
+    pub async fn actor(&self, _id: &str) -> Result<Option<ActorDetail>, sqlx::Error> {
+        Err(sqlx::Error::Protocol("まだ読めない".to_owned()))
     }
 }
 
