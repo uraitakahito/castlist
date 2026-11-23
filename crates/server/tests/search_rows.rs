@@ -488,6 +488,57 @@ async fn a_next_token_of_another_query_is_400() {
     .await;
 }
 
+/// 種類が同じで中身の数が違う印は「崩れた」と答え、「ほかの検索の印」と答えるのは種類が違う時だけ。
+#[tokio::test]
+async fn a_token_of_the_same_kind_with_the_wrong_parts_is_broken_not_another_query() {
+    let s = sample().await;
+    let broken = "前の答えの nextToken を、そのまま渡す";
+    let other = "検索の nextToken ではない";
+    for (uri, want) in [
+        (
+            format!("/api/settings?nextToken={}", token("settings\n1\n2")),
+            broken,
+        ),
+        (
+            format!("/api/settings?nextToken={}", token("settings")),
+            broken,
+        ),
+        (
+            format!("/api/events?nextToken={}", token("events\n")),
+            broken,
+        ),
+        (
+            format!("/api/events?nextToken={}", token("events\n1\n")),
+            broken,
+        ),
+        (
+            format!(
+                "/api/actors?label=project:castlist&nextToken={}",
+                token("actors\nentered\nasc\n1")
+            ),
+            broken,
+        ),
+        (
+            format!("/api/events?nextToken={}", token("settings\n1")),
+            other,
+        ),
+        (
+            format!("/api/settings?nextToken={}", token("events")),
+            other,
+        ),
+        (
+            format!(
+                "/api/actors?label=project:castlist&nextToken={}",
+                token("events\n1")
+            ),
+            other,
+        ),
+    ] {
+        let message = invalid(&s.app, &uri).await;
+        assert!(message.contains(want), "{uri}: {message}");
+    }
+}
+
 // --- 誤り ---
 
 /// 値の形の誤りは、生成した層が 400 で断る（種類は 10 種のどれか・reason と source は空でない 256 字まで）。

@@ -69,7 +69,16 @@ mod tests {
             ),
             Err(other("出来事の検索"))
         );
-        for broken in ["zz", "abc", "ff", &encode(&["events", "x"])] {
+        // 種類が同じで、中身の数が違う物は崩れた印。
+        for broken in [
+            "zz",
+            "abc",
+            "ff",
+            "",
+            &encode(&["events", "x"]),
+            &encode(&["events", "1", "2"]),
+            &encode(&["events"]),
+        ] {
             assert_eq!(
                 seq_after(broken, "events", "出来事の検索"),
                 Err(BROKEN.to_owned()),
