@@ -3,6 +3,7 @@
 //! 定義（model/）から作った骨（crates/castlist-sdk/）に処理（handler）を入れ、守りの層を前に掛ける。
 //! 手の道（画面・backup・logs）は、この後の PR で同じ Router に足す。
 mod actor;
+mod actor_settings;
 mod body;
 pub mod db;
 mod errors;
@@ -11,11 +12,14 @@ mod generated;
 mod lineage;
 mod link;
 mod list_actors;
+mod list_events;
+mod list_settings;
 mod register;
 mod resolve;
 mod rows;
 pub mod search;
 mod setting;
+mod token;
 
 use std::sync::Arc;
 
@@ -49,6 +53,22 @@ pub fn app(db: Arc<Db>) -> Router {
         .get_lineage({
             let db = db.clone();
             move |input| lineage::get_lineage(db.clone(), input)
+        })
+        .list_actor_settings({
+            let db = db.clone();
+            move |input| actor_settings::list_actor_settings(db.clone(), input)
+        })
+        .get_actor_setting_at({
+            let db = db.clone();
+            move |input| actor_settings::get_actor_setting_at(db.clone(), input)
+        })
+        .list_settings({
+            let db = db.clone();
+            move |input| list_settings::list_settings(db.clone(), input)
+        })
+        .list_events({
+            let db = db.clone();
+            move |input| list_events::list_events(db.clone(), input)
         })
         .resolve_actors({
             let db = db.clone();
@@ -93,6 +113,15 @@ fn stored_time(name: &str, t: &aws_smithy_types::DateTime) -> Result<String, Str
         .filter(|t| (0..=9999).contains(&t.year()))
         .map(db::stamp)
         .ok_or_else(|| format!("{name} は 0000 年から 9999 年までの時刻"))
+}
+
+/// true だけを受ける絞り（付けなければ絞らない）。false は、絞らないのか逆に絞るのかが読めないので断る（その訳）。
+fn only_true(name: &str, value: Option<bool>) -> Result<bool, String> {
+    match value {
+        None => Ok(false),
+        Some(true) => Ok(true),
+        Some(false) => Err(format!("{name} は true だけ（絞らないなら付けない）")),
+    }
 }
 
 /// 送り手の時刻を、time の時刻にする。扱えなければ、その訳。

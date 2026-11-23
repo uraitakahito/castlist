@@ -1,4 +1,4 @@
-//! 監査の検索の見本（ListActors と GetLineage の試験で共に使う）。Auditor が台帳の件から持てる物（project・Key・役・workspace・時刻）で
+//! 監査の検索の見本（探す操作の試験で共に使う）。Auditor が台帳の件から持てる物（project・Key・役・workspace・時刻）で
 //! 引けるよう、今の server の tests/search.rs と同じ記録を、書く操作（RegisterActor・PutEvent・PutLink・PutSetting）だけで作る。
 use std::collections::BTreeMap;
 use std::time::Duration;
@@ -91,6 +91,8 @@ pub struct Sample {
     pub ids: BTreeMap<&'static str, String>,
     /// se.1 が登場した時（workspace:3 は se.1 の物）。
     pub se1_entered: String,
+    /// se.2 が登場した時（頼んだ opus のまま）。
+    pub se2_entered: String,
     /// se.2 の /model（見た sonnet）を受けた時。
     pub model_changed: String,
     /// se.2 と devops.1 が退いた後、se.3 と tpm.1 が退く前の印（auditor.1 の reported_in）。
@@ -109,7 +111,7 @@ impl Sample {
 
 /// 人の owner → PM → TPM → SWE×2・DevOps・Auditor。se.1 は /clear して se.3 に継がれる。
 /// se.2 は /model で sonnet に替わる（見た行）。tpm.1 は頼んだ high と違う max を見られ、後で high に戻る。
-/// auditor.1 は退かず、送り手の時計が 1 時間ずれた出来事を 1 つ持つ。
+/// auditor.1 は退かず、送り手の時計が 1 時間ずれた出来事を 1 つ持つ。devops.1 と auditor.1 は model を読めなかった（訳は detail.reason）。
 pub async fn sample() -> Sample {
     let app = App::start().await;
     let mut ids = BTreeMap::new();
@@ -151,7 +153,7 @@ pub async fn sample() -> Sample {
     )
     .await;
     put(&app, "/api/links/l-tpm-se2", &line("launched", TPM, SE2)).await;
-    put(
+    let se2_entered = received(
         &app,
         "/api/events/e-se2-in",
         &ev(SE2, "entered", json!({}), &at(0)),
@@ -228,6 +230,18 @@ pub async fn sample() -> Sample {
     )
     .await;
     tick().await;
+    put(
+        &app,
+        "/api/events/e-unread-2",
+        &ev(
+            AUDITOR,
+            "model_unreadable",
+            json!({ "reason": "timeout" }),
+            &at(0),
+        ),
+    )
+    .await;
+    tick().await;
 
     // /clear: se.1 が退き、同じ workspace の se.3 が継ぐ。
     put(
@@ -293,6 +307,7 @@ pub async fn sample() -> Sample {
         app,
         ids,
         se1_entered,
+        se2_entered,
         model_changed,
         marker,
         as_of_before_last,

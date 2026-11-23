@@ -262,6 +262,62 @@ impl GetLineageInput {
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]
+pub struct ListActorSettingsInput {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+}
+impl ListActorSettingsInput {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+}
+impl crate::constrained::Constrained for crate::input::ListActorSettingsInput {
+    type Unconstrained = crate::input::list_actor_settings_input_internal::Builder;
+}
+impl ListActorSettingsInput {
+    /// Creates a new builder-style object to manufacture [`ListActorSettingsInput`](crate::input::ListActorSettingsInput).
+    pub fn builder() -> crate::input::list_actor_settings_input::Builder {
+        crate::input::list_actor_settings_input::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct GetActorSettingAtInput {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// 効いていた物を引く時刻。
+    pub time: ::aws_smithy_types::DateTime,
+}
+impl GetActorSettingAtInput {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 効いていた物を引く時刻。
+    pub fn time(&self) -> &::aws_smithy_types::DateTime {
+        &self.time
+    }
+}
+impl crate::constrained::Constrained for crate::input::GetActorSettingAtInput {
+    type Unconstrained = crate::input::get_actor_setting_at_input_internal::Builder;
+}
+impl GetActorSettingAtInput {
+    /// Creates a new builder-style object to manufacture [`GetActorSettingAtInput`](crate::input::GetActorSettingAtInput).
+    pub fn builder() -> crate::input::get_actor_setting_at_input::Builder {
+        crate::input::get_actor_setting_at_input::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
 pub struct ResolveActorsInput {
     /// 出し手。鍵は出し手の中で引く。
     pub issuer: ::std::string::String,
@@ -343,6 +399,78 @@ impl PutEventInput {
     /// Creates a new builder-style object to manufacture [`PutEventInput`](crate::input::PutEventInput).
     pub fn builder() -> crate::input::put_event_input::Builder {
         crate::input::put_event_input::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct ListEventsInput {
+    /// 出来事の種類。重ねれば、どれか。
+    pub r#type: ::std::option::Option<::std::vec::Vec<::std::string::String>>,
+    /// このアクターの出来事。
+    pub actor: ::std::option::Option<::std::string::String>,
+    /// 受けた時刻の窓の始め（含む）。
+    pub from: ::std::option::Option<::aws_smithy_types::DateTime>,
+    /// 受けた時刻の窓の終わり（含む）。
+    pub to: ::std::option::Option<::aws_smithy_types::DateTime>,
+    /// `detail.reason` がこの字と等しい。
+    pub reason: ::std::option::Option<::std::string::String>,
+    /// `detail.source` がこの字と等しい。
+    pub source: ::std::option::Option<::std::string::String>,
+    /// 時刻ずれの行（true だけ）。
+    pub skewed: ::std::option::Option<bool>,
+    /// 1 頁の数（既定 100）。
+    pub max_results: ::std::option::Option<i32>,
+    /// 前の答えの `nextToken`。
+    pub next_token: ::std::option::Option<::std::string::String>,
+}
+impl ListEventsInput {
+    /// 出来事の種類。重ねれば、どれか。
+    pub fn r#type(&self) -> ::std::option::Option<&[::std::string::String]> {
+        self.r#type.as_deref()
+    }
+    /// このアクターの出来事。
+    pub fn actor(&self) -> ::std::option::Option<&str> {
+        self.actor.as_deref()
+    }
+    /// 受けた時刻の窓の始め（含む）。
+    pub fn from(&self) -> ::std::option::Option<&::aws_smithy_types::DateTime> {
+        self.from.as_ref()
+    }
+    /// 受けた時刻の窓の終わり（含む）。
+    pub fn to(&self) -> ::std::option::Option<&::aws_smithy_types::DateTime> {
+        self.to.as_ref()
+    }
+    /// `detail.reason` がこの字と等しい。
+    pub fn reason(&self) -> ::std::option::Option<&str> {
+        self.reason.as_deref()
+    }
+    /// `detail.source` がこの字と等しい。
+    pub fn source(&self) -> ::std::option::Option<&str> {
+        self.source.as_deref()
+    }
+    /// 時刻ずれの行（true だけ）。
+    pub fn skewed(&self) -> ::std::option::Option<bool> {
+        self.skewed
+    }
+    /// 1 頁の数（既定 100）。
+    pub fn max_results(&self) -> ::std::option::Option<i32> {
+        self.max_results
+    }
+    /// 前の答えの `nextToken`。
+    pub fn next_token(&self) -> ::std::option::Option<&str> {
+        self.next_token.as_deref()
+    }
+}
+impl crate::constrained::Constrained for crate::input::ListEventsInput {
+    type Unconstrained = crate::input::list_events_input_internal::Builder;
+}
+impl ListEventsInput {
+    /// Creates a new builder-style object to manufacture [`ListEventsInput`](crate::input::ListEventsInput).
+    pub fn builder() -> crate::input::list_events_input::Builder {
+        crate::input::list_events_input::Builder::default()
     }
 }
 
@@ -468,6 +596,78 @@ impl PutSettingInput {
     /// Creates a new builder-style object to manufacture [`PutSettingInput`](crate::input::PutSettingInput).
     pub fn builder() -> crate::input::put_setting_input::Builder {
         crate::input::put_setting_input::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct ListSettingsInput {
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub model: ::std::option::Option<::std::string::String>,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub effort: ::std::option::Option<::std::string::String>,
+    /// `requested`（頼んだ）か `observed`（見た）。
+    pub source: ::std::option::Option<::std::string::String>,
+    /// 受けた時刻の窓の始め（含む）。
+    pub from: ::std::option::Option<::aws_smithy_types::DateTime>,
+    /// 受けた時刻の窓の終わり（含む）。
+    pub to: ::std::option::Option<::aws_smithy_types::DateTime>,
+    /// 見た物が、その前に頼んだ物と違う行（true だけ）。
+    pub mismatch: ::std::option::Option<bool>,
+    /// 時刻ずれの行（true だけ）。
+    pub skewed: ::std::option::Option<bool>,
+    /// 1 頁の数（既定 100）。
+    pub max_results: ::std::option::Option<i32>,
+    /// 前の答えの `nextToken`。
+    pub next_token: ::std::option::Option<::std::string::String>,
+}
+impl ListSettingsInput {
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn model(&self) -> ::std::option::Option<&str> {
+        self.model.as_deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn effort(&self) -> ::std::option::Option<&str> {
+        self.effort.as_deref()
+    }
+    /// `requested`（頼んだ）か `observed`（見た）。
+    pub fn source(&self) -> ::std::option::Option<&str> {
+        self.source.as_deref()
+    }
+    /// 受けた時刻の窓の始め（含む）。
+    pub fn from(&self) -> ::std::option::Option<&::aws_smithy_types::DateTime> {
+        self.from.as_ref()
+    }
+    /// 受けた時刻の窓の終わり（含む）。
+    pub fn to(&self) -> ::std::option::Option<&::aws_smithy_types::DateTime> {
+        self.to.as_ref()
+    }
+    /// 見た物が、その前に頼んだ物と違う行（true だけ）。
+    pub fn mismatch(&self) -> ::std::option::Option<bool> {
+        self.mismatch
+    }
+    /// 時刻ずれの行（true だけ）。
+    pub fn skewed(&self) -> ::std::option::Option<bool> {
+        self.skewed
+    }
+    /// 1 頁の数（既定 100）。
+    pub fn max_results(&self) -> ::std::option::Option<i32> {
+        self.max_results
+    }
+    /// 前の答えの `nextToken`。
+    pub fn next_token(&self) -> ::std::option::Option<&str> {
+        self.next_token.as_deref()
+    }
+}
+impl crate::constrained::Constrained for crate::input::ListSettingsInput {
+    type Unconstrained = crate::input::list_settings_input_internal::Builder;
+}
+impl ListSettingsInput {
+    /// Creates a new builder-style object to manufacture [`ListSettingsInput`](crate::input::ListSettingsInput).
+    pub fn builder() -> crate::input::list_settings_input::Builder {
+        crate::input::list_settings_input::Builder::default()
     }
 }
 /// See [`GetHealthInput`](crate::input::GetHealthInput).
@@ -1905,6 +2105,363 @@ pub mod get_lineage_input {
         }
     }
 }
+/// See [`ListActorSettingsInput`](crate::input::ListActorSettingsInput).
+pub(crate) mod list_actor_settings_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `ListActorSettingsInput`.
+        MissingActorId,
+        /// Constraint violation occurred building member `actor_id` when building `ListActorSettingsInput`.
+        #[doc(hidden)]
+        ActorId(crate::model::actor_id_internal::ConstraintViolation),
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `ListActorSettingsInput`"),
+                ConstraintViolation::ActorId(_) => write!(f, "constraint violation occurred building member `actor_id` when building `ListActorSettingsInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingActorId => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/actorId' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/actorId",
+                                            },
+            ConstraintViolation::ActorId(inner) => inner.as_validation_exception_field(path + "/actorId"),
+        }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::ListActorSettingsInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::ListActorSettingsInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListActorSettingsInput`](crate::input::ListActorSettingsInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) actor_id:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorId>>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub(crate) fn set_actor_id(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorId>,
+            >,
+        ) -> Self {
+            self.actor_id = Some(input.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`ListActorSettingsInput`](crate::input::ListActorSettingsInput).
+        ///
+        /// The builder fails to construct a [`ListActorSettingsInput`](crate::input::ListActorSettingsInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::ListActorSettingsInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::ListActorSettingsInput, ConstraintViolation> {
+            Ok(crate::input::ListActorSettingsInput {
+                actor_id: self
+                    .actor_id
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::ActorId))
+                    .transpose()?
+                    .map(|v: crate::model::ActorId| v.into())
+                    .ok_or(ConstraintViolation::MissingActorId)?,
+            })
+        }
+    }
+}
+/// See [`ListActorSettingsInput`](crate::input::ListActorSettingsInput).
+pub mod list_actor_settings_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `ListActorSettingsInput`.
+        MissingActorId,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `ListActorSettingsInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::ListActorSettingsInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListActorSettingsInput`](crate::input::ListActorSettingsInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`ListActorSettingsInput`](crate::input::ListActorSettingsInput).
+        ///
+        /// The builder fails to construct a [`ListActorSettingsInput`](crate::input::ListActorSettingsInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::ListActorSettingsInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::ListActorSettingsInput, ConstraintViolation> {
+            Ok(crate::input::ListActorSettingsInput {
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+            })
+        }
+    }
+}
+/// See [`GetActorSettingAtInput`](crate::input::GetActorSettingAtInput).
+pub(crate) mod get_actor_setting_at_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `GetActorSettingAtInput`.
+        MissingActorId,
+        /// Constraint violation occurred building member `actor_id` when building `GetActorSettingAtInput`.
+        #[doc(hidden)]
+        ActorId(crate::model::actor_id_internal::ConstraintViolation),
+        /// `time` was not provided but it is required when building `GetActorSettingAtInput`.
+        MissingTime,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `GetActorSettingAtInput`"),
+                ConstraintViolation::ActorId(_) => write!(f, "constraint violation occurred building member `actor_id` when building `GetActorSettingAtInput`"),
+                ConstraintViolation::MissingTime => write!(f, "`time` was not provided but it is required when building `GetActorSettingAtInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingActorId => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/actorId' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/actorId",
+                                            },
+            ConstraintViolation::ActorId(inner) => inner.as_validation_exception_field(path + "/actorId"),
+            ConstraintViolation::MissingTime => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/time' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/time",
+                                            },
+        }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::GetActorSettingAtInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::GetActorSettingAtInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetActorSettingAtInput`](crate::input::GetActorSettingAtInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) actor_id:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorId>>,
+        pub(crate) time: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub(crate) fn set_actor_id(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorId>,
+            >,
+        ) -> Self {
+            self.actor_id = Some(input.into());
+            self
+        }
+        /// 効いていた物を引く時刻。
+        pub(crate) fn set_time(
+            mut self,
+            input: impl ::std::convert::Into<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.time = Some(input.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`GetActorSettingAtInput`](crate::input::GetActorSettingAtInput).
+        ///
+        /// The builder fails to construct a [`GetActorSettingAtInput`](crate::input::GetActorSettingAtInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::GetActorSettingAtInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::GetActorSettingAtInput, ConstraintViolation> {
+            Ok(crate::input::GetActorSettingAtInput {
+                actor_id: self
+                    .actor_id
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::ActorId))
+                    .transpose()?
+                    .map(|v: crate::model::ActorId| v.into())
+                    .ok_or(ConstraintViolation::MissingActorId)?,
+                time: self.time.ok_or(ConstraintViolation::MissingTime)?,
+            })
+        }
+    }
+}
+/// See [`GetActorSettingAtInput`](crate::input::GetActorSettingAtInput).
+pub mod get_actor_setting_at_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `GetActorSettingAtInput`.
+        MissingActorId,
+        /// `time` was not provided but it is required when building `GetActorSettingAtInput`.
+        MissingTime,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `GetActorSettingAtInput`"),
+                ConstraintViolation::MissingTime => write!(f, "`time` was not provided but it is required when building `GetActorSettingAtInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::GetActorSettingAtInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetActorSettingAtInput`](crate::input::GetActorSettingAtInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) time: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 効いていた物を引く時刻。
+        pub fn time(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.time = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`GetActorSettingAtInput`](crate::input::GetActorSettingAtInput).
+        ///
+        /// The builder fails to construct a [`GetActorSettingAtInput`](crate::input::GetActorSettingAtInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::GetActorSettingAtInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::GetActorSettingAtInput, ConstraintViolation> {
+            Ok(crate::input::GetActorSettingAtInput {
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                time: self.time.ok_or(ConstraintViolation::MissingTime)?,
+            })
+        }
+    }
+}
 /// See [`ResolveActorsInput`](crate::input::ResolveActorsInput).
 pub(crate) mod resolve_actors_input_internal {
 
@@ -2466,6 +3023,377 @@ pub mod put_event_input {
                 detail: self.detail,
                 sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
             })
+        }
+    }
+}
+/// See [`ListEventsInput`](crate::input::ListEventsInput).
+pub(crate) mod list_events_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// Constraint violation occurred building member `r#type` when building `ListEventsInput`.
+        #[doc(hidden)]
+        Type(crate::model::event_types_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `actor` when building `ListEventsInput`.
+        #[doc(hidden)]
+        Actor(crate::model::actor_id_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `reason` when building `ListEventsInput`.
+        #[doc(hidden)]
+        Reason(crate::model::text_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `source` when building `ListEventsInput`.
+        #[doc(hidden)]
+        Source(crate::model::text_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `max_results` when building `ListEventsInput`.
+        #[doc(hidden)]
+        MaxResults(crate::model::max_results_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `next_token` when building `ListEventsInput`.
+        #[doc(hidden)]
+        NextToken(crate::model::next_token_internal::ConstraintViolation),
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::Type(_) => write!(f, "constraint violation occurred building member `r#type` when building `ListEventsInput`"),
+                ConstraintViolation::Actor(_) => write!(f, "constraint violation occurred building member `actor` when building `ListEventsInput`"),
+                ConstraintViolation::Reason(_) => write!(f, "constraint violation occurred building member `reason` when building `ListEventsInput`"),
+                ConstraintViolation::Source(_) => write!(f, "constraint violation occurred building member `source` when building `ListEventsInput`"),
+                ConstraintViolation::MaxResults(_) => write!(f, "constraint violation occurred building member `max_results` when building `ListEventsInput`"),
+                ConstraintViolation::NextToken(_) => write!(f, "constraint violation occurred building member `next_token` when building `ListEventsInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                ConstraintViolation::Type(inner) => {
+                    inner.as_validation_exception_field(path + "/type")
+                }
+                ConstraintViolation::Actor(inner) => {
+                    inner.as_validation_exception_field(path + "/actor")
+                }
+                ConstraintViolation::Reason(inner) => {
+                    inner.as_validation_exception_field(path + "/reason")
+                }
+                ConstraintViolation::Source(inner) => {
+                    inner.as_validation_exception_field(path + "/source")
+                }
+                ConstraintViolation::MaxResults(inner) => {
+                    inner.as_validation_exception_field(path + "/maxResults")
+                }
+                ConstraintViolation::NextToken(inner) => {
+                    inner.as_validation_exception_field(path + "/nextToken")
+                }
+            }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::ListEventsInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::ListEventsInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListEventsInput`](crate::input::ListEventsInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) r#type: ::std::option::Option<
+            crate::constrained::MaybeConstrained<
+                crate::constrained::event_types_constrained::EventTypesConstrained,
+            >,
+        >,
+        pub(crate) actor:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorId>>,
+        pub(crate) from: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) to: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) reason:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Text>>,
+        pub(crate) source:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Text>>,
+        pub(crate) skewed: ::std::option::Option<bool>,
+        pub(crate) max_results:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::MaxResults>>,
+        pub(crate) next_token:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::NextToken>>,
+    }
+    impl Builder {
+        /// 出来事の種類。重ねれば、どれか。
+        pub(crate) fn set_type(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<
+                        crate::constrained::event_types_constrained::EventTypesConstrained,
+                    >,
+                >,
+            >,
+        ) -> Self {
+            self.r#type = input.map(|v| v.into());
+            self
+        }
+        /// このアクターの出来事。
+        pub(crate) fn set_actor(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::ActorId>>,
+            >,
+        ) -> Self {
+            self.actor = input.map(|v| v.into());
+            self
+        }
+        /// 受けた時刻の窓の始め（含む）。
+        pub(crate) fn set_from(
+            mut self,
+            input: Option<impl ::std::convert::Into<::aws_smithy_types::DateTime>>,
+        ) -> Self {
+            self.from = input.map(|v| v.into());
+            self
+        }
+        /// 受けた時刻の窓の終わり（含む）。
+        pub(crate) fn set_to(
+            mut self,
+            input: Option<impl ::std::convert::Into<::aws_smithy_types::DateTime>>,
+        ) -> Self {
+            self.to = input.map(|v| v.into());
+            self
+        }
+        /// `detail.reason` がこの字と等しい。
+        pub(crate) fn set_reason(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Text>>,
+            >,
+        ) -> Self {
+            self.reason = input.map(|v| v.into());
+            self
+        }
+        /// `detail.source` がこの字と等しい。
+        pub(crate) fn set_source(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Text>>,
+            >,
+        ) -> Self {
+            self.source = input.map(|v| v.into());
+            self
+        }
+        /// 時刻ずれの行（true だけ）。
+        pub(crate) fn set_skewed(mut self, input: Option<impl ::std::convert::Into<bool>>) -> Self {
+            self.skewed = input.map(|v| v.into());
+            self
+        }
+        /// 1 頁の数（既定 100）。
+        pub(crate) fn set_max_results(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<crate::model::MaxResults>,
+                >,
+            >,
+        ) -> Self {
+            self.max_results = input.map(|v| v.into());
+            self
+        }
+        /// 前の答えの `nextToken`。
+        pub(crate) fn set_next_token(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::NextToken>>,
+            >,
+        ) -> Self {
+            self.next_token = input.map(|v| v.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`ListEventsInput`](crate::input::ListEventsInput).
+        ///
+        /// The builder fails to construct a [`ListEventsInput`](crate::input::ListEventsInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::ListEventsInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::ListEventsInput, ConstraintViolation> {
+            Ok(crate::input::ListEventsInput {
+                r#type: self
+                    .r#type
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map(|v| v.into()).map_err(ConstraintViolation::Type))
+                    .transpose()?,
+                actor: self
+                    .actor
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Actor))
+                    .transpose()?
+                    .map(|v: crate::model::ActorId| v.into()),
+                from: self.from,
+                to: self.to,
+                reason: self
+                    .reason
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Reason))
+                    .transpose()?
+                    .map(|v: crate::model::Text| v.into()),
+                source: self
+                    .source
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Source))
+                    .transpose()?
+                    .map(|v: crate::model::Text| v.into()),
+                skewed: self.skewed,
+                max_results: self
+                    .max_results
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::MaxResults))
+                    .transpose()?
+                    .map(|v: crate::model::MaxResults| v.into()),
+                next_token: self
+                    .next_token
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::NextToken))
+                    .transpose()?
+                    .map(|v: crate::model::NextToken| v.into()),
+            })
+        }
+    }
+}
+/// See [`ListEventsInput`](crate::input::ListEventsInput).
+pub mod list_events_input {
+
+    impl ::std::convert::From<Builder> for crate::input::ListEventsInput {
+        fn from(builder: Builder) -> Self {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListEventsInput`](crate::input::ListEventsInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) r#type: ::std::option::Option<::std::vec::Vec<::std::string::String>>,
+        pub(crate) actor: ::std::option::Option<::std::string::String>,
+        pub(crate) from: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) to: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) reason: ::std::option::Option<::std::string::String>,
+        pub(crate) source: ::std::option::Option<::std::string::String>,
+        pub(crate) skewed: ::std::option::Option<bool>,
+        pub(crate) max_results: ::std::option::Option<i32>,
+        pub(crate) next_token: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// 出来事の種類。重ねれば、どれか。
+        pub fn r#type(
+            mut self,
+            input: ::std::option::Option<::std::vec::Vec<::std::string::String>>,
+        ) -> Self {
+            self.r#type = input;
+            self
+        }
+        /// このアクターの出来事。
+        pub fn actor(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.actor = input;
+            self
+        }
+        /// 受けた時刻の窓の始め（含む）。
+        pub fn from(mut self, input: ::std::option::Option<::aws_smithy_types::DateTime>) -> Self {
+            self.from = input;
+            self
+        }
+        /// 受けた時刻の窓の終わり（含む）。
+        pub fn to(mut self, input: ::std::option::Option<::aws_smithy_types::DateTime>) -> Self {
+            self.to = input;
+            self
+        }
+        /// `detail.reason` がこの字と等しい。
+        pub fn reason(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.reason = input;
+            self
+        }
+        /// `detail.source` がこの字と等しい。
+        pub fn source(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.source = input;
+            self
+        }
+        /// 時刻ずれの行（true だけ）。
+        pub fn skewed(mut self, input: ::std::option::Option<bool>) -> Self {
+            self.skewed = input;
+            self
+        }
+        /// 1 頁の数（既定 100）。
+        pub fn max_results(mut self, input: ::std::option::Option<i32>) -> Self {
+            self.max_results = input;
+            self
+        }
+        /// 前の答えの `nextToken`。
+        pub fn next_token(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.next_token = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`ListEventsInput`](crate::input::ListEventsInput).
+        pub fn build(self) -> crate::input::ListEventsInput {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(self) -> crate::input::ListEventsInput {
+            crate::input::ListEventsInput {
+                r#type: self.r#type,
+                actor: self.actor,
+                from: self.from,
+                to: self.to,
+                reason: self.reason,
+                source: self.source,
+                skewed: self.skewed,
+                max_results: self.max_results,
+                next_token: self.next_token,
+            }
         }
     }
 }
@@ -3259,6 +4187,353 @@ pub mod put_setting_input {
                 source: self.source.ok_or(ConstraintViolation::MissingSource)?,
                 sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
             })
+        }
+    }
+}
+/// See [`ListSettingsInput`](crate::input::ListSettingsInput).
+pub(crate) mod list_settings_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// Constraint violation occurred building member `model` when building `ListSettingsInput`.
+        #[doc(hidden)]
+        Model(crate::model::name_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `effort` when building `ListSettingsInput`.
+        #[doc(hidden)]
+        Effort(crate::model::name_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `source` when building `ListSettingsInput`.
+        #[doc(hidden)]
+        Source(crate::model::setting_source_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `max_results` when building `ListSettingsInput`.
+        #[doc(hidden)]
+        MaxResults(crate::model::max_results_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `next_token` when building `ListSettingsInput`.
+        #[doc(hidden)]
+        NextToken(crate::model::next_token_internal::ConstraintViolation),
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::Model(_) => write!(f, "constraint violation occurred building member `model` when building `ListSettingsInput`"),
+                ConstraintViolation::Effort(_) => write!(f, "constraint violation occurred building member `effort` when building `ListSettingsInput`"),
+                ConstraintViolation::Source(_) => write!(f, "constraint violation occurred building member `source` when building `ListSettingsInput`"),
+                ConstraintViolation::MaxResults(_) => write!(f, "constraint violation occurred building member `max_results` when building `ListSettingsInput`"),
+                ConstraintViolation::NextToken(_) => write!(f, "constraint violation occurred building member `next_token` when building `ListSettingsInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                ConstraintViolation::Model(inner) => {
+                    inner.as_validation_exception_field(path + "/model")
+                }
+                ConstraintViolation::Effort(inner) => {
+                    inner.as_validation_exception_field(path + "/effort")
+                }
+                ConstraintViolation::Source(inner) => {
+                    inner.as_validation_exception_field(path + "/source")
+                }
+                ConstraintViolation::MaxResults(inner) => {
+                    inner.as_validation_exception_field(path + "/maxResults")
+                }
+                ConstraintViolation::NextToken(inner) => {
+                    inner.as_validation_exception_field(path + "/nextToken")
+                }
+            }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::ListSettingsInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::ListSettingsInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListSettingsInput`](crate::input::ListSettingsInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) model:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) effort:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) source: ::std::option::Option<
+            crate::constrained::MaybeConstrained<crate::model::SettingSource>,
+        >,
+        pub(crate) from: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) to: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) mismatch: ::std::option::Option<bool>,
+        pub(crate) skewed: ::std::option::Option<bool>,
+        pub(crate) max_results:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::MaxResults>>,
+        pub(crate) next_token:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::NextToken>>,
+    }
+    impl Builder {
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub(crate) fn set_model(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+            >,
+        ) -> Self {
+            self.model = input.map(|v| v.into());
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub(crate) fn set_effort(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+            >,
+        ) -> Self {
+            self.effort = input.map(|v| v.into());
+            self
+        }
+        /// `requested`（頼んだ）か `observed`（見た）。
+        pub(crate) fn set_source(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<crate::model::SettingSource>,
+                >,
+            >,
+        ) -> Self {
+            self.source = input.map(|v| v.into());
+            self
+        }
+        /// 受けた時刻の窓の始め（含む）。
+        pub(crate) fn set_from(
+            mut self,
+            input: Option<impl ::std::convert::Into<::aws_smithy_types::DateTime>>,
+        ) -> Self {
+            self.from = input.map(|v| v.into());
+            self
+        }
+        /// 受けた時刻の窓の終わり（含む）。
+        pub(crate) fn set_to(
+            mut self,
+            input: Option<impl ::std::convert::Into<::aws_smithy_types::DateTime>>,
+        ) -> Self {
+            self.to = input.map(|v| v.into());
+            self
+        }
+        /// 見た物が、その前に頼んだ物と違う行（true だけ）。
+        pub(crate) fn set_mismatch(
+            mut self,
+            input: Option<impl ::std::convert::Into<bool>>,
+        ) -> Self {
+            self.mismatch = input.map(|v| v.into());
+            self
+        }
+        /// 時刻ずれの行（true だけ）。
+        pub(crate) fn set_skewed(mut self, input: Option<impl ::std::convert::Into<bool>>) -> Self {
+            self.skewed = input.map(|v| v.into());
+            self
+        }
+        /// 1 頁の数（既定 100）。
+        pub(crate) fn set_max_results(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<crate::model::MaxResults>,
+                >,
+            >,
+        ) -> Self {
+            self.max_results = input.map(|v| v.into());
+            self
+        }
+        /// 前の答えの `nextToken`。
+        pub(crate) fn set_next_token(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::NextToken>>,
+            >,
+        ) -> Self {
+            self.next_token = input.map(|v| v.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`ListSettingsInput`](crate::input::ListSettingsInput).
+        ///
+        /// The builder fails to construct a [`ListSettingsInput`](crate::input::ListSettingsInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::ListSettingsInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::ListSettingsInput, ConstraintViolation> {
+            Ok(crate::input::ListSettingsInput {
+                model: self
+                    .model
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Model))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into()),
+                effort: self
+                    .effort
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Effort))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into()),
+                source: self
+                    .source
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Source))
+                    .transpose()?
+                    .map(|v: crate::model::SettingSource| v.into()),
+                from: self.from,
+                to: self.to,
+                mismatch: self.mismatch,
+                skewed: self.skewed,
+                max_results: self
+                    .max_results
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::MaxResults))
+                    .transpose()?
+                    .map(|v: crate::model::MaxResults| v.into()),
+                next_token: self
+                    .next_token
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::NextToken))
+                    .transpose()?
+                    .map(|v: crate::model::NextToken| v.into()),
+            })
+        }
+    }
+}
+/// See [`ListSettingsInput`](crate::input::ListSettingsInput).
+pub mod list_settings_input {
+
+    impl ::std::convert::From<Builder> for crate::input::ListSettingsInput {
+        fn from(builder: Builder) -> Self {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListSettingsInput`](crate::input::ListSettingsInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) model: ::std::option::Option<::std::string::String>,
+        pub(crate) effort: ::std::option::Option<::std::string::String>,
+        pub(crate) source: ::std::option::Option<::std::string::String>,
+        pub(crate) from: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) to: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) mismatch: ::std::option::Option<bool>,
+        pub(crate) skewed: ::std::option::Option<bool>,
+        pub(crate) max_results: ::std::option::Option<i32>,
+        pub(crate) next_token: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn model(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.model = input;
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn effort(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.effort = input;
+            self
+        }
+        /// `requested`（頼んだ）か `observed`（見た）。
+        pub fn source(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.source = input;
+            self
+        }
+        /// 受けた時刻の窓の始め（含む）。
+        pub fn from(mut self, input: ::std::option::Option<::aws_smithy_types::DateTime>) -> Self {
+            self.from = input;
+            self
+        }
+        /// 受けた時刻の窓の終わり（含む）。
+        pub fn to(mut self, input: ::std::option::Option<::aws_smithy_types::DateTime>) -> Self {
+            self.to = input;
+            self
+        }
+        /// 見た物が、その前に頼んだ物と違う行（true だけ）。
+        pub fn mismatch(mut self, input: ::std::option::Option<bool>) -> Self {
+            self.mismatch = input;
+            self
+        }
+        /// 時刻ずれの行（true だけ）。
+        pub fn skewed(mut self, input: ::std::option::Option<bool>) -> Self {
+            self.skewed = input;
+            self
+        }
+        /// 1 頁の数（既定 100）。
+        pub fn max_results(mut self, input: ::std::option::Option<i32>) -> Self {
+            self.max_results = input;
+            self
+        }
+        /// 前の答えの `nextToken`。
+        pub fn next_token(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.next_token = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`ListSettingsInput`](crate::input::ListSettingsInput).
+        pub fn build(self) -> crate::input::ListSettingsInput {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(self) -> crate::input::ListSettingsInput {
+            crate::input::ListSettingsInput {
+                model: self.model,
+                effort: self.effort,
+                source: self.source,
+                from: self.from,
+                to: self.to,
+                mismatch: self.mismatch,
+                skewed: self.skewed,
+                max_results: self.max_results,
+                next_token: self.next_token,
+            }
         }
     }
 }

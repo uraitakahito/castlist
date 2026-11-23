@@ -1552,102 +1552,6 @@ mod test_event_type {
     }
 }
 
-/// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
-///
-/// This is a constrained type because its corresponding modeled Smithy shape has one or more
-/// [constraint traits]. Use [`SettingSource::try_from`] to construct values of this type.
-///
-/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
-///
-#[derive(
-    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
-)]
-pub(crate) struct SettingSource(pub(crate) ::std::string::String);
-#[allow(dead_code)]
-impl SettingSource {
-    /// Extracts a string slice containing the entire underlying `String`.
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-
-    /// Returns an immutable reference to the underlying [`::std::string::String`].
-    pub fn inner(&self) -> &::std::string::String {
-        &self.0
-    }
-
-    /// Consumes the value, returning the underlying [`::std::string::String`].
-    pub fn into_inner(self) -> ::std::string::String {
-        self.0
-    }
-}
-impl SettingSource {
-    fn check_pattern(
-        string: ::std::string::String,
-    ) -> ::std::result::Result<
-        ::std::string::String,
-        crate::model::setting_source_internal::ConstraintViolation,
-    > {
-        let regex = Self::compile_regex();
-
-        if regex.is_match(&string) {
-            Ok(string)
-        } else {
-            Err(crate::model::setting_source_internal::ConstraintViolation::Pattern(string))
-        }
-    }
-
-    /// Attempts to compile the regex for this constrained type's `@pattern`.
-    /// This can fail if the specified regex is not supported by the `::regex` crate.
-    pub fn compile_regex() -> &'static ::regex::Regex {
-        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
-            ::regex::Regex::new(r#"^(requested|observed)$"#).expect(r#"The regular expression ^(requested|observed)$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
-        });
-
-        &REGEX
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for SettingSource {
-    type Error = crate::model::setting_source_internal::ConstraintViolation;
-
-    /// Constructs a `SettingSource` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
-    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
-        let value = Self::check_pattern(value)?;
-
-        Ok(Self(value))
-    }
-}
-impl crate::constrained::Constrained for SettingSource {
-    type Unconstrained = ::std::string::String;
-}
-
-impl ::std::convert::From<::std::string::String>
-    for crate::constrained::MaybeConstrained<crate::model::SettingSource>
-{
-    fn from(value: ::std::string::String) -> Self {
-        Self::Unconstrained(value)
-    }
-}
-
-impl ::std::fmt::Display for SettingSource {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl ::std::convert::From<SettingSource> for ::std::string::String {
-    fn from(value: SettingSource) -> Self {
-        value.into_inner()
-    }
-}
-
-#[cfg(test)]
-mod test_setting_source {
-    #[test]
-    fn regex_compiles() {
-        crate::model::SettingSource::compile_regex();
-    }
-}
-
 /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
 ///
 /// This is a constrained type because its corresponding modeled Smithy shape has one or more
@@ -1759,6 +1663,102 @@ mod test_text {
     #[test]
     fn regex_compiles() {
         crate::model::Text::compile_regex();
+    }
+}
+
+/// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`SettingSource::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct SettingSource(pub(crate) ::std::string::String);
+#[allow(dead_code)]
+impl SettingSource {
+    /// Extracts a string slice containing the entire underlying `String`.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns an immutable reference to the underlying [`::std::string::String`].
+    pub fn inner(&self) -> &::std::string::String {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`::std::string::String`].
+    pub fn into_inner(self) -> ::std::string::String {
+        self.0
+    }
+}
+impl SettingSource {
+    fn check_pattern(
+        string: ::std::string::String,
+    ) -> ::std::result::Result<
+        ::std::string::String,
+        crate::model::setting_source_internal::ConstraintViolation,
+    > {
+        let regex = Self::compile_regex();
+
+        if regex.is_match(&string) {
+            Ok(string)
+        } else {
+            Err(crate::model::setting_source_internal::ConstraintViolation::Pattern(string))
+        }
+    }
+
+    /// Attempts to compile the regex for this constrained type's `@pattern`.
+    /// This can fail if the specified regex is not supported by the `::regex` crate.
+    pub fn compile_regex() -> &'static ::regex::Regex {
+        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
+            ::regex::Regex::new(r#"^(requested|observed)$"#).expect(r#"The regular expression ^(requested|observed)$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
+        });
+
+        &REGEX
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for SettingSource {
+    type Error = crate::model::setting_source_internal::ConstraintViolation;
+
+    /// Constructs a `SettingSource` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
+        let value = Self::check_pattern(value)?;
+
+        Ok(Self(value))
+    }
+}
+impl crate::constrained::Constrained for SettingSource {
+    type Unconstrained = ::std::string::String;
+}
+
+impl ::std::convert::From<::std::string::String>
+    for crate::constrained::MaybeConstrained<crate::model::SettingSource>
+{
+    fn from(value: ::std::string::String) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for SettingSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<SettingSource> for ::std::string::String {
+    fn from(value: SettingSource) -> Self {
+        value.into_inner()
+    }
+}
+
+#[cfg(test)]
+mod test_setting_source {
+    #[test]
+    fn regex_compiles() {
+        crate::model::SettingSource::compile_regex();
     }
 }
 
@@ -2233,6 +2233,145 @@ impl Resolution {
     /// Creates a new builder-style object to manufacture [`Resolution`](crate::model::Resolution).
     pub fn builder() -> crate::model::resolution::Builder {
         crate::model::resolution::Builder::default()
+    }
+}
+
+/// 探した出来事の 1 行（出来事の欄に、アクターの名を足した物）。
+#[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct EventRow {
+    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    pub id: ::std::string::String,
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+    pub r#type: ::std::string::String,
+    /// 送られた JSON の物と同じ中身（無ければ空の物）。鍵の順と字の並びは、送られた物と同じとは限らない。
+    pub detail: ::aws_smithy_types::Document,
+    /// 時刻（RFC 3339）。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 時刻（RFC 3339）。
+    pub received_at: ::aws_smithy_types::DateTime,
+    #[allow(missing_docs)] // documentation missing in model
+    pub clock_skew: bool,
+    /// アクターの名（`&lt;接頭辞&gt;.&lt;番号&gt;`）。
+    pub actor_name: ::std::string::String,
+}
+impl EventRow {
+    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    pub fn id(&self) -> &str {
+        use std::ops::Deref;
+        self.id.deref()
+    }
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+    pub fn r#type(&self) -> &str {
+        use std::ops::Deref;
+        self.r#type.deref()
+    }
+    /// 送られた JSON の物と同じ中身（無ければ空の物）。鍵の順と字の並びは、送られた物と同じとは限らない。
+    pub fn detail(&self) -> &::aws_smithy_types::Document {
+        &self.detail
+    }
+    /// 時刻（RFC 3339）。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 時刻（RFC 3339）。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    #[allow(missing_docs)] // documentation missing in model
+    pub fn clock_skew(&self) -> bool {
+        self.clock_skew
+    }
+    /// アクターの名（`&lt;接頭辞&gt;.&lt;番号&gt;`）。
+    pub fn actor_name(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_name.deref()
+    }
+}
+impl EventRow {
+    /// Creates a new builder-style object to manufacture [`EventRow`](crate::model::EventRow).
+    pub fn builder() -> crate::model::event_row::Builder {
+        crate::model::event_row::Builder::default()
+    }
+}
+
+/// 探した model と effort の 1 行（model と effort の欄に、アクターの名を足した物）。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct SettingRow {
+    /// 送り手の id。登録の時に頼んだ物には無い。
+    pub id: ::std::option::Option<::std::string::String>,
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub model: ::std::string::String,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub effort: ::std::string::String,
+    /// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+    pub source: ::std::string::String,
+    /// 時刻（RFC 3339）。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 時刻（RFC 3339）。
+    pub received_at: ::aws_smithy_types::DateTime,
+    #[allow(missing_docs)] // documentation missing in model
+    pub clock_skew: bool,
+    /// アクターの名（`&lt;接頭辞&gt;.&lt;番号&gt;`）。
+    pub actor_name: ::std::string::String,
+}
+impl SettingRow {
+    /// 送り手の id。登録の時に頼んだ物には無い。
+    pub fn id(&self) -> ::std::option::Option<&str> {
+        self.id.as_deref()
+    }
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn model(&self) -> &str {
+        use std::ops::Deref;
+        self.model.deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn effort(&self) -> &str {
+        use std::ops::Deref;
+        self.effort.deref()
+    }
+    /// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+    pub fn source(&self) -> &str {
+        use std::ops::Deref;
+        self.source.deref()
+    }
+    /// 時刻（RFC 3339）。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 時刻（RFC 3339）。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    #[allow(missing_docs)] // documentation missing in model
+    pub fn clock_skew(&self) -> bool {
+        self.clock_skew
+    }
+    /// アクターの名（`&lt;接頭辞&gt;.&lt;番号&gt;`）。
+    pub fn actor_name(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_name.deref()
+    }
+}
+impl SettingRow {
+    /// Creates a new builder-style object to manufacture [`SettingRow`](crate::model::SettingRow).
+    pub fn builder() -> crate::model::setting_row::Builder {
+        crate::model::setting_row::Builder::default()
     }
 }
 pub(crate) mod name_internal {
@@ -3433,24 +3572,28 @@ pub(crate) mod event_type_internal {
         }
     }
 }
-pub(crate) mod setting_source_internal {
+pub(crate) mod event_types_internal {
 
+    #[allow(clippy::enum_variant_names)]
     #[derive(Debug, PartialEq)]
-    pub enum ConstraintViolation {
-        /// Error when a string doesn't satisfy its `@pattern`.
-        /// Contains the String that failed the pattern.
-        Pattern(String),
+    pub(crate) enum ConstraintViolation {
+        /// Constraint violation error when an element doesn't satisfy its own constraints.
+        /// The first component of the tuple is the index in the collection where the
+        /// first constraint violation was found.
+        #[doc(hidden)]
+        Member(
+            usize,
+            crate::model::event_type_internal::ConstraintViolation,
+        ),
     }
 
     impl ::std::fmt::Display for ConstraintViolation {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             let message = match self {
-                Self::Pattern(_) => {
-                    format!(
-                        r#"Value provided for `ai.castlist#SettingSource` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
-                        r#"^(requested|observed)$"#
-                    )
-                }
+                Self::Member(index, failing_member) => format!(
+                    "Value at index {index} failed to satisfy constraint. {}",
+                    failing_member
+                ),
             };
             write!(f, "{message}")
         }
@@ -3463,12 +3606,9 @@ pub(crate) mod setting_source_internal {
             path: ::std::string::String,
         ) -> crate::model::ValidationExceptionField {
             match self {
-                            #[allow(unused_variables)]
-    Self::Pattern(_) => crate::model::ValidationExceptionField {
-                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^(requested|observed)$"#),
-                            path
-                        },
-                        }
+                Self::Member(index, member_constraint_violation) => member_constraint_violation
+                    .as_validation_exception_field(path + "/" + &index.to_string()),
+            }
         }
     }
 }
@@ -3515,6 +3655,45 @@ pub(crate) mod text_internal {
     #[allow(unused_variables)]
     Self::Pattern(_) => crate::model::ValidationExceptionField {
                             message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^[^\x00-\x1F\x7F-\x9F]*$"#),
+                            path
+                        },
+                        }
+        }
+    }
+}
+pub(crate) mod setting_source_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        /// Error when a string doesn't satisfy its `@pattern`.
+        /// Contains the String that failed the pattern.
+        Pattern(String),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Pattern(_) => {
+                    format!(
+                        r#"Value provided for `ai.castlist#SettingSource` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
+                        r#"^(requested|observed)$"#
+                    )
+                }
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            #[allow(unused_variables)]
+    Self::Pattern(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^(requested|observed)$"#),
                             path
                         },
                         }
@@ -4496,6 +4675,317 @@ pub mod resolution {
             Ok(crate::model::Resolution {
                 r#ref: self.r#ref.ok_or(ConstraintViolation::MissingRef)?,
                 actor: self.actor,
+            })
+        }
+    }
+}
+/// See [`EventRow`](crate::model::EventRow).
+pub mod event_row {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `id` was not provided but it is required when building `EventRow`.
+        MissingId,
+        /// `actor_id` was not provided but it is required when building `EventRow`.
+        MissingActorId,
+        /// `r#type` was not provided but it is required when building `EventRow`.
+        MissingType,
+        /// `detail` was not provided but it is required when building `EventRow`.
+        MissingDetail,
+        /// `sent_at` was not provided but it is required when building `EventRow`.
+        MissingSentAt,
+        /// `received_at` was not provided but it is required when building `EventRow`.
+        MissingReceivedAt,
+        /// `clock_skew` was not provided but it is required when building `EventRow`.
+        MissingClockSkew,
+        /// `actor_name` was not provided but it is required when building `EventRow`.
+        MissingActorName,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingId => write!(
+                    f,
+                    "`id` was not provided but it is required when building `EventRow`"
+                ),
+                ConstraintViolation::MissingActorId => write!(
+                    f,
+                    "`actor_id` was not provided but it is required when building `EventRow`"
+                ),
+                ConstraintViolation::MissingType => write!(
+                    f,
+                    "`r#type` was not provided but it is required when building `EventRow`"
+                ),
+                ConstraintViolation::MissingDetail => write!(
+                    f,
+                    "`detail` was not provided but it is required when building `EventRow`"
+                ),
+                ConstraintViolation::MissingSentAt => write!(
+                    f,
+                    "`sent_at` was not provided but it is required when building `EventRow`"
+                ),
+                ConstraintViolation::MissingReceivedAt => write!(
+                    f,
+                    "`received_at` was not provided but it is required when building `EventRow`"
+                ),
+                ConstraintViolation::MissingClockSkew => write!(
+                    f,
+                    "`clock_skew` was not provided but it is required when building `EventRow`"
+                ),
+                ConstraintViolation::MissingActorName => write!(
+                    f,
+                    "`actor_name` was not provided but it is required when building `EventRow`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::model::EventRow {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`EventRow`](crate::model::EventRow).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) r#type: ::std::option::Option<::std::string::String>,
+        pub(crate) detail: ::std::option::Option<::aws_smithy_types::Document>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) clock_skew: ::std::option::Option<bool>,
+        pub(crate) actor_name: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+        pub fn id(mut self, input: ::std::string::String) -> Self {
+            self.id = Some(input);
+            self
+        }
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+        pub fn r#type(mut self, input: ::std::string::String) -> Self {
+            self.r#type = Some(input);
+            self
+        }
+        /// 送られた JSON の物と同じ中身（無ければ空の物）。鍵の順と字の並びは、送られた物と同じとは限らない。
+        pub fn detail(mut self, input: ::aws_smithy_types::Document) -> Self {
+            self.detail = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn clock_skew(mut self, input: bool) -> Self {
+            self.clock_skew = Some(input);
+            self
+        }
+        /// アクターの名（`&lt;接頭辞&gt;.&lt;番号&gt;`）。
+        pub fn actor_name(mut self, input: ::std::string::String) -> Self {
+            self.actor_name = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`EventRow`](crate::model::EventRow).
+        ///
+        /// The builder fails to construct a [`EventRow`](crate::model::EventRow) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::model::EventRow, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::model::EventRow, ConstraintViolation> {
+            Ok(crate::model::EventRow {
+                id: self.id.ok_or(ConstraintViolation::MissingId)?,
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                r#type: self.r#type.ok_or(ConstraintViolation::MissingType)?,
+                detail: self.detail.ok_or(ConstraintViolation::MissingDetail)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                clock_skew: self
+                    .clock_skew
+                    .ok_or(ConstraintViolation::MissingClockSkew)?,
+                actor_name: self
+                    .actor_name
+                    .ok_or(ConstraintViolation::MissingActorName)?,
+            })
+        }
+    }
+}
+/// See [`SettingRow`](crate::model::SettingRow).
+pub mod setting_row {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `SettingRow`.
+        MissingActorId,
+        /// `model` was not provided but it is required when building `SettingRow`.
+        MissingModel,
+        /// `effort` was not provided but it is required when building `SettingRow`.
+        MissingEffort,
+        /// `source` was not provided but it is required when building `SettingRow`.
+        MissingSource,
+        /// `sent_at` was not provided but it is required when building `SettingRow`.
+        MissingSentAt,
+        /// `received_at` was not provided but it is required when building `SettingRow`.
+        MissingReceivedAt,
+        /// `clock_skew` was not provided but it is required when building `SettingRow`.
+        MissingClockSkew,
+        /// `actor_name` was not provided but it is required when building `SettingRow`.
+        MissingActorName,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(
+                    f,
+                    "`actor_id` was not provided but it is required when building `SettingRow`"
+                ),
+                ConstraintViolation::MissingModel => write!(
+                    f,
+                    "`model` was not provided but it is required when building `SettingRow`"
+                ),
+                ConstraintViolation::MissingEffort => write!(
+                    f,
+                    "`effort` was not provided but it is required when building `SettingRow`"
+                ),
+                ConstraintViolation::MissingSource => write!(
+                    f,
+                    "`source` was not provided but it is required when building `SettingRow`"
+                ),
+                ConstraintViolation::MissingSentAt => write!(
+                    f,
+                    "`sent_at` was not provided but it is required when building `SettingRow`"
+                ),
+                ConstraintViolation::MissingReceivedAt => write!(
+                    f,
+                    "`received_at` was not provided but it is required when building `SettingRow`"
+                ),
+                ConstraintViolation::MissingClockSkew => write!(
+                    f,
+                    "`clock_skew` was not provided but it is required when building `SettingRow`"
+                ),
+                ConstraintViolation::MissingActorName => write!(
+                    f,
+                    "`actor_name` was not provided but it is required when building `SettingRow`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::model::SettingRow {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`SettingRow`](crate::model::SettingRow).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) model: ::std::option::Option<::std::string::String>,
+        pub(crate) effort: ::std::option::Option<::std::string::String>,
+        pub(crate) source: ::std::option::Option<::std::string::String>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) clock_skew: ::std::option::Option<bool>,
+        pub(crate) actor_name: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// 送り手の id。登録の時に頼んだ物には無い。
+        pub fn id(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.id = input;
+            self
+        }
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn model(mut self, input: ::std::string::String) -> Self {
+            self.model = Some(input);
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn effort(mut self, input: ::std::string::String) -> Self {
+            self.effort = Some(input);
+            self
+        }
+        /// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+        pub fn source(mut self, input: ::std::string::String) -> Self {
+            self.source = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn clock_skew(mut self, input: bool) -> Self {
+            self.clock_skew = Some(input);
+            self
+        }
+        /// アクターの名（`&lt;接頭辞&gt;.&lt;番号&gt;`）。
+        pub fn actor_name(mut self, input: ::std::string::String) -> Self {
+            self.actor_name = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`SettingRow`](crate::model::SettingRow).
+        ///
+        /// The builder fails to construct a [`SettingRow`](crate::model::SettingRow) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::model::SettingRow, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::model::SettingRow, ConstraintViolation> {
+            Ok(crate::model::SettingRow {
+                id: self.id,
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                model: self.model.ok_or(ConstraintViolation::MissingModel)?,
+                effort: self.effort.ok_or(ConstraintViolation::MissingEffort)?,
+                source: self.source.ok_or(ConstraintViolation::MissingSource)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                clock_skew: self
+                    .clock_skew
+                    .ok_or(ConstraintViolation::MissingClockSkew)?,
+                actor_name: self
+                    .actor_name
+                    .ok_or(ConstraintViolation::MissingActorName)?,
             })
         }
     }

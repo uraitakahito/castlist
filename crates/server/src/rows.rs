@@ -1,6 +1,7 @@
-//! DB の行を、答えの形に直す（GetActor の中の物と、Put… の答えで同じ形。一覧の行は ListActors と GetLineage で同じ形）。直せなければ、その訳の字を返す（呼ぶ側が中の失敗にする）。
+//! DB の行を、答えの形に直す（GetActor の中の物と、Put… の答えで同じ形。一覧の行は ListActors と GetLineage で同じ形。
+//! 探した出来事と model と effort の行は、その形にアクターの名を足した物）。直せなければ、その訳の字を返す（呼ぶ側が中の失敗にする）。
 use aws_smithy_types::{Document, Number};
-use castlist_sdk::model::{ActorRow, Event, Link, Setting};
+use castlist_sdk::model::{ActorRow, Event, EventRow, Link, Setting, SettingRow};
 
 use crate::datetime;
 use crate::{db, search};
@@ -82,5 +83,36 @@ pub fn actor_row(a: search::ActorItem) -> Result<ActorRow, String> {
         inferred: a.inferred,
         model: a.model,
         effort: a.effort,
+    })
+}
+
+/// 探した model と effort の 1 行を、答えの形にする（model と effort の形に、アクターの名を足した物）。
+pub fn setting_row(item: search::SettingItem) -> Result<SettingRow, String> {
+    let s = setting(item.setting)?;
+    Ok(SettingRow {
+        id: s.id,
+        actor_id: s.actor_id,
+        actor_name: item.actor_name,
+        model: s.model,
+        effort: s.effort,
+        source: s.source,
+        sent_at: s.sent_at,
+        received_at: s.received_at,
+        clock_skew: s.clock_skew,
+    })
+}
+
+/// 探した出来事の 1 行を、答えの形にする（出来事の形に、アクターの名を足した物）。
+pub fn event_row(item: search::EventItem) -> Result<EventRow, String> {
+    let e = event(item.event)?;
+    Ok(EventRow {
+        id: e.id,
+        actor_id: e.actor_id,
+        actor_name: item.actor_name,
+        r#type: e.r#type,
+        detail: e.detail,
+        sent_at: e.sent_at,
+        received_at: e.received_at,
+        clock_skew: e.clock_skew,
     })
 }

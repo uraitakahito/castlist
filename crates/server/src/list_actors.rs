@@ -7,8 +7,8 @@ use castlist_sdk::output::ListActorsOutput;
 
 use crate::db::{self, Db, Ref};
 use crate::errors::Failure;
-use crate::search::{ActorQuery, LIMIT, Page, Sort};
-use crate::{datetime, rows, stored_time};
+use crate::search::{ActorItem, ActorQuery, LIMIT, Page, Sort};
+use crate::{datetime, only_true, rows, stored_time, token};
 
 const OPERATION: &str = "ListActors";
 
@@ -65,11 +65,7 @@ fn query(input: ListActorsInput, as_of: &str) -> Result<ActorQuery, ListActorsEr
         }
         (None, None) => None,
     };
-    let skewed = match input.skewed {
-        None => false,
-        Some(true) => true,
-        Some(false) => return Err(invalid("skewed は true だけ（絞らないなら付けない）")),
-    };
+    let skewed = only_true("skewed", input.skewed).map_err(invalid)?;
     let sort = match input.sort.as_deref() {
         Some("exited") => Sort::Exited,
         _ => Sort::Entered,
@@ -118,52 +114,30 @@ fn order_name(desc: bool) -> &'static str {
     if desc { "desc" } else { "asc" }
 }
 
-/// 次の頁の印（終わりなら無い）: 種類・sort・order・最後の行の並べる値と seq を改行で繋ぎ、16 進にした字。
-/// 中は読まずに、前の答えの物をそのまま渡してもらう。ほかの条件は結ばない（今の server と同じ）。
-fn next_token(query: &ActorQuery, page: &Page) -> Option<String> {
+/// 次の頁の印（終わりなら無い）: 種類・sort・order・最後の行の並べる値と seq。ほかの条件は結ばない（今の server と同じ）。
+fn next_token(query: &ActorQuery, page: &Page<ActorItem>) -> Option<String> {
     page.more.then(|| page.rows.last()).flatten().map(|last| {
-        [
+        token::encode(&[
             TOKEN_KIND,
             sort_name(query.sort),
             order_name(query.desc),
             &last.sort_key,
             &last.seq.to_string(),
-        ]
-        .join("\n")
-        .bytes()
-        .map(|b| format!("{b:02x}"))
-        .collect()
+        ])
     })
 }
 
 /// 頁の印を読む（前の頁の最後の並べる値と seq）。崩れた物・ほかの検索の物・sort か order の違う物は 400。
 fn after(token: &str, sort: Sort, desc: bool) -> Result<(String, i64), ListActorsError> {
-    let bad = || invalid("nextToken が読めない（前の答えの nextToken を、そのまま渡す）");
-    if !token.len().is_multiple_of(2) || !token.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return Err(bad());
-    }
-    let bytes = (0..token.len())
-        .step_by(2)
-        .map(|i| u8::from_str_radix(&token[i..i + 2], 16))
-        .collect::<Result<Vec<u8>, _>>()
-        .map_err(|_| bad())?;
-    let text = String::from_utf8(bytes).map_err(|_| bad())?;
-    let parts: Vec<&str> = text.split('\n').collect();
-    let [kind, token_sort, token_order, value, seq] = parts[..] else {
-        return Err(invalid(
-            "nextToken が読めない（アクターの検索の nextToken ではない）",
-        ));
+    let parts = token::read(token, TOKEN_KIND, 5, "アクターの検索").map_err(invalid)?;
+    let [_, token_sort, token_order, value, seq] = &parts[..] else {
+        return Err(invalid(token::BROKEN));
     };
-    if kind != TOKEN_KIND {
-        return Err(invalid(
-            "nextToken が読めない（アクターの検索の nextToken ではない）",
-        ));
-    }
     if token_sort != sort_name(sort) || token_order != order_name(desc) {
         return Err(invalid("nextToken は、同じ sort と order の答えの物を渡す"));
     }
-    let seq = seq.parse().map_err(|_| bad())?;
-    Ok((value.to_owned(), seq))
+    let seq = seq.parse().map_err(|_| invalid(token::BROKEN))?;
+    Ok((value.clone(), seq))
 }
 
 #[cfg(test)]
@@ -173,7 +147,7 @@ mod tests {
     #[test]
     fn a_token_reads_back_and_a_broken_or_other_one_is_refused() {
         let page = Page {
-            rows: vec![crate::search::ActorItem {
+            rows: vec![ActorItem {
                 seq: 7,
                 id: "a".into(),
                 name: "se.1".into(),
