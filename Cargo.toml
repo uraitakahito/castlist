@@ -1,11 +1,25 @@
-# アクターの台帳のサーバー（castlist-server）。crate は 1 つ（API を共にする CLI が無いので、pagetray の crates/api の分けはしない）。
-[package]
-name = "castlist"
+# アクターの台帳のサーバー（castlist-server）。
+# AI-36 の作り直しの間は、新しい server（crates/server。Smithy の定義 model/ から作った骨 crates/castlist-sdk/ を使う）を並べて作る。
+# 切り替えまで、image に入るのは今の server（この crate）だけ。
+[workspace]
+members = [".", "crates/server"]
+default-members = [".", "crates/server"]
+# 生成した骨は手で直さないので、fmt と clippy の外に置く（ci/gen.sh --check が定義との合いを見る）。
+exclude = ["crates/castlist-sdk"]
+
+[workspace.package]
 # 版はここだけに書く（release の workflow が、この file の初めの `version = "…"` の行を tag と突き合わせる）。
 version = "0.4.0"
 edition = "2024"
 rust-version = "1.100"
 license = "MIT"
+
+[package]
+name = "castlist"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
 publish = false
 
 [[bin]]

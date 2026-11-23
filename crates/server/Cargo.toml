@@ -1,0 +1,27 @@
+# 新しい castlist の server（AI-36）。定義（model/）から作った骨（crates/castlist-sdk/）に処理を入れ、
+# 手の道（画面・backup・logs）と 1 つの axum の Router に並べる。切り替え（AI-36 の段 8）まで image には入らない。
+[package]
+name = "castlist-next"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+castlist_sdk = { path = "../castlist-sdk" }
+axum = { version = "0.8.9", default-features = false, features = ["http1", "tokio"] }
+aws-smithy-types = "1.9.4"
+bytes = "1"
+http-body = "1"
+http-body-util = "0.1"
+time = { version = "0.3", features = ["formatting"] }
+tower = { version = "0.5", features = ["util"] }
+
+[dev-dependencies]
+serde_json = "1"
+tokio = { version = "1.54", features = ["rt-multi-thread", "macros"] }
+
+[lints.clippy]
+await_holding_lock = "deny"
+disallowed_methods = "deny"
