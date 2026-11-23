@@ -1,6 +1,7 @@
 //! ListActorSettings と GetActorSettingAt: あるアクターの model と effort の全部と、ある時刻に効いていた物。値の形は定義（model/）が見てある。
 use std::sync::Arc;
 
+use aws_smithy_types::date_time::Format;
 use castlist_sdk::error::{
     GetActorSettingAtError, ListActorSettingsError, NotFound, ValidationException,
 };
@@ -47,11 +48,16 @@ pub async fn get_actor_setting_at(
 ) -> Result<GetActorSettingAtOutput, GetActorSettingAtError> {
     const OPERATION: &str = "GetActorSettingAt";
     let as_of = db::now();
-    // 問いの時刻は DB に残す字（UTC・ミリ秒まで）に直して比べ、直した物を答えの at にする。
-    let at = stored_time("time", &input.time).map_err(|message| ValidationException {
+    let invalid = |message: String| ValidationException {
         message,
         field_list: None,
-    })?;
+    };
+    // 答えの at（RFC 3339）は 0001 年からしか書けないので、書けない時刻は先に断る。
+    if input.time.fmt(Format::DateTime).is_err() {
+        return Err(invalid("time は 0001 年から 9999 年までの時刻".to_owned()).into());
+    }
+    // 問いの時刻は DB に残す字（UTC・ミリ秒まで）に直して比べ、直した物を答えの at にする。
+    let at = stored_time("time", &input.time).map_err(invalid)?;
     let Some(setting) = db
         .actor_setting_at(&input.actor_id, &at)
         .await
