@@ -5,7 +5,8 @@
 //! - どの表も足すだけ。この file の SQL は insert と select だけで、`ci/check-sql.sh` が見張る。
 //!   「最新」は seq だけで決め、送り手の時刻（sent_at）では決めない。
 use std::fmt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use serde_json::json;
@@ -18,6 +19,9 @@ use crate::body;
 
 /// 書く接続を待つ長さ。過ぎれば「混んでいる」で返す。
 pub const WRITE_WAIT: Duration = Duration::from_secs(2);
+/// 読む接続（軽い読み・重い読み）を待つ長さ。過ぎれば「混んでいる」で返す。問い合わせの時間切れ（5 秒）より短くし、
+/// 混んでいる時は「混んでいる」の 503 が、時間切れの 503 より先に答える。
+pub const READ_WAIT: Duration = Duration::from_secs(3);
 /// 軽い読みの接続の本数。
 pub const READS: u32 = 4;
 /// 重い読み（図の点と線・タイムライン）だけが使う、読むだけの接続の本数。軽い読みの接続とは別にして、
@@ -125,6 +129,8 @@ const CLOCK: &str = "select max(t) from (
        union all select (select received_at from settings order by seq desc limit 1))";
 
 pub struct Db {
+    /// DB の file（バックアップの一時の file を、この隣に作る）。
+    path: PathBuf,
     read: SqlitePool,
     /// 重い読みだけが使う、読むだけの接続（[`HEAVY_READS`] 本）。
     heavy: SqlitePool,
@@ -437,17 +443,22 @@ impl Db {
         }
         let heavy = SqlitePoolOptions::new()
             .max_connections(HEAVY_READS)
-            .acquire_timeout(Duration::from_secs(5))
+            .acquire_timeout(READ_WAIT)
             .connect_with(options.clone().read_only(true))
             .await
             .map_err(OpenError::Db)?;
         let read = SqlitePoolOptions::new()
             .max_connections(READS)
-            .acquire_timeout(Duration::from_secs(5))
+            .acquire_timeout(READ_WAIT)
             .connect_with(options.read_only(true))
             .await
             .map_err(OpenError::Db)?;
-        Ok(Self { read, heavy, write })
+        Ok(Self {
+            path: path.to_owned(),
+            read,
+            heavy,
+            write,
+        })
     }
 
     /// 軽い読みの接続（[`READS`] 本・読むだけ）。
@@ -469,6 +480,26 @@ impl Db {
         self.read.close().await;
         self.heavy.close().await;
         self.write.close().await;
+    }
+
+    /// 揃ったバックアップを、DB の隣の一時の file（`<DB>.backup-<pid>-<番号>`）に `VACUUM INTO` で作り、その path を返す
+    /// （今の server と同じ）。DB 全体を読むので、重い読みの接続で作る（軽い読みの接続を取らない）。消すのは呼んだ側。
+    pub async fn backup(&self) -> Result<PathBuf, sqlx::Error> {
+        static SEQ: AtomicU64 = AtomicU64::new(0);
+        let mut name = self.path.clone().into_os_string();
+        name.push(format!(
+            ".backup-{}-{}",
+            std::process::id(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let out = PathBuf::from(name);
+        // VACUUM INTO は、在る file には書かない。
+        let _ = tokio::fs::remove_file(&out).await;
+        sqlx::query("vacuum into ?1")
+            .bind(out.to_string_lossy().into_owned())
+            .execute(&self.heavy)
+            .await?;
+        Ok(out)
     }
 }
 

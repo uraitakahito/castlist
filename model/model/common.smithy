@@ -15,6 +15,23 @@ integer MaxResults
 @timestampFormat("date-time")
 timestamp DateTime
 
+/// 受けない要求。castlist を動かす機械の外からの名（`Host`）と、browser の中のページからの書く要求（`Origin` の付いた
+/// `GET`・`HEAD` のほか）を断る。どの操作の前でも効く（server の守りの層）。
+@error("client")
+@httpError(403)
+structure Forbidden {
+    @required
+    message: String
+}
+
+/// 本文が上限より大きい。どの操作の前でも効く（server の守りの層。上限は server が決める）。
+@error("client")
+@httpError(413)
+structure PayloadTooLarge {
+    @required
+    message: String
+}
+
 /// 名指した物が無い。
 @error("client")
 @httpError(404)
@@ -49,6 +66,7 @@ structure InternalError {
 }
 
 /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+/// 時間切れは、どの操作の前でも効く（server の守りの層）。
 @error("server")
 @httpError(503)
 @retryable

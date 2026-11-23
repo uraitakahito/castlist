@@ -1,7 +1,9 @@
 //! 試験の足場: 試験ごとに一時の DB を作り、Router に要求を通す。DB の決まりは、書く接続と読む接続を直に使って見る。
+//! 本物の binary を起こす道具は [`server`]。
 #![allow(dead_code)]
 
 pub mod sample;
+pub mod server;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -57,22 +59,33 @@ impl Drop for App {
 
 impl App {
     pub async fn start() -> Self {
+        Self::start_with(castlist_next::Config::default()).await
+    }
+
+    /// 守りの層の設定（時間切れの長さ・記録の置き場）を決めて起こす。
+    pub async fn start_with(config: castlist_next::Config) -> Self {
         let path = temp_db("app");
         let db = Arc::new(Db::open(&path).await.expect("Db::open"));
-        let app = castlist_next::app(db.clone());
+        let app = castlist_next::app_with(db.clone(), config);
         Self { app, db, path }
     }
 
     /// 要求を 1 つ通し、状態と header と本文の字を返す。
     pub async fn send(&self, request: Request<Body>) -> (StatusCode, HeaderMap, String) {
+        let (status, headers, bytes) = self.send_bytes(request).await;
+        (
+            status,
+            headers,
+            String::from_utf8_lossy(&bytes).into_owned(),
+        )
+    }
+
+    /// 要求を 1 つ通し、状態と header と本文の byte を返す。
+    pub async fn send_bytes(&self, request: Request<Body>) -> (StatusCode, HeaderMap, Vec<u8>) {
         let response = self.app.clone().oneshot(request).await.expect("oneshot");
         let (parts, body) = response.into_parts();
         let bytes = body.collect().await.expect("本文").to_bytes();
-        (
-            parts.status,
-            parts.headers,
-            String::from_utf8_lossy(&bytes).into_owned(),
-        )
+        (parts.status, parts.headers, bytes.to_vec())
     }
 
     /// `POST`（本文は JSON）。答えの本文は JSON に読む（読めなければ Null）。

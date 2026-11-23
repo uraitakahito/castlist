@@ -29,6 +29,8 @@ pub(crate) mod shape_resolve_actors;
 
 pub(crate) mod shape_conflict;
 
+pub(crate) mod shape_forbidden;
+
 pub(crate) mod shape_get_actor_input;
 
 pub(crate) mod shape_get_actor_output;
@@ -66,6 +68,8 @@ pub(crate) mod shape_list_settings_input;
 pub(crate) mod shape_list_settings_output;
 
 pub(crate) mod shape_not_found;
+
+pub(crate) mod shape_payload_too_large;
 
 pub(crate) fn or_empty_doc(data: &[u8]) -> &[u8] {
     if data.is_empty() {

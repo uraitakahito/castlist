@@ -1,4 +1,6 @@
 //! 操作に共通の誤りの作り方。
+use axum::http::{HeaderName, StatusCode, header};
+use axum::response::{IntoResponse, Response};
 use castlist_sdk::error::{
     Conflict, GetActorError, GetActorSettingAtError, GetGraphError, GetLineageError, InternalError,
     ListActorSettingsError, ListActorsError, ListEventsError, ListSettingsError, PutEventError,
@@ -13,6 +15,20 @@ pub fn internal(operation: &str, error: &dyn std::fmt::Display) -> InternalError
     InternalError {
         message: "castlist の中で失敗した（記録を見る）".to_owned(),
     }
+}
+
+/// 生成した層の外（守りの層・手の道の backup と logs）で返す誤りの答え。生成した層の誤りと同じ restJson1 の形にする:
+/// header `X-Amzn-Errortype` に定義の型の名（`kind`）、本文は JSON の `{"message":…}`。
+pub fn reply(status: StatusCode, kind: &'static str, message: &str) -> Response {
+    (
+        status,
+        [
+            (header::CONTENT_TYPE, "application/json"),
+            (HeaderName::from_static("x-amzn-errortype"), kind),
+        ],
+        serde_json::json!({ "message": message }).to_string(),
+    )
+        .into_response()
 }
 
 /// 混んでいる（503。送り直せば通る見込み）。
@@ -40,6 +56,22 @@ impl Failure {
     /// 残っている行を答えの形に直せない（中の失敗）。
     pub fn data(operation: &str, error: &dyn std::fmt::Display) -> Self {
         Failure::Internal(internal(operation, error))
+    }
+
+    /// 生成した層の外の道（手の道）の答え（[`reply`] の形。型は生成した層と同じ `Unavailable`・`InternalError`）。
+    pub fn reply(self) -> Response {
+        match self {
+            Failure::Busy => reply(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "Unavailable",
+                &busy().message,
+            ),
+            Failure::Internal(e) => reply(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "InternalError",
+                &e.message,
+            ),
+        }
     }
 }
 

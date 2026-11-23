@@ -9,10 +9,12 @@ use ai.common#ActorRef
 use ai.common#ActorSummary
 use ai.common#Conflict
 use ai.common#DateTime
+use ai.common#Forbidden
 use ai.common#InternalError
 use ai.common#MaxResults
 use ai.common#NextToken
 use ai.common#NotFound
+use ai.common#PayloadTooLarge
 use ai.common#Unavailable
 use aws.protocols#restJson1
 use smithy.framework#ValidationException
@@ -38,6 +40,13 @@ service Castlist {
         PutSetting
         ListSettings
         GetGraph
+    ]
+
+    // 操作の前の守りの層（server の生成した骨の外）が返す誤り。どの操作の答えにもなり得る。
+    errors: [
+        Forbidden
+        PayloadTooLarge
+        Unavailable
     ]
 }
 
