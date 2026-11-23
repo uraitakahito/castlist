@@ -286,7 +286,7 @@ impl PutEventOutput {
     }
 }
 
-/// 線の欄（`from` が `to` を起こした・`to` が `from` の後を継いだ）。GetActor の線と、PutLink の答えで同じ形。
+/// 線の欄（`from` が `to` を起こした・`to` が `from` の後を継いだ）。GetActor の線と、PutLink の答えで同じ形。 答えの `from`・`to` はアクターの id（PutLink の要求の `from`・`to` は付随する id の参照 `種類:値` で、castlist が引き当てた物）。
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]

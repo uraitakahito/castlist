@@ -45,7 +45,7 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 
 - DB は SQLite のまま、表を新しい migrations（`crates/server/migrations/`）で作る。表の作りは今の物を土台にし、決まり（足すだけの trigger・seq・外のキー）を引き継ぐ。
 - id の値（アクターの UUID v7・出来事・線・設定の送り手の id）は変えない（pagetray の送り手と、切り替えをまたいで送り続ける roster の id のため）。新しい id の字の検査は、今の id をみな受ける。
-- 同じ id で同じ本文かを見る写し（`body_hash`）は、新しい本文の形で取る。今の DB から移した行は「移した」印を持ち、同じ id の送り直しは、本文を比べずに 200 で前の物を返す（AI-36 の段 3 の移す命令）。
+- 同じ id で同じ本文かを見る写し（`body_hash`）は、新しい本文の形で取る。今の DB から移した行の写しは今の形の物なので、新しい形の本文で同じ id を送り直すと 409 になる。特別な決まり（移した印で 200 にする）は置かない: 送り手の roster は 409 を「もう在るので済んだ」とみなす（今の server でも、送り手の時刻が写しに入るので、送り直しは 409 になる）。段 6c で roster が `Conflict` を済んだと扱い続けることを、この決まりの前提にする。
 - 写しの形（`crates/server/src/body.rs`。替えれば、前に受けた物の送り直しが 409 になる）:
   1. 本文の欄を、定義の名の JSON の物にする。道の id は入れない。出来事は `issuer`・`by`・`type`・`detail`・`sentAt`、線は `issuer`・`type`・`from`・`to`・`sentAt`、model と effort は `issuer`・`by`・`model`・`effort`・`source`・`sentAt`。
   2. `detail` は、無ければ（JSON の null も）空の物 `{}`。`by`・`from`・`to` は送られた参照の字（`種類:値`）のまま。

@@ -230,7 +230,7 @@ impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for Put
     }
 }
 
-/// model と effort を足す。id は送り手が決める。同じ id の扱いは PutEvent と同じ（同じ本文は 200・違えば 409・`by` を引くより先に見る）。 新しい id でも、そのアクターの最新（受けた順で。`source` は比べない）と model と effort が同じなら、足さずに最新の行を 200 で返す （その時の id は残らない）。知らない model と effort の名は、初めて来た時に一覧に足す。
+/// model と effort を足す。id は送り手が決める。同じ id の扱いは PutEvent と同じ（同じ本文は 200・違えば 409・`by` を引くより先に見る）。 新しい id でも、そのアクターの最新（受けた順で。`source` は比べない）と model と effort が同じなら、足さずに最新の行を 200 で返す （その時の id は残らない。なので同じ id を後で送り直すと、その時の最新と比べ直し、間に別の設定が入っていれば新しい行として足す）。 知らない model と effort の名は、初めて来た時に一覧に足す。
 pub struct PutSetting;
 
 impl ::aws_smithy_http_server::operation::OperationShape for PutSetting {
