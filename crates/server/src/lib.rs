@@ -8,10 +8,13 @@ pub mod db;
 mod errors;
 mod event;
 mod generated;
+mod lineage;
 mod link;
+mod list_actors;
 mod register;
 mod resolve;
 mod rows;
+pub mod search;
 mod setting;
 
 use std::sync::Arc;
@@ -38,6 +41,14 @@ pub fn app(db: Arc<Db>) -> Router {
         .get_actor({
             let db = db.clone();
             move |input| actor::get_actor(db.clone(), input)
+        })
+        .list_actors({
+            let db = db.clone();
+            move |input| list_actors::list_actors(db.clone(), input)
+        })
+        .get_lineage({
+            let db = db.clone();
+            move |input| lineage::get_lineage(db.clone(), input)
         })
         .resolve_actors({
             let db = db.clone();
@@ -73,6 +84,15 @@ fn datetime(s: &str) -> Result<aws_smithy_types::DateTime, String> {
         .ok()
         .and_then(|t| aws_smithy_types::DateTime::from_nanos(t.unix_timestamp_nanos()).ok())
         .ok_or_else(|| format!("DB の時刻が読めない: {s}"))
+}
+
+/// 問いの時刻を、DB に残す字（UTC・ミリ秒まで・24 字。ミリ秒より下は切る）にする。字の順で比べられる。
+fn stored_time(name: &str, t: &aws_smithy_types::DateTime) -> Result<String, String> {
+    time::OffsetDateTime::from_unix_timestamp_nanos(t.as_nanos())
+        .ok()
+        .filter(|t| (0..=9999).contains(&t.year()))
+        .map(db::stamp)
+        .ok_or_else(|| format!("{name} は 0000 年から 9999 年までの時刻"))
 }
 
 /// 送り手の時刻を、time の時刻にする。扱えなければ、その訳。

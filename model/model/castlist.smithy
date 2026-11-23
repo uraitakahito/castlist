@@ -10,6 +10,8 @@ use ai.common#ActorSummary
 use ai.common#Conflict
 use ai.common#DateTime
 use ai.common#InternalError
+use ai.common#MaxResults
+use ai.common#NextToken
 use ai.common#NotFound
 use ai.common#Unavailable
 use aws.protocols#restJson1
@@ -21,7 +23,7 @@ use smithy.test#httpResponseTests
 @title("castlist")
 service Castlist {
     version: "1.0"
-    operations: [GetHealth, RegisterActor, GetActor, ResolveActors, PutEvent, PutLink, PutSetting]
+    operations: [GetHealth, RegisterActor, GetActor, ListActors, GetLineage, ResolveActors, PutEvent, PutLink, PutSetting]
 }
 
 /// 動いているかと、castlist の今の時刻（送り手が、自分の時計との差を測る）。
@@ -405,6 +407,387 @@ operation GetActor {
         InternalError
     ]
 }
+
+/// アクターを条件で探す（監査の検索）。条件はどれも AND。時刻の条件は、どれも castlist が受けた時刻（`receivedAt`）で比べる。
+/// 索引で引ける条件（`label`・`binding`・`activeFrom`・`activeTo`・`active` が true・`model`・`effort`・`launchedBy`・`skewed`）が
+/// 1 つも無ければ 400（`kind` と `active` が false は、それだけでは数えない）。
+/// - `label` は `鍵:値`。重ねれば、どれも持つアクター。
+/// - `binding` は `種類:値`。`at`（既定は `asOf`）までに受けた、その値の付随する id の最新の行（出し手と鍵かを問わない）のアクター 1 つ。
+///   `at` は `binding` と一緒にだけ付ける（無ければ 400）。
+/// - `activeFrom`・`activeTo` は稼働した期間（初めの登場から最後の退場まで。稼働中なら今まで）が窓に掛かるアクター（両端を含む）。
+///   登場していないアクターは入らない。
+/// - `active` は今稼働中か。`model`・`effort` は、その名の model か effort の行を 1 つでも持つ。`launchedBy` は、そのアクターが起こした（launched）。
+/// - `skewed` は時刻ずれの行（アクター・出来事・model と effort）を持つ。true だけを受ける（false は 400。絞らないなら付けない）。
+/// - 並びは `sort`（`entered` は初めの登場・`exited` は最後の退場。既定 `entered`）と `order`（既定 `asc`）。値の無いアクターは昇順で先・降順で後。
+///   同じ値は受けた順（同じ向き）。
+/// - 頁は keyset で分ける（並べる値と受けた順で後ろから続けるので、辿る間に行が足されても、元の組に穴も重なりも出ない）。
+///   `nextToken` は同じ `sort` と `order` の答えの物を渡す（違えば 400。ほかの条件は見ない）。
+@readonly
+@paginated(inputToken: "nextToken", outputToken: "nextToken", pageSize: "maxResults", items: "actors")
+@http(method: "GET", uri: "/api/actors")
+@httpRequestTests([
+    {
+        id: "ListActorsRequest"
+        documentation: "引数の名は camelCase。label は重ねられる"
+        protocol: restJson1
+        method: "GET"
+        uri: "/api/actors"
+        queryParams: [
+            "label=project:castlist"
+            "label=tpm.role:auditor"
+            "binding=cmux.workspace.ref:workspace:3"
+            "at=2026-11-24T00:00:00Z"
+            "activeFrom=2026-11-24T00:00:00Z"
+            "activeTo=2026-11-25T00:00:00Z"
+            "kind=ai"
+            "model=claude-opus-5-5"
+            "effort=high"
+            "active=true"
+            "launchedBy=019abcde-0000-7000-8000-000000000002"
+            "skewed=true"
+            "sort=exited"
+            "order=desc"
+            "maxResults=10"
+            "nextToken=abc"
+        ]
+        params: {
+            label: ["project:castlist", "tpm.role:auditor"]
+            binding: "cmux.workspace.ref:workspace:3"
+            at: 1795478400
+            activeFrom: 1795478400
+            activeTo: 1795564800
+            kind: "ai"
+            model: "claude-opus-5-5"
+            effort: "high"
+            active: true
+            launchedBy: "019abcde-0000-7000-8000-000000000002"
+            skewed: true
+            sort: "exited"
+            order: "desc"
+            maxResults: 10
+            nextToken: "abc"
+        }
+    }
+])
+@httpResponseTests([
+    {
+        id: "ListActorsResponse"
+        documentation: "行は一覧の形（url はプロフィールの頁）。次の頁が無ければ nextToken が無い"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"asOf":"2026-11-24T00:00:02Z","actors":[{"id":"019abcde-0000-7000-8000-000000000001","name":"se.1","kind":"ai","issuer":"tpm","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false,"labels":{"project":"castlist"},"firstEnteredAt":"2026-11-24T00:00:01Z","lastExitedAt":"2026-11-24T00:00:02Z","lastExitType":"closed","present":false,"inferred":true,"model":"claude-opus-5-5","effort":"high","url":"/actors/019abcde-0000-7000-8000-000000000001"}]}"""
+        bodyMediaType: "application/json"
+        params: {
+            asOf: 1795478402
+            actors: [
+                {
+                    id: "019abcde-0000-7000-8000-000000000001"
+                    name: "se.1"
+                    kind: "ai"
+                    issuer: "tpm"
+                    sentAt: 1795478400
+                    receivedAt: 1795478401
+                    clockSkew: false
+                    labels: { project: "castlist" }
+                    firstEnteredAt: 1795478401
+                    lastExitedAt: 1795478402
+                    lastExitType: "closed"
+                    present: false
+                    inferred: true
+                    model: "claude-opus-5-5"
+                    effort: "high"
+                    url: "/actors/019abcde-0000-7000-8000-000000000001"
+                }
+            ]
+        }
+    }
+    {
+        id: "ListActorsResponseWithNextToken"
+        documentation: "次の頁があれば nextToken を付ける"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"asOf":"2026-11-24T00:00:00Z","actors":[],"nextToken":"abc"}"""
+        bodyMediaType: "application/json"
+        params: { asOf: 1795478400, actors: [], nextToken: "abc" }
+    }
+])
+operation ListActors {
+    input := {
+        /// ラベル（`鍵:値`）。重ねれば、どれも持つアクター。
+        @httpQuery("label")
+        label: LabelFilters
+
+        /// 付随する id（`種類:値`）。
+        @httpQuery("binding")
+        binding: ActorRef
+
+        /// `binding` を引く時刻（既定は `asOf`）。`binding` と一緒にだけ付ける。
+        @httpQuery("at")
+        at: DateTime
+
+        /// 稼働した期間の窓の始め（両端を含む）。
+        @httpQuery("activeFrom")
+        activeFrom: DateTime
+
+        /// 稼働した期間の窓の終わり（両端を含む）。
+        @httpQuery("activeTo")
+        activeTo: DateTime
+
+        @httpQuery("kind")
+        kind: ActorKind
+
+        /// その名の model の行を 1 つでも持つ。
+        @httpQuery("model")
+        model: Name
+
+        /// その名の effort の行を 1 つでも持つ。
+        @httpQuery("effort")
+        effort: Name
+
+        /// 今稼働中か。
+        @httpQuery("active")
+        active: Boolean
+
+        /// このアクターが起こした（launched）。
+        @httpQuery("launchedBy")
+        launchedBy: ActorId
+
+        /// 時刻ずれの行を持つ（true だけ）。
+        @httpQuery("skewed")
+        skewed: Boolean
+
+        /// `entered`（初めの登場。既定）か `exited`（最後の退場）。
+        @httpQuery("sort")
+        sort: ActorSort
+
+        /// `asc`（既定）か `desc`。
+        @httpQuery("order")
+        order: SortOrder
+
+        /// 1 頁の数（既定 100）。
+        @httpQuery("maxResults")
+        maxResults: MaxResults
+
+        /// 前の答えの `nextToken`。
+        @httpQuery("nextToken")
+        nextToken: NextToken
+    }
+
+    output := {
+        /// 読み始める前の castlist の時刻。
+        @required
+        asOf: DateTime
+
+        @required
+        actors: ActorRows
+
+        /// 次の頁の印。終わりなら無い。
+        nextToken: NextToken
+    }
+
+    errors: [
+        ValidationException
+        Unavailable
+        InternalError
+    ]
+}
+
+/// ラベルの絞り: `鍵:値`。初めの `:` で分ける。鍵は名の形、値は空でなく制御文字の無い 256 字まで。
+@pattern("^[a-z0-9.-]{1,64}:[^\\x00-\\x1F\\x7F-\\x9F]{1,256}$")
+string LabelFilter
+
+list LabelFilters {
+    member: LabelFilter
+}
+
+/// アクターの一覧の並べ方: 初めの登場（`entered`）・最後の退場（`exited`）。
+@pattern("^(entered|exited)$")
+string ActorSort
+
+/// 並べる向き。
+@pattern("^(asc|desc)$")
+string SortOrder
+
+/// 一覧の 1 行（アクター）。
+structure ActorRow {
+    @required
+    id: ActorId
+
+    @required
+    name: String
+
+    @required
+    kind: ActorKind
+
+    @required
+    issuer: Name
+
+    /// 登録の送り手の時刻。
+    @required
+    sentAt: DateTime
+
+    /// 登録を受けた castlist の時刻。
+    @required
+    receivedAt: DateTime
+
+    @required
+    clockSkew: Boolean
+
+    /// ラベル（JSON の鍵の順は決まらない）。
+    @required
+    labels: Labels
+
+    /// 初めの登場（entered・reentered・forked）を受けた時刻。
+    firstEnteredAt: DateTime
+
+    /// 最後の退場（cleared・exited・closed）を受けた時刻。
+    lastExitedAt: DateTime
+
+    /// 最後の退場の種類。
+    lastExitType: EventType
+
+    /// 今稼働中か。
+    @required
+    present: Boolean
+
+    /// 今の停止が推しか（GetActor の `state.inferred` と同じ）。
+    @required
+    inferred: Boolean
+
+    /// 最新の model（受けた順で）。
+    model: Name
+
+    /// 最新の effort（受けた順で）。
+    effort: Name
+
+    /// プロフィールの頁の path（`/actors/{id}`）。
+    @required
+    url: String
+}
+
+list ActorRows {
+    member: ActorRow
+}
+
+/// 起こした・継いだ線を上り下りする。上りは人で止める（人は含む。起点が人なら上らない）。
+/// 既定の深さは上 20 段・下 1 段で、`depth` を付ければ両方にそれを使う。`type` は上りと下りの両方の線を絞る。
+/// `nodes` は一覧の形を初めの登場の順（同じなら受けた順）に、`edges` は線を受けた順に、重ならずに返す。
+@readonly
+@http(method: "GET", uri: "/api/actors/{actorId}/lineage")
+@httpRequestTests([
+    {
+        id: "GetLineageRequest"
+        documentation: "向き・深さ・線の種類は引数"
+        protocol: restJson1
+        method: "GET"
+        uri: "/api/actors/019abcde-0000-7000-8000-000000000001/lineage"
+        queryParams: ["direction=up", "depth=3", "type=launched"]
+        params: {
+            actorId: "019abcde-0000-7000-8000-000000000001"
+            direction: "up"
+            depth: 3
+            type: "launched"
+        }
+    }
+])
+@httpResponseTests([
+    {
+        id: "GetLineageResponse"
+        documentation: "点は一覧の形、線は GetActor の線と同じ形"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"asOf":"2026-11-24T00:00:02Z","actorId":"019abcde-0000-7000-8000-000000000001","nodes":[{"id":"019abcde-0000-7000-8000-000000000001","name":"se.1","kind":"ai","issuer":"tpm","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false,"labels":{},"present":false,"inferred":false,"url":"/actors/019abcde-0000-7000-8000-000000000001"}],"edges":[{"id":"l-1","type":"launched","from":"019abcde-0000-7000-8000-000000000002","to":"019abcde-0000-7000-8000-000000000001","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false}]}"""
+        bodyMediaType: "application/json"
+        params: {
+            asOf: 1795478402
+            actorId: "019abcde-0000-7000-8000-000000000001"
+            nodes: [
+                {
+                    id: "019abcde-0000-7000-8000-000000000001"
+                    name: "se.1"
+                    kind: "ai"
+                    issuer: "tpm"
+                    sentAt: 1795478400
+                    receivedAt: 1795478401
+                    clockSkew: false
+                    labels: {}
+                    present: false
+                    inferred: false
+                    url: "/actors/019abcde-0000-7000-8000-000000000001"
+                }
+            ]
+            edges: [
+                {
+                    id: "l-1"
+                    type: "launched"
+                    from: "019abcde-0000-7000-8000-000000000002"
+                    to: "019abcde-0000-7000-8000-000000000001"
+                    sentAt: 1795478400
+                    receivedAt: 1795478401
+                    clockSkew: false
+                }
+            ]
+        }
+    }
+])
+operation GetLineage {
+    input := {
+        @required
+        @httpLabel
+        actorId: ActorId
+
+        /// `up`・`down`・`both`（既定）。
+        @httpQuery("direction")
+        direction: LineageDirection
+
+        /// 辿る段の数（1 から 20）。無ければ上 20 段・下 1 段。
+        @httpQuery("depth")
+        depth: LineageDepth
+
+        /// 線の種類で絞る（上りと下りの両方）。
+        @httpQuery("type")
+        type: LinkType
+    }
+
+    output := {
+        /// 読み始める前の castlist の時刻。
+        @required
+        asOf: DateTime
+
+        /// 起点のアクター。
+        @required
+        actorId: ActorId
+
+        /// 起点と、辿って着いたアクター（初めの登場の順。同じなら受けた順）。
+        @required
+        nodes: ActorRows
+
+        /// 辿った線（受けた順）。
+        @required
+        edges: Links
+    }
+
+    errors: [
+        NotFound
+        ValidationException
+        Unavailable
+        InternalError
+    ]
+}
+
+/// 線を辿る向き。
+@pattern("^(up|down|both)$")
+string LineageDirection
+
+/// 線を辿る段の数。
+@range(min: 1, max: 20)
+integer LineageDepth
 
 /// 鍵の付随する id（`種類:値`）から、出し手の中のアクターを引く。答えは問いと同じ順で、引けない物（知らない・鍵でない・出し手が違う）は `actor` が無い。
 /// 1 つでも形の違う参照があれば、全体を 400 で断る。

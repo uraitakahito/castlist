@@ -24,6 +24,8 @@ version = "1.2.0"
 [dependencies.aws-smithy-types]
 version = "1.9.4"
 features = ["http-body-1-x"]
+[dependencies.form_urlencoded]
+version = "1"
 [dependencies.futures-util]
 version = "0.3"
 [dependencies.http-1x]

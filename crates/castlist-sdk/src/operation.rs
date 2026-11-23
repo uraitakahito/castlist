@@ -810,6 +810,513 @@ mod get_actor_test {
 
 ::pin_project_lite::pin_project! {
     /// A [`Future`](std::future::Future) aggregating the body bytes of a [`Request`] and constructing the
+    /// [`ListActorsInput`](crate::input::ListActorsInput) using modelled bindings.
+    pub struct ListActorsInputFuture {
+        inner: std::pin::Pin<Box<dyn std::future::Future<Output = Result<crate::input::ListActorsInput, ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError>> + Send>>
+    }
+}
+
+impl std::future::Future for ListActorsInputFuture {
+    type Output = Result<
+        crate::input::ListActorsInput,
+        ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError,
+    >;
+
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        let this = self.project();
+        this.inner.as_mut().poll(cx)
+    }
+}
+
+impl<B>
+    ::aws_smithy_http_server::request::FromRequest<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+        B,
+    > for crate::input::ListActorsInput
+where
+    B: ::aws_smithy_http_server::body::HttpBody + Send,
+    B: 'static,
+
+    B::Data: Send,
+    ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection:
+        From<<B as ::aws_smithy_http_server::body::HttpBody>::Error>,
+{
+    type Rejection = ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError;
+    type Future = ListActorsInputFuture;
+
+    fn from_request(request: ::http_1x::Request<B>) -> Self::Future {
+        let fut = async move {
+            if !::aws_smithy_http_server::protocol::accept_header_classifier(
+                request.headers(),
+                &crate::mimes::CONTENT_TYPE_APPLICATION_JSON,
+            ) {
+                return Err(::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection::NotAcceptable);
+            }
+            crate::protocol_serde::shape_list_actors::de_list_actors_http_request(request).await
+        };
+        use ::futures_util::future::TryFutureExt;
+        let fut = fut.map_err(
+            |e: ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection| {
+                ::tracing::debug!(error = %e, "failed to deserialize request");
+                ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(
+                    e,
+                )
+            },
+        );
+        ListActorsInputFuture {
+            inner: Box::pin(fut),
+        }
+    }
+}
+impl
+    ::aws_smithy_http_server::response::IntoResponse<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+    > for crate::output::ListActorsOutput
+{
+    fn into_response(self) -> ::aws_smithy_http_server::response::Response {
+        match crate::protocol_serde::shape_list_actors::ser_list_actors_http_response(self) {
+            Ok(response) => response,
+            Err(e) => {
+                ::tracing::error!(error = %e, "failed to serialize response");
+                ::aws_smithy_http_server::response::IntoResponse::<::aws_smithy_http_server::protocol::rest_json_1::RestJson1>::into_response(::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(e))
+            }
+        }
+    }
+}
+impl
+    ::aws_smithy_http_server::response::IntoResponse<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+    > for crate::error::ListActorsError
+{
+    fn into_response(self) -> ::aws_smithy_http_server::response::Response {
+        match crate::protocol_serde::shape_list_actors::ser_list_actors_http_error(&self) {
+            Ok(mut response) => {
+                response.extensions_mut().insert(
+                    ::aws_smithy_http_server::extension::ModeledErrorExtension::new(self.name()),
+                );
+                response
+            }
+            Err(e) => {
+                ::tracing::error!(error = %e, "failed to serialize response");
+                ::aws_smithy_http_server::response::IntoResponse::<::aws_smithy_http_server::protocol::rest_json_1::RestJson1>::into_response(::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(e))
+            }
+        }
+    }
+}
+
+#[allow(unreachable_code, unused_variables)]
+#[cfg(test)]
+mod list_actors_test {
+
+    /// 引数の名は camelCase。label は重ねられる
+    /// Test ID: ListActorsRequest
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn list_actors_request_request() {
+        #[allow(unused_mut)]
+        let mut http_request = ::http_1x::Request::builder()
+            .uri("/api/actors")
+            .method("GET")
+            .body(::aws_smithy_http_server::body::boxed(
+                ::http_body_util::Empty::new(),
+            ))
+            .unwrap();
+        *http_request.uri_mut() = "/api/actors?label=project:castlist&label=tpm.role:auditor&binding=cmux.workspace.ref:workspace:3&at=2026-11-24T00:00:00Z&activeFrom=2026-11-24T00:00:00Z&activeTo=2026-11-25T00:00:00Z&kind=ai&model=claude-opus-5-5&effort=high&active=true&launchedBy=019abcde-0000-7000-8000-000000000002&skewed=true&sort=exited&order=desc&maxResults=10&nextToken=abc".parse().unwrap();
+        #[allow(unused_mut)]
+        let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
+        let config = crate::service::CastlistConfig::builder().build();
+        let service =
+            crate::service::Castlist::builder::<::aws_smithy_http_server::body::BoxBody, _, _, _>(
+                config,
+            )
+            .list_actors(
+                // Rust 1.94+ flags the moved `sender` as "value captured is never read"
+                // since `send()` only borrows it.
+                #[allow(unused_assignments)]
+                move |input: crate::input::ListActorsInput| {
+                    let sender = sender.clone();
+                    async move {
+                        let result = {
+                            let expected = crate::input::ListActorsInput {
+                                label: ::std::option::Option::Some(vec![
+                                    "project:castlist".to_owned(),
+                                    "tpm.role:auditor".to_owned(),
+                                ]),
+                                binding: ::std::option::Option::Some(
+                                    "cmux.workspace.ref:workspace:3".to_owned(),
+                                ),
+                                at: ::std::option::Option::Some(
+                                    ::aws_smithy_types::DateTime::from_fractional_secs(
+                                        1795478400, 0_f64,
+                                    ),
+                                ),
+                                active_from: ::std::option::Option::Some(
+                                    ::aws_smithy_types::DateTime::from_fractional_secs(
+                                        1795478400, 0_f64,
+                                    ),
+                                ),
+                                active_to: ::std::option::Option::Some(
+                                    ::aws_smithy_types::DateTime::from_fractional_secs(
+                                        1795564800, 0_f64,
+                                    ),
+                                ),
+                                kind: ::std::option::Option::Some("ai".to_owned()),
+                                model: ::std::option::Option::Some("claude-opus-5-5".to_owned()),
+                                effort: ::std::option::Option::Some("high".to_owned()),
+                                active: ::std::option::Option::Some(true),
+                                launched_by: ::std::option::Option::Some(
+                                    "019abcde-0000-7000-8000-000000000002".to_owned(),
+                                ),
+                                skewed: ::std::option::Option::Some(true),
+                                sort: ::std::option::Option::Some("exited".to_owned()),
+                                order: ::std::option::Option::Some("desc".to_owned()),
+                                max_results: ::std::option::Option::Some(10),
+                                next_token: ::std::option::Option::Some("abc".to_owned()),
+                            };
+                            ::pretty_assertions::assert_eq!(input, expected);
+                            let output = crate::output::ListActorsOutput {
+                                as_of: ::aws_smithy_types::DateTime::from_fractional_secs(0, 0_f64),
+                                actors: vec![],
+                                next_token: ::std::option::Option::None,
+                            };
+                            Ok(output)
+                        };
+                        sender.send(()).await.expect("receiver dropped early");
+                        result
+                    }
+                },
+            )
+            .build_unchecked();
+        let http_response = ::tower::ServiceExt::oneshot(service, http_request)
+            .await
+            .expect("unable to make an HTTP request");
+        assert!(
+            receiver.recv().await.is_some(),
+            "we expected operation handler to be invoked but it was not entered"
+        );
+    }
+
+    /// 行は一覧の形（url はプロフィールの頁）。次の頁が無ければ nextToken が無い
+    /// Test ID: ListActorsResponse
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn list_actors_response_response() {
+        let output = crate::output::ListActorsOutput {
+            as_of: ::aws_smithy_types::DateTime::from_fractional_secs(1795478402, 0_f64),
+            actors: vec![crate::model::ActorRow {
+                id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                name: "se.1".to_owned(),
+                kind: "ai".to_owned(),
+                issuer: "tpm".to_owned(),
+                sent_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478400, 0_f64),
+                received_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478401, 0_f64),
+                clock_skew: false,
+                labels: {
+                    let mut ret = ::std::collections::HashMap::new();
+                    ret.insert("project".to_owned(), "castlist".to_owned());
+                    ret
+                },
+                first_entered_at: ::std::option::Option::Some(
+                    ::aws_smithy_types::DateTime::from_fractional_secs(1795478401, 0_f64),
+                ),
+                last_exited_at: ::std::option::Option::Some(
+                    ::aws_smithy_types::DateTime::from_fractional_secs(1795478402, 0_f64),
+                ),
+                last_exit_type: ::std::option::Option::Some("closed".to_owned()),
+                present: false,
+                inferred: true,
+                model: ::std::option::Option::Some("claude-opus-5-5".to_owned()),
+                effort: ::std::option::Option::Some("high".to_owned()),
+                url: "/actors/019abcde-0000-7000-8000-000000000001".to_owned(),
+            }],
+            next_token: ::std::option::Option::None,
+        };
+        use ::aws_smithy_http_server::response::IntoResponse;
+        let http_response = output.into_response();
+        ::pretty_assertions::assert_eq!(
+            ::http_1x::StatusCode::from_u16(200).expect("invalid expected HTTP status code"),
+            http_response.status()
+        );
+        let expected_headers = [("Content-Type", "application/json")];
+        ::aws_smithy_protocol_test::assert_ok(::aws_smithy_protocol_test::validate_headers(
+            http_response.headers(),
+            expected_headers,
+        ));
+        use ::http_body_util::BodyExt;
+        let body = http_response
+            .into_body()
+            .collect()
+            .await
+            .expect("unable to collect body")
+            .to_bytes();
+        ::aws_smithy_protocol_test::assert_ok(
+        ::aws_smithy_protocol_test::validate_body(&body, "{\"asOf\":\"2026-11-24T00:00:02Z\",\"actors\":[{\"id\":\"019abcde-0000-7000-8000-000000000001\",\"name\":\"se.1\",\"kind\":\"ai\",\"issuer\":\"tpm\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false,\"labels\":{\"project\":\"castlist\"},\"firstEnteredAt\":\"2026-11-24T00:00:01Z\",\"lastExitedAt\":\"2026-11-24T00:00:02Z\",\"lastExitType\":\"closed\",\"present\":false,\"inferred\":true,\"model\":\"claude-opus-5-5\",\"effort\":\"high\",\"url\":\"/actors/019abcde-0000-7000-8000-000000000001\"}]}", ::aws_smithy_protocol_test::MediaType::from("application/json"))
+        );
+    }
+
+    /// 次の頁があれば nextToken を付ける
+    /// Test ID: ListActorsResponseWithNextToken
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn list_actors_response_with_next_token_response() {
+        let output = crate::output::ListActorsOutput {
+            as_of: ::aws_smithy_types::DateTime::from_fractional_secs(1795478400, 0_f64),
+            actors: vec![],
+            next_token: ::std::option::Option::Some("abc".to_owned()),
+        };
+        use ::aws_smithy_http_server::response::IntoResponse;
+        let http_response = output.into_response();
+        ::pretty_assertions::assert_eq!(
+            ::http_1x::StatusCode::from_u16(200).expect("invalid expected HTTP status code"),
+            http_response.status()
+        );
+        let expected_headers = [("Content-Type", "application/json")];
+        ::aws_smithy_protocol_test::assert_ok(::aws_smithy_protocol_test::validate_headers(
+            http_response.headers(),
+            expected_headers,
+        ));
+        use ::http_body_util::BodyExt;
+        let body = http_response
+            .into_body()
+            .collect()
+            .await
+            .expect("unable to collect body")
+            .to_bytes();
+        ::aws_smithy_protocol_test::assert_ok(::aws_smithy_protocol_test::validate_body(
+            &body,
+            "{\"asOf\":\"2026-11-24T00:00:00Z\",\"actors\":[],\"nextToken\":\"abc\"}",
+            ::aws_smithy_protocol_test::MediaType::from("application/json"),
+        ));
+    }
+}
+
+::pin_project_lite::pin_project! {
+    /// A [`Future`](std::future::Future) aggregating the body bytes of a [`Request`] and constructing the
+    /// [`GetLineageInput`](crate::input::GetLineageInput) using modelled bindings.
+    pub struct GetLineageInputFuture {
+        inner: std::pin::Pin<Box<dyn std::future::Future<Output = Result<crate::input::GetLineageInput, ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError>> + Send>>
+    }
+}
+
+impl std::future::Future for GetLineageInputFuture {
+    type Output = Result<
+        crate::input::GetLineageInput,
+        ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError,
+    >;
+
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        let this = self.project();
+        this.inner.as_mut().poll(cx)
+    }
+}
+
+impl<B>
+    ::aws_smithy_http_server::request::FromRequest<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+        B,
+    > for crate::input::GetLineageInput
+where
+    B: ::aws_smithy_http_server::body::HttpBody + Send,
+    B: 'static,
+
+    B::Data: Send,
+    ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection:
+        From<<B as ::aws_smithy_http_server::body::HttpBody>::Error>,
+{
+    type Rejection = ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError;
+    type Future = GetLineageInputFuture;
+
+    fn from_request(request: ::http_1x::Request<B>) -> Self::Future {
+        let fut = async move {
+            if !::aws_smithy_http_server::protocol::accept_header_classifier(
+                request.headers(),
+                &crate::mimes::CONTENT_TYPE_APPLICATION_JSON,
+            ) {
+                return Err(::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection::NotAcceptable);
+            }
+            crate::protocol_serde::shape_get_lineage::de_get_lineage_http_request(request).await
+        };
+        use ::futures_util::future::TryFutureExt;
+        let fut = fut.map_err(
+            |e: ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection| {
+                ::tracing::debug!(error = %e, "failed to deserialize request");
+                ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(
+                    e,
+                )
+            },
+        );
+        GetLineageInputFuture {
+            inner: Box::pin(fut),
+        }
+    }
+}
+impl
+    ::aws_smithy_http_server::response::IntoResponse<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+    > for crate::output::GetLineageOutput
+{
+    fn into_response(self) -> ::aws_smithy_http_server::response::Response {
+        match crate::protocol_serde::shape_get_lineage::ser_get_lineage_http_response(self) {
+            Ok(response) => response,
+            Err(e) => {
+                ::tracing::error!(error = %e, "failed to serialize response");
+                ::aws_smithy_http_server::response::IntoResponse::<::aws_smithy_http_server::protocol::rest_json_1::RestJson1>::into_response(::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(e))
+            }
+        }
+    }
+}
+impl
+    ::aws_smithy_http_server::response::IntoResponse<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+    > for crate::error::GetLineageError
+{
+    fn into_response(self) -> ::aws_smithy_http_server::response::Response {
+        match crate::protocol_serde::shape_get_lineage::ser_get_lineage_http_error(&self) {
+            Ok(mut response) => {
+                response.extensions_mut().insert(
+                    ::aws_smithy_http_server::extension::ModeledErrorExtension::new(self.name()),
+                );
+                response
+            }
+            Err(e) => {
+                ::tracing::error!(error = %e, "failed to serialize response");
+                ::aws_smithy_http_server::response::IntoResponse::<::aws_smithy_http_server::protocol::rest_json_1::RestJson1>::into_response(::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(e))
+            }
+        }
+    }
+}
+
+#[allow(unreachable_code, unused_variables)]
+#[cfg(test)]
+mod get_lineage_test {
+
+    /// 向き・深さ・線の種類は引数
+    /// Test ID: GetLineageRequest
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn get_lineage_request_request() {
+        #[allow(unused_mut)]
+        let mut http_request = ::http_1x::Request::builder()
+            .uri("/api/actors/019abcde-0000-7000-8000-000000000001/lineage")
+            .method("GET")
+            .body(::aws_smithy_http_server::body::boxed(
+                ::http_body_util::Empty::new(),
+            ))
+            .unwrap();
+        *http_request.uri_mut() = "/api/actors/019abcde-0000-7000-8000-000000000001/lineage?direction=up&depth=3&type=launched".parse().unwrap();
+        #[allow(unused_mut)]
+        let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
+        let config = crate::service::CastlistConfig::builder().build();
+        let service =
+            crate::service::Castlist::builder::<::aws_smithy_http_server::body::BoxBody, _, _, _>(
+                config,
+            )
+            .get_lineage(
+                // Rust 1.94+ flags the moved `sender` as "value captured is never read"
+                // since `send()` only borrows it.
+                #[allow(unused_assignments)]
+                move |input: crate::input::GetLineageInput| {
+                    let sender = sender.clone();
+                    async move {
+                        let result = {
+                            let expected = crate::input::GetLineageInput {
+                                actor_id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                                direction: ::std::option::Option::Some("up".to_owned()),
+                                depth: ::std::option::Option::Some(3),
+                                r#type: ::std::option::Option::Some("launched".to_owned()),
+                            };
+                            ::pretty_assertions::assert_eq!(input, expected);
+                            let output = crate::output::GetLineageOutput {
+                                as_of: ::aws_smithy_types::DateTime::from_fractional_secs(0, 0_f64),
+                                actor_id: "".to_owned(),
+                                nodes: vec![],
+                                edges: vec![],
+                            };
+                            Ok(output)
+                        };
+                        sender.send(()).await.expect("receiver dropped early");
+                        result
+                    }
+                },
+            )
+            .build_unchecked();
+        let http_response = ::tower::ServiceExt::oneshot(service, http_request)
+            .await
+            .expect("unable to make an HTTP request");
+        assert!(
+            receiver.recv().await.is_some(),
+            "we expected operation handler to be invoked but it was not entered"
+        );
+    }
+
+    /// 点は一覧の形、線は GetActor の線と同じ形
+    /// Test ID: GetLineageResponse
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn get_lineage_response_response() {
+        let output = crate::output::GetLineageOutput {
+            as_of: ::aws_smithy_types::DateTime::from_fractional_secs(1795478402, 0_f64),
+            actor_id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+            nodes: vec![crate::model::ActorRow {
+                id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                name: "se.1".to_owned(),
+                kind: "ai".to_owned(),
+                issuer: "tpm".to_owned(),
+                sent_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478400, 0_f64),
+                received_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478401, 0_f64),
+                clock_skew: false,
+                labels: ::std::collections::HashMap::new(),
+                present: false,
+                inferred: false,
+                url: "/actors/019abcde-0000-7000-8000-000000000001".to_owned(),
+                first_entered_at: ::std::option::Option::None,
+                last_exited_at: ::std::option::Option::None,
+                last_exit_type: ::std::option::Option::None,
+                model: ::std::option::Option::None,
+                effort: ::std::option::Option::None,
+            }],
+            edges: vec![crate::model::Link {
+                id: "l-1".to_owned(),
+                r#type: "launched".to_owned(),
+                from: "019abcde-0000-7000-8000-000000000002".to_owned(),
+                to: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                sent_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478400, 0_f64),
+                received_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478401, 0_f64),
+                clock_skew: false,
+            }],
+        };
+        use ::aws_smithy_http_server::response::IntoResponse;
+        let http_response = output.into_response();
+        ::pretty_assertions::assert_eq!(
+            ::http_1x::StatusCode::from_u16(200).expect("invalid expected HTTP status code"),
+            http_response.status()
+        );
+        let expected_headers = [("Content-Type", "application/json")];
+        ::aws_smithy_protocol_test::assert_ok(::aws_smithy_protocol_test::validate_headers(
+            http_response.headers(),
+            expected_headers,
+        ));
+        use ::http_body_util::BodyExt;
+        let body = http_response
+            .into_body()
+            .collect()
+            .await
+            .expect("unable to collect body")
+            .to_bytes();
+        ::aws_smithy_protocol_test::assert_ok(
+        ::aws_smithy_protocol_test::validate_body(&body, "{\"asOf\":\"2026-11-24T00:00:02Z\",\"actorId\":\"019abcde-0000-7000-8000-000000000001\",\"nodes\":[{\"id\":\"019abcde-0000-7000-8000-000000000001\",\"name\":\"se.1\",\"kind\":\"ai\",\"issuer\":\"tpm\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false,\"labels\":{},\"present\":false,\"inferred\":false,\"url\":\"/actors/019abcde-0000-7000-8000-000000000001\"}],\"edges\":[{\"id\":\"l-1\",\"type\":\"launched\",\"from\":\"019abcde-0000-7000-8000-000000000002\",\"to\":\"019abcde-0000-7000-8000-000000000001\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false}]}", ::aws_smithy_protocol_test::MediaType::from("application/json"))
+        );
+    }
+}
+
+::pin_project_lite::pin_project! {
+    /// A [`Future`](std::future::Future) aggregating the body bytes of a [`Request`] and constructing the
     /// [`ResolveActorsInput`](crate::input::ResolveActorsInput) using modelled bindings.
     pub struct ResolveActorsInputFuture {
         inner: std::pin::Pin<Box<dyn std::future::Future<Output = Result<crate::input::ResolveActorsInput, ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError>> + Send>>

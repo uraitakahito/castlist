@@ -195,6 +195,78 @@ impl GetActorOutput {
 }
 
 #[allow(missing_docs)] // documentation missing in model
+#[derive(::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct ListActorsOutput {
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+    #[allow(missing_docs)] // documentation missing in model
+    pub actors: ::std::vec::Vec<crate::model::ActorRow>,
+    /// 次の頁の印。終わりなら無い。
+    pub next_token: ::std::option::Option<::std::string::String>,
+}
+impl ListActorsOutput {
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+    #[allow(missing_docs)] // documentation missing in model
+    pub fn actors(&self) -> &[crate::model::ActorRow] {
+        use std::ops::Deref;
+        self.actors.deref()
+    }
+    /// 次の頁の印。終わりなら無い。
+    pub fn next_token(&self) -> ::std::option::Option<&str> {
+        self.next_token.as_deref()
+    }
+}
+impl ListActorsOutput {
+    /// Creates a new builder-style object to manufacture [`ListActorsOutput`](crate::output::ListActorsOutput).
+    pub fn builder() -> crate::output::list_actors_output::Builder {
+        crate::output::list_actors_output::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct GetLineageOutput {
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+    /// 起点のアクター。
+    pub actor_id: ::std::string::String,
+    /// 起点と、辿って着いたアクター（初めの登場の順。同じなら受けた順）。
+    pub nodes: ::std::vec::Vec<crate::model::ActorRow>,
+    /// 辿った線（受けた順）。
+    pub edges: ::std::vec::Vec<crate::model::Link>,
+}
+impl GetLineageOutput {
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+    /// 起点のアクター。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 起点と、辿って着いたアクター（初めの登場の順。同じなら受けた順）。
+    pub fn nodes(&self) -> &[crate::model::ActorRow] {
+        use std::ops::Deref;
+        self.nodes.deref()
+    }
+    /// 辿った線（受けた順）。
+    pub fn edges(&self) -> &[crate::model::Link] {
+        use std::ops::Deref;
+        self.edges.deref()
+    }
+}
+impl GetLineageOutput {
+    /// Creates a new builder-style object to manufacture [`GetLineageOutput`](crate::output::GetLineageOutput).
+    pub fn builder() -> crate::output::get_lineage_output::Builder {
+        crate::output::get_lineage_output::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]
@@ -801,6 +873,163 @@ pub mod get_actor_output {
                 links_out: self.links_out.ok_or(ConstraintViolation::MissingLinksOut)?,
                 state: self.state.ok_or(ConstraintViolation::MissingState)?,
                 as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+            })
+        }
+    }
+}
+/// See [`ListActorsOutput`](crate::output::ListActorsOutput).
+pub mod list_actors_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `as_of` was not provided but it is required when building `ListActorsOutput`.
+        MissingAsOf,
+        /// `actors` was not provided but it is required when building `ListActorsOutput`.
+        MissingActors,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingAsOf => write!(
+                    f,
+                    "`as_of` was not provided but it is required when building `ListActorsOutput`"
+                ),
+                ConstraintViolation::MissingActors => write!(
+                    f,
+                    "`actors` was not provided but it is required when building `ListActorsOutput`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::ListActorsOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListActorsOutput`](crate::output::ListActorsOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) actors: ::std::option::Option<::std::vec::Vec<crate::model::ActorRow>>,
+        pub(crate) next_token: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn actors(mut self, input: ::std::vec::Vec<crate::model::ActorRow>) -> Self {
+            self.actors = Some(input);
+            self
+        }
+        /// 次の頁の印。終わりなら無い。
+        pub fn next_token(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.next_token = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`ListActorsOutput`](crate::output::ListActorsOutput).
+        ///
+        /// The builder fails to construct a [`ListActorsOutput`](crate::output::ListActorsOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::ListActorsOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::ListActorsOutput, ConstraintViolation> {
+            Ok(crate::output::ListActorsOutput {
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+                actors: self.actors.ok_or(ConstraintViolation::MissingActors)?,
+                next_token: self.next_token,
+            })
+        }
+    }
+}
+/// See [`GetLineageOutput`](crate::output::GetLineageOutput).
+pub mod get_lineage_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `as_of` was not provided but it is required when building `GetLineageOutput`.
+        MissingAsOf,
+        /// `actor_id` was not provided but it is required when building `GetLineageOutput`.
+        MissingActorId,
+        /// `nodes` was not provided but it is required when building `GetLineageOutput`.
+        MissingNodes,
+        /// `edges` was not provided but it is required when building `GetLineageOutput`.
+        MissingEdges,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingAsOf => write!(f, "`as_of` was not provided but it is required when building `GetLineageOutput`"),
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `GetLineageOutput`"),
+                ConstraintViolation::MissingNodes => write!(f, "`nodes` was not provided but it is required when building `GetLineageOutput`"),
+                ConstraintViolation::MissingEdges => write!(f, "`edges` was not provided but it is required when building `GetLineageOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::GetLineageOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetLineageOutput`](crate::output::GetLineageOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) nodes: ::std::option::Option<::std::vec::Vec<crate::model::ActorRow>>,
+        pub(crate) edges: ::std::option::Option<::std::vec::Vec<crate::model::Link>>,
+    }
+    impl Builder {
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        /// 起点のアクター。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 起点と、辿って着いたアクター（初めの登場の順。同じなら受けた順）。
+        pub fn nodes(mut self, input: ::std::vec::Vec<crate::model::ActorRow>) -> Self {
+            self.nodes = Some(input);
+            self
+        }
+        /// 辿った線（受けた順）。
+        pub fn edges(mut self, input: ::std::vec::Vec<crate::model::Link>) -> Self {
+            self.edges = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`GetLineageOutput`](crate::output::GetLineageOutput).
+        ///
+        /// The builder fails to construct a [`GetLineageOutput`](crate::output::GetLineageOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::GetLineageOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::GetLineageOutput, ConstraintViolation> {
+            Ok(crate::output::GetLineageOutput {
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                nodes: self.nodes.ok_or(ConstraintViolation::MissingNodes)?,
+                edges: self.edges.ok_or(ConstraintViolation::MissingEdges)?,
             })
         }
     }

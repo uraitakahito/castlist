@@ -3,6 +3,10 @@ pub(crate) mod shape_get_actor;
 
 pub(crate) mod shape_get_health;
 
+pub(crate) mod shape_get_lineage;
+
+pub(crate) mod shape_list_actors;
+
 pub(crate) mod shape_put_event;
 
 pub(crate) mod shape_put_link;
@@ -21,7 +25,15 @@ pub(crate) mod shape_get_actor_output;
 
 pub(crate) mod shape_get_health_output;
 
+pub(crate) mod shape_get_lineage_input;
+
+pub(crate) mod shape_get_lineage_output;
+
 pub(crate) mod shape_internal_error;
+
+pub(crate) mod shape_list_actors_input;
+
+pub(crate) mod shape_list_actors_output;
 
 pub(crate) mod shape_not_found;
 
@@ -62,6 +74,8 @@ pub(crate) mod shape_labels;
 pub(crate) mod shape_requested_settings;
 
 pub(crate) mod shape_actor_binding;
+
+pub(crate) mod shape_actor_row;
 
 pub(crate) mod shape_actor_state;
 

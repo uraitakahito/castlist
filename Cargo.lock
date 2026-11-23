@@ -537,6 +537,7 @@ dependencies = [
  "aws-smithy-schema",
  "aws-smithy-types",
  "bytes",
+ "form_urlencoded",
  "futures-util",
  "http 1.5.0",
  "http-body",

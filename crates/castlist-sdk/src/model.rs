@@ -615,6 +615,697 @@ impl ActorState {
     }
 }
 
+/// 付随する id を指す参照: `種類:値`。初めの `:` で分ける（種類は `:` を持たないので、値に `:` があってよい）。 種類は英小文字・数字・`-`・`.` で 64 字まで。値は空でなく、制御文字（Unicode の Cc）の無い、256 字まで。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`ActorRef::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct ActorRef(pub(crate) ::std::string::String);
+#[allow(dead_code)]
+impl ActorRef {
+    /// Extracts a string slice containing the entire underlying `String`.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns an immutable reference to the underlying [`::std::string::String`].
+    pub fn inner(&self) -> &::std::string::String {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`::std::string::String`].
+    pub fn into_inner(self) -> ::std::string::String {
+        self.0
+    }
+}
+impl ActorRef {
+    fn check_pattern(
+        string: ::std::string::String,
+    ) -> ::std::result::Result<
+        ::std::string::String,
+        crate::model::actor_ref_internal::ConstraintViolation,
+    > {
+        let regex = Self::compile_regex();
+
+        if regex.is_match(&string) {
+            Ok(string)
+        } else {
+            Err(crate::model::actor_ref_internal::ConstraintViolation::Pattern(string))
+        }
+    }
+
+    /// Attempts to compile the regex for this constrained type's `@pattern`.
+    /// This can fail if the specified regex is not supported by the `::regex` crate.
+    pub fn compile_regex() -> &'static ::regex::Regex {
+        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
+            ::regex::Regex::new(r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#).expect(r#"The regular expression ^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
+        });
+
+        &REGEX
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ActorRef {
+    type Error = crate::model::actor_ref_internal::ConstraintViolation;
+
+    /// Constructs a `ActorRef` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
+        let value = Self::check_pattern(value)?;
+
+        Ok(Self(value))
+    }
+}
+impl crate::constrained::Constrained for ActorRef {
+    type Unconstrained = ::std::string::String;
+}
+
+impl ::std::convert::From<::std::string::String>
+    for crate::constrained::MaybeConstrained<crate::model::ActorRef>
+{
+    fn from(value: ::std::string::String) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for ActorRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<ActorRef> for ::std::string::String {
+    fn from(value: ActorRef) -> Self {
+        value.into_inner()
+    }
+}
+
+#[cfg(test)]
+mod test_actor_ref {
+    #[test]
+    fn regex_compiles() {
+        crate::model::ActorRef::compile_regex();
+    }
+}
+
+/// アクターの一覧の並べ方: 初めの登場（`entered`）・最後の退場（`exited`）。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`ActorSort::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct ActorSort(pub(crate) ::std::string::String);
+#[allow(dead_code)]
+impl ActorSort {
+    /// Extracts a string slice containing the entire underlying `String`.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns an immutable reference to the underlying [`::std::string::String`].
+    pub fn inner(&self) -> &::std::string::String {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`::std::string::String`].
+    pub fn into_inner(self) -> ::std::string::String {
+        self.0
+    }
+}
+impl ActorSort {
+    fn check_pattern(
+        string: ::std::string::String,
+    ) -> ::std::result::Result<
+        ::std::string::String,
+        crate::model::actor_sort_internal::ConstraintViolation,
+    > {
+        let regex = Self::compile_regex();
+
+        if regex.is_match(&string) {
+            Ok(string)
+        } else {
+            Err(crate::model::actor_sort_internal::ConstraintViolation::Pattern(string))
+        }
+    }
+
+    /// Attempts to compile the regex for this constrained type's `@pattern`.
+    /// This can fail if the specified regex is not supported by the `::regex` crate.
+    pub fn compile_regex() -> &'static ::regex::Regex {
+        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
+            ::regex::Regex::new(r#"^(entered|exited)$"#).expect(r#"The regular expression ^(entered|exited)$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
+        });
+
+        &REGEX
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ActorSort {
+    type Error = crate::model::actor_sort_internal::ConstraintViolation;
+
+    /// Constructs a `ActorSort` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
+        let value = Self::check_pattern(value)?;
+
+        Ok(Self(value))
+    }
+}
+impl crate::constrained::Constrained for ActorSort {
+    type Unconstrained = ::std::string::String;
+}
+
+impl ::std::convert::From<::std::string::String>
+    for crate::constrained::MaybeConstrained<crate::model::ActorSort>
+{
+    fn from(value: ::std::string::String) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for ActorSort {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<ActorSort> for ::std::string::String {
+    fn from(value: ActorSort) -> Self {
+        value.into_inner()
+    }
+}
+
+#[cfg(test)]
+mod test_actor_sort {
+    #[test]
+    fn regex_compiles() {
+        crate::model::ActorSort::compile_regex();
+    }
+}
+
+/// 並べる向き。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`SortOrder::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct SortOrder(pub(crate) ::std::string::String);
+#[allow(dead_code)]
+impl SortOrder {
+    /// Extracts a string slice containing the entire underlying `String`.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns an immutable reference to the underlying [`::std::string::String`].
+    pub fn inner(&self) -> &::std::string::String {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`::std::string::String`].
+    pub fn into_inner(self) -> ::std::string::String {
+        self.0
+    }
+}
+impl SortOrder {
+    fn check_pattern(
+        string: ::std::string::String,
+    ) -> ::std::result::Result<
+        ::std::string::String,
+        crate::model::sort_order_internal::ConstraintViolation,
+    > {
+        let regex = Self::compile_regex();
+
+        if regex.is_match(&string) {
+            Ok(string)
+        } else {
+            Err(crate::model::sort_order_internal::ConstraintViolation::Pattern(string))
+        }
+    }
+
+    /// Attempts to compile the regex for this constrained type's `@pattern`.
+    /// This can fail if the specified regex is not supported by the `::regex` crate.
+    pub fn compile_regex() -> &'static ::regex::Regex {
+        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
+            ::regex::Regex::new(r#"^(asc|desc)$"#).expect(r#"The regular expression ^(asc|desc)$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
+        });
+
+        &REGEX
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for SortOrder {
+    type Error = crate::model::sort_order_internal::ConstraintViolation;
+
+    /// Constructs a `SortOrder` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
+        let value = Self::check_pattern(value)?;
+
+        Ok(Self(value))
+    }
+}
+impl crate::constrained::Constrained for SortOrder {
+    type Unconstrained = ::std::string::String;
+}
+
+impl ::std::convert::From<::std::string::String>
+    for crate::constrained::MaybeConstrained<crate::model::SortOrder>
+{
+    fn from(value: ::std::string::String) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for SortOrder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<SortOrder> for ::std::string::String {
+    fn from(value: SortOrder) -> Self {
+        value.into_inner()
+    }
+}
+
+#[cfg(test)]
+mod test_sort_order {
+    #[test]
+    fn regex_compiles() {
+        crate::model::SortOrder::compile_regex();
+    }
+}
+
+/// 1 頁の数。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`MaxResults::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct MaxResults(pub(crate) i32);
+#[allow(dead_code)]
+impl MaxResults {
+    /// Returns an immutable reference to the underlying [`i32`].
+    pub fn inner(&self) -> &i32 {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`i32`].
+    pub fn into_inner(self) -> i32 {
+        self.0
+    }
+}
+
+impl crate::constrained::Constrained for MaxResults {
+    type Unconstrained = i32;
+}
+
+impl ::std::convert::From<i32> for crate::constrained::MaybeConstrained<crate::model::MaxResults> {
+    fn from(value: i32) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for MaxResults {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<MaxResults> for i32 {
+    fn from(value: MaxResults) -> Self {
+        value.into_inner()
+    }
+}
+impl MaxResults {
+    fn check_range(
+        value: i32,
+    ) -> ::std::result::Result<(), crate::model::max_results_internal::ConstraintViolation> {
+        if (1..=1000).contains(&value) {
+            Ok(())
+        } else {
+            Err(crate::model::max_results_internal::ConstraintViolation::Range(value))
+        }
+    }
+}
+impl ::std::convert::TryFrom<i32> for MaxResults {
+    type Error = crate::model::max_results_internal::ConstraintViolation;
+
+    /// Constructs a `MaxResults` from an [`i32`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: i32) -> ::std::result::Result<Self, Self::Error> {
+        Self::check_range(value)?;
+
+        Ok(Self(value))
+    }
+}
+
+/// 次の頁の印。中は読まず、前の答えの `nextToken` をそのまま渡す。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`NextToken::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct NextToken(pub(crate) ::std::string::String);
+#[allow(dead_code)]
+impl NextToken {
+    /// Extracts a string slice containing the entire underlying `String`.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns an immutable reference to the underlying [`::std::string::String`].
+    pub fn inner(&self) -> &::std::string::String {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`::std::string::String`].
+    pub fn into_inner(self) -> ::std::string::String {
+        self.0
+    }
+}
+impl NextToken {
+    fn check_length(
+        string: &str,
+    ) -> ::std::result::Result<(), crate::model::next_token_internal::ConstraintViolation> {
+        let length = string.chars().count();
+
+        if (1..=512).contains(&length) {
+            Ok(())
+        } else {
+            Err(crate::model::next_token_internal::ConstraintViolation::Length(length))
+        }
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for NextToken {
+    type Error = crate::model::next_token_internal::ConstraintViolation;
+
+    /// Constructs a `NextToken` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
+        Self::check_length(&value)?;
+
+        Ok(Self(value))
+    }
+}
+impl crate::constrained::Constrained for NextToken {
+    type Unconstrained = ::std::string::String;
+}
+
+impl ::std::convert::From<::std::string::String>
+    for crate::constrained::MaybeConstrained<crate::model::NextToken>
+{
+    fn from(value: ::std::string::String) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for NextToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<NextToken> for ::std::string::String {
+    fn from(value: NextToken) -> Self {
+        value.into_inner()
+    }
+}
+
+/// 線を辿る向き。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`LineageDirection::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct LineageDirection(pub(crate) ::std::string::String);
+#[allow(dead_code)]
+impl LineageDirection {
+    /// Extracts a string slice containing the entire underlying `String`.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns an immutable reference to the underlying [`::std::string::String`].
+    pub fn inner(&self) -> &::std::string::String {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`::std::string::String`].
+    pub fn into_inner(self) -> ::std::string::String {
+        self.0
+    }
+}
+impl LineageDirection {
+    fn check_pattern(
+        string: ::std::string::String,
+    ) -> ::std::result::Result<
+        ::std::string::String,
+        crate::model::lineage_direction_internal::ConstraintViolation,
+    > {
+        let regex = Self::compile_regex();
+
+        if regex.is_match(&string) {
+            Ok(string)
+        } else {
+            Err(crate::model::lineage_direction_internal::ConstraintViolation::Pattern(string))
+        }
+    }
+
+    /// Attempts to compile the regex for this constrained type's `@pattern`.
+    /// This can fail if the specified regex is not supported by the `::regex` crate.
+    pub fn compile_regex() -> &'static ::regex::Regex {
+        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
+            ::regex::Regex::new(r#"^(up|down|both)$"#).expect(r#"The regular expression ^(up|down|both)$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
+        });
+
+        &REGEX
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for LineageDirection {
+    type Error = crate::model::lineage_direction_internal::ConstraintViolation;
+
+    /// Constructs a `LineageDirection` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
+        let value = Self::check_pattern(value)?;
+
+        Ok(Self(value))
+    }
+}
+impl crate::constrained::Constrained for LineageDirection {
+    type Unconstrained = ::std::string::String;
+}
+
+impl ::std::convert::From<::std::string::String>
+    for crate::constrained::MaybeConstrained<crate::model::LineageDirection>
+{
+    fn from(value: ::std::string::String) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for LineageDirection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<LineageDirection> for ::std::string::String {
+    fn from(value: LineageDirection) -> Self {
+        value.into_inner()
+    }
+}
+
+#[cfg(test)]
+mod test_lineage_direction {
+    #[test]
+    fn regex_compiles() {
+        crate::model::LineageDirection::compile_regex();
+    }
+}
+
+/// 線を辿る段の数。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`LineageDepth::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct LineageDepth(pub(crate) i32);
+#[allow(dead_code)]
+impl LineageDepth {
+    /// Returns an immutable reference to the underlying [`i32`].
+    pub fn inner(&self) -> &i32 {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`i32`].
+    pub fn into_inner(self) -> i32 {
+        self.0
+    }
+}
+
+impl crate::constrained::Constrained for LineageDepth {
+    type Unconstrained = i32;
+}
+
+impl ::std::convert::From<i32>
+    for crate::constrained::MaybeConstrained<crate::model::LineageDepth>
+{
+    fn from(value: i32) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for LineageDepth {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<LineageDepth> for i32 {
+    fn from(value: LineageDepth) -> Self {
+        value.into_inner()
+    }
+}
+impl LineageDepth {
+    fn check_range(
+        value: i32,
+    ) -> ::std::result::Result<(), crate::model::lineage_depth_internal::ConstraintViolation> {
+        if (1..=20).contains(&value) {
+            Ok(())
+        } else {
+            Err(crate::model::lineage_depth_internal::ConstraintViolation::Range(value))
+        }
+    }
+}
+impl ::std::convert::TryFrom<i32> for LineageDepth {
+    type Error = crate::model::lineage_depth_internal::ConstraintViolation;
+
+    /// Constructs a `LineageDepth` from an [`i32`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: i32) -> ::std::result::Result<Self, Self::Error> {
+        Self::check_range(value)?;
+
+        Ok(Self(value))
+    }
+}
+
+/// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`LinkType::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct LinkType(pub(crate) ::std::string::String);
+#[allow(dead_code)]
+impl LinkType {
+    /// Extracts a string slice containing the entire underlying `String`.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns an immutable reference to the underlying [`::std::string::String`].
+    pub fn inner(&self) -> &::std::string::String {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`::std::string::String`].
+    pub fn into_inner(self) -> ::std::string::String {
+        self.0
+    }
+}
+impl LinkType {
+    fn check_pattern(
+        string: ::std::string::String,
+    ) -> ::std::result::Result<
+        ::std::string::String,
+        crate::model::link_type_internal::ConstraintViolation,
+    > {
+        let regex = Self::compile_regex();
+
+        if regex.is_match(&string) {
+            Ok(string)
+        } else {
+            Err(crate::model::link_type_internal::ConstraintViolation::Pattern(string))
+        }
+    }
+
+    /// Attempts to compile the regex for this constrained type's `@pattern`.
+    /// This can fail if the specified regex is not supported by the `::regex` crate.
+    pub fn compile_regex() -> &'static ::regex::Regex {
+        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
+            ::regex::Regex::new(r#"^(launched|continued)$"#).expect(r#"The regular expression ^(launched|continued)$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
+        });
+
+        &REGEX
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for LinkType {
+    type Error = crate::model::link_type_internal::ConstraintViolation;
+
+    /// Constructs a `LinkType` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
+        let value = Self::check_pattern(value)?;
+
+        Ok(Self(value))
+    }
+}
+impl crate::constrained::Constrained for LinkType {
+    type Unconstrained = ::std::string::String;
+}
+
+impl ::std::convert::From<::std::string::String>
+    for crate::constrained::MaybeConstrained<crate::model::LinkType>
+{
+    fn from(value: ::std::string::String) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for LinkType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<LinkType> for ::std::string::String {
+    fn from(value: LinkType) -> Self {
+        value.into_inner()
+    }
+}
+
+#[cfg(test)]
+mod test_link_type {
+    #[test]
+    fn regex_compiles() {
+        crate::model::LinkType::compile_regex();
+    }
+}
+
 /// 引く参照の並び（1 から 100 個）。
 ///
 /// This is a constrained type because its corresponding modeled Smithy shape has one or more
@@ -765,102 +1456,6 @@ mod test_sender_id {
     }
 }
 
-/// 付随する id を指す参照: `種類:値`。初めの `:` で分ける（種類は `:` を持たないので、値に `:` があってよい）。 種類は英小文字・数字・`-`・`.` で 64 字まで。値は空でなく、制御文字（Unicode の Cc）の無い、256 字まで。
-///
-/// This is a constrained type because its corresponding modeled Smithy shape has one or more
-/// [constraint traits]. Use [`ActorRef::try_from`] to construct values of this type.
-///
-/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
-///
-#[derive(
-    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
-)]
-pub(crate) struct ActorRef(pub(crate) ::std::string::String);
-#[allow(dead_code)]
-impl ActorRef {
-    /// Extracts a string slice containing the entire underlying `String`.
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-
-    /// Returns an immutable reference to the underlying [`::std::string::String`].
-    pub fn inner(&self) -> &::std::string::String {
-        &self.0
-    }
-
-    /// Consumes the value, returning the underlying [`::std::string::String`].
-    pub fn into_inner(self) -> ::std::string::String {
-        self.0
-    }
-}
-impl ActorRef {
-    fn check_pattern(
-        string: ::std::string::String,
-    ) -> ::std::result::Result<
-        ::std::string::String,
-        crate::model::actor_ref_internal::ConstraintViolation,
-    > {
-        let regex = Self::compile_regex();
-
-        if regex.is_match(&string) {
-            Ok(string)
-        } else {
-            Err(crate::model::actor_ref_internal::ConstraintViolation::Pattern(string))
-        }
-    }
-
-    /// Attempts to compile the regex for this constrained type's `@pattern`.
-    /// This can fail if the specified regex is not supported by the `::regex` crate.
-    pub fn compile_regex() -> &'static ::regex::Regex {
-        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
-            ::regex::Regex::new(r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#).expect(r#"The regular expression ^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
-        });
-
-        &REGEX
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for ActorRef {
-    type Error = crate::model::actor_ref_internal::ConstraintViolation;
-
-    /// Constructs a `ActorRef` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
-    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
-        let value = Self::check_pattern(value)?;
-
-        Ok(Self(value))
-    }
-}
-impl crate::constrained::Constrained for ActorRef {
-    type Unconstrained = ::std::string::String;
-}
-
-impl ::std::convert::From<::std::string::String>
-    for crate::constrained::MaybeConstrained<crate::model::ActorRef>
-{
-    fn from(value: ::std::string::String) -> Self {
-        Self::Unconstrained(value)
-    }
-}
-
-impl ::std::fmt::Display for ActorRef {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl ::std::convert::From<ActorRef> for ::std::string::String {
-    fn from(value: ActorRef) -> Self {
-        value.into_inner()
-    }
-}
-
-#[cfg(test)]
-mod test_actor_ref {
-    #[test]
-    fn regex_compiles() {
-        crate::model::ActorRef::compile_regex();
-    }
-}
-
 /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
 ///
 /// This is a constrained type because its corresponding modeled Smithy shape has one or more
@@ -954,102 +1549,6 @@ mod test_event_type {
     #[test]
     fn regex_compiles() {
         crate::model::EventType::compile_regex();
-    }
-}
-
-/// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
-///
-/// This is a constrained type because its corresponding modeled Smithy shape has one or more
-/// [constraint traits]. Use [`LinkType::try_from`] to construct values of this type.
-///
-/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
-///
-#[derive(
-    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
-)]
-pub(crate) struct LinkType(pub(crate) ::std::string::String);
-#[allow(dead_code)]
-impl LinkType {
-    /// Extracts a string slice containing the entire underlying `String`.
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-
-    /// Returns an immutable reference to the underlying [`::std::string::String`].
-    pub fn inner(&self) -> &::std::string::String {
-        &self.0
-    }
-
-    /// Consumes the value, returning the underlying [`::std::string::String`].
-    pub fn into_inner(self) -> ::std::string::String {
-        self.0
-    }
-}
-impl LinkType {
-    fn check_pattern(
-        string: ::std::string::String,
-    ) -> ::std::result::Result<
-        ::std::string::String,
-        crate::model::link_type_internal::ConstraintViolation,
-    > {
-        let regex = Self::compile_regex();
-
-        if regex.is_match(&string) {
-            Ok(string)
-        } else {
-            Err(crate::model::link_type_internal::ConstraintViolation::Pattern(string))
-        }
-    }
-
-    /// Attempts to compile the regex for this constrained type's `@pattern`.
-    /// This can fail if the specified regex is not supported by the `::regex` crate.
-    pub fn compile_regex() -> &'static ::regex::Regex {
-        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
-            ::regex::Regex::new(r#"^(launched|continued)$"#).expect(r#"The regular expression ^(launched|continued)$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
-        });
-
-        &REGEX
-    }
-}
-impl ::std::convert::TryFrom<::std::string::String> for LinkType {
-    type Error = crate::model::link_type_internal::ConstraintViolation;
-
-    /// Constructs a `LinkType` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
-    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
-        let value = Self::check_pattern(value)?;
-
-        Ok(Self(value))
-    }
-}
-impl crate::constrained::Constrained for LinkType {
-    type Unconstrained = ::std::string::String;
-}
-
-impl ::std::convert::From<::std::string::String>
-    for crate::constrained::MaybeConstrained<crate::model::LinkType>
-{
-    fn from(value: ::std::string::String) -> Self {
-        Self::Unconstrained(value)
-    }
-}
-
-impl ::std::fmt::Display for LinkType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl ::std::convert::From<LinkType> for ::std::string::String {
-    fn from(value: LinkType) -> Self {
-        value.into_inner()
-    }
-}
-
-#[cfg(test)]
-mod test_link_type {
-    #[test]
-    fn regex_compiles() {
-        crate::model::LinkType::compile_regex();
     }
 }
 
@@ -1494,6 +1993,218 @@ impl Link {
     /// Creates a new builder-style object to manufacture [`Link`](crate::model::Link).
     pub fn builder() -> crate::model::link::Builder {
         crate::model::link::Builder::default()
+    }
+}
+
+/// ラベルの絞り: `鍵:値`。初めの `:` で分ける。鍵は名の形、値は空でなく制御文字の無い 256 字まで。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`LabelFilter::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct LabelFilter(pub(crate) ::std::string::String);
+#[allow(dead_code)]
+impl LabelFilter {
+    /// Extracts a string slice containing the entire underlying `String`.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns an immutable reference to the underlying [`::std::string::String`].
+    pub fn inner(&self) -> &::std::string::String {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`::std::string::String`].
+    pub fn into_inner(self) -> ::std::string::String {
+        self.0
+    }
+}
+impl LabelFilter {
+    fn check_pattern(
+        string: ::std::string::String,
+    ) -> ::std::result::Result<
+        ::std::string::String,
+        crate::model::label_filter_internal::ConstraintViolation,
+    > {
+        let regex = Self::compile_regex();
+
+        if regex.is_match(&string) {
+            Ok(string)
+        } else {
+            Err(crate::model::label_filter_internal::ConstraintViolation::Pattern(string))
+        }
+    }
+
+    /// Attempts to compile the regex for this constrained type's `@pattern`.
+    /// This can fail if the specified regex is not supported by the `::regex` crate.
+    pub fn compile_regex() -> &'static ::regex::Regex {
+        static REGEX: std::sync::LazyLock<::regex::Regex> = std::sync::LazyLock::new(|| {
+            ::regex::Regex::new(r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#).expect(r#"The regular expression ^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$ is not supported by the `regex` crate; feel free to file an issue under https://github.com/smithy-lang/smithy-rs/issues for support"#)
+        });
+
+        &REGEX
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for LabelFilter {
+    type Error = crate::model::label_filter_internal::ConstraintViolation;
+
+    /// Constructs a `LabelFilter` from an [`::std::string::String`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, Self::Error> {
+        let value = Self::check_pattern(value)?;
+
+        Ok(Self(value))
+    }
+}
+impl crate::constrained::Constrained for LabelFilter {
+    type Unconstrained = ::std::string::String;
+}
+
+impl ::std::convert::From<::std::string::String>
+    for crate::constrained::MaybeConstrained<crate::model::LabelFilter>
+{
+    fn from(value: ::std::string::String) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for LabelFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<LabelFilter> for ::std::string::String {
+    fn from(value: LabelFilter) -> Self {
+        value.into_inner()
+    }
+}
+
+#[cfg(test)]
+mod test_label_filter {
+    #[test]
+    fn regex_compiles() {
+        crate::model::LabelFilter::compile_regex();
+    }
+}
+
+/// 一覧の 1 行（アクター）。
+#[derive(::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct ActorRow {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub id: ::std::string::String,
+    #[allow(missing_docs)] // documentation missing in model
+    pub name: ::std::string::String,
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+    pub kind: ::std::string::String,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub issuer: ::std::string::String,
+    /// 登録の送り手の時刻。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 登録を受けた castlist の時刻。
+    pub received_at: ::aws_smithy_types::DateTime,
+    #[allow(missing_docs)] // documentation missing in model
+    pub clock_skew: bool,
+    /// ラベル（JSON の鍵の順は決まらない）。
+    pub labels: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    /// 初めの登場（entered・reentered・forked）を受けた時刻。
+    pub first_entered_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    /// 最後の退場（cleared・exited・closed）を受けた時刻。
+    pub last_exited_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    /// 最後の退場の種類。
+    pub last_exit_type: ::std::option::Option<::std::string::String>,
+    /// 今稼働中か。
+    pub present: bool,
+    /// 今の停止が推しか（GetActor の `state.inferred` と同じ）。
+    pub inferred: bool,
+    /// 最新の model（受けた順で）。
+    pub model: ::std::option::Option<::std::string::String>,
+    /// 最新の effort（受けた順で）。
+    pub effort: ::std::option::Option<::std::string::String>,
+    /// プロフィールの頁の path（`/actors/{id}`）。
+    pub url: ::std::string::String,
+}
+impl ActorRow {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn id(&self) -> &str {
+        use std::ops::Deref;
+        self.id.deref()
+    }
+    #[allow(missing_docs)] // documentation missing in model
+    pub fn name(&self) -> &str {
+        use std::ops::Deref;
+        self.name.deref()
+    }
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+    pub fn kind(&self) -> &str {
+        use std::ops::Deref;
+        self.kind.deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn issuer(&self) -> &str {
+        use std::ops::Deref;
+        self.issuer.deref()
+    }
+    /// 登録の送り手の時刻。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 登録を受けた castlist の時刻。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    #[allow(missing_docs)] // documentation missing in model
+    pub fn clock_skew(&self) -> bool {
+        self.clock_skew
+    }
+    /// ラベル（JSON の鍵の順は決まらない）。
+    pub fn labels(
+        &self,
+    ) -> &::std::collections::HashMap<::std::string::String, ::std::string::String> {
+        &self.labels
+    }
+    /// 初めの登場（entered・reentered・forked）を受けた時刻。
+    pub fn first_entered_at(&self) -> ::std::option::Option<&::aws_smithy_types::DateTime> {
+        self.first_entered_at.as_ref()
+    }
+    /// 最後の退場（cleared・exited・closed）を受けた時刻。
+    pub fn last_exited_at(&self) -> ::std::option::Option<&::aws_smithy_types::DateTime> {
+        self.last_exited_at.as_ref()
+    }
+    /// 最後の退場の種類。
+    pub fn last_exit_type(&self) -> ::std::option::Option<&str> {
+        self.last_exit_type.as_deref()
+    }
+    /// 今稼働中か。
+    pub fn present(&self) -> bool {
+        self.present
+    }
+    /// 今の停止が推しか（GetActor の `state.inferred` と同じ）。
+    pub fn inferred(&self) -> bool {
+        self.inferred
+    }
+    /// 最新の model（受けた順で）。
+    pub fn model(&self) -> ::std::option::Option<&str> {
+        self.model.as_deref()
+    }
+    /// 最新の effort（受けた順で）。
+    pub fn effort(&self) -> ::std::option::Option<&str> {
+        self.effort.as_deref()
+    }
+    /// プロフィールの頁の path（`/actors/{id}`）。
+    pub fn url(&self) -> &str {
+        use std::ops::Deref;
+        self.url.deref()
+    }
+}
+impl ActorRow {
+    /// Creates a new builder-style object to manufacture [`ActorRow`](crate::model::ActorRow).
+    pub fn builder() -> crate::model::actor_row::Builder {
+        crate::model::actor_row::Builder::default()
     }
 }
 
@@ -2273,6 +2984,331 @@ pub mod actor_state {
         }
     }
 }
+pub(crate) mod label_filters_internal {
+
+    #[allow(clippy::enum_variant_names)]
+    #[derive(Debug, PartialEq)]
+    pub(crate) enum ConstraintViolation {
+        /// Constraint violation error when an element doesn't satisfy its own constraints.
+        /// The first component of the tuple is the index in the collection where the
+        /// first constraint violation was found.
+        #[doc(hidden)]
+        Member(
+            usize,
+            crate::model::label_filter_internal::ConstraintViolation,
+        ),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Member(index, failing_member) => format!(
+                    "Value at index {index} failed to satisfy constraint. {}",
+                    failing_member
+                ),
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                Self::Member(index, member_constraint_violation) => member_constraint_violation
+                    .as_validation_exception_field(path + "/" + &index.to_string()),
+            }
+        }
+    }
+}
+pub(crate) mod actor_ref_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        /// Error when a string doesn't satisfy its `@pattern`.
+        /// Contains the String that failed the pattern.
+        Pattern(String),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Pattern(_) => {
+                    format!(
+                        r#"Value provided for `ai.common#ActorRef` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
+                        r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#
+                    )
+                }
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            #[allow(unused_variables)]
+    Self::Pattern(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#),
+                            path
+                        },
+                        }
+        }
+    }
+}
+pub(crate) mod actor_sort_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        /// Error when a string doesn't satisfy its `@pattern`.
+        /// Contains the String that failed the pattern.
+        Pattern(String),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Pattern(_) => {
+                    format!(
+                        r#"Value provided for `ai.castlist#ActorSort` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
+                        r#"^(entered|exited)$"#
+                    )
+                }
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            #[allow(unused_variables)]
+    Self::Pattern(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^(entered|exited)$"#),
+                            path
+                        },
+                        }
+        }
+    }
+}
+pub(crate) mod sort_order_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        /// Error when a string doesn't satisfy its `@pattern`.
+        /// Contains the String that failed the pattern.
+        Pattern(String),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Pattern(_) => {
+                    format!(
+                        r#"Value provided for `ai.castlist#SortOrder` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
+                        r#"^(asc|desc)$"#
+                    )
+                }
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            #[allow(unused_variables)]
+    Self::Pattern(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^(asc|desc)$"#),
+                            path
+                        },
+                        }
+        }
+    }
+}
+pub(crate) mod max_results_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        Range(i32),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Value for `ai.common#MaxResults`failed to satisfy constraint: Member must be between 1 and 1000, inclusive")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            Self::Range(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must be between 1 and 1000, inclusive", &path),
+                            path,
+                        },
+                        }
+        }
+    }
+}
+pub(crate) mod next_token_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        /// Error when a string doesn't satisfy its `@length` requirements.
+        Length(usize),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Length(length) => {
+                    format!("Value with length {} provided for 'ai.common#NextToken' failed to satisfy constraint: Member must have length between 1 and 512, inclusive", length)
+                }
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            Self::Length(length) => crate::model::ValidationExceptionField {
+                            message: format!("Value with length {} at '{}' failed to satisfy constraint: Member must have length between 1 and 512, inclusive", length, &path),
+                            path,
+                        },
+                        }
+        }
+    }
+}
+pub(crate) mod lineage_direction_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        /// Error when a string doesn't satisfy its `@pattern`.
+        /// Contains the String that failed the pattern.
+        Pattern(String),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Pattern(_) => {
+                    format!(
+                        r#"Value provided for `ai.castlist#LineageDirection` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
+                        r#"^(up|down|both)$"#
+                    )
+                }
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            #[allow(unused_variables)]
+    Self::Pattern(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^(up|down|both)$"#),
+                            path
+                        },
+                        }
+        }
+    }
+}
+pub(crate) mod lineage_depth_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        Range(i32),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Value for `ai.castlist#LineageDepth`failed to satisfy constraint: Member must be between 1 and 20, inclusive")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            Self::Range(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must be between 1 and 20, inclusive", &path),
+                            path,
+                        },
+                        }
+        }
+    }
+}
+pub(crate) mod link_type_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        /// Error when a string doesn't satisfy its `@pattern`.
+        /// Contains the String that failed the pattern.
+        Pattern(String),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Pattern(_) => {
+                    format!(
+                        r#"Value provided for `ai.castlist#LinkType` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
+                        r#"^(launched|continued)$"#
+                    )
+                }
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            #[allow(unused_variables)]
+    Self::Pattern(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^(launched|continued)$"#),
+                            path
+                        },
+                        }
+        }
+    }
+}
 pub(crate) mod actor_refs_internal {
 
     #[allow(clippy::enum_variant_names)]
@@ -2358,45 +3394,6 @@ pub(crate) mod sender_id_internal {
         }
     }
 }
-pub(crate) mod actor_ref_internal {
-
-    #[derive(Debug, PartialEq)]
-    pub enum ConstraintViolation {
-        /// Error when a string doesn't satisfy its `@pattern`.
-        /// Contains the String that failed the pattern.
-        Pattern(String),
-    }
-
-    impl ::std::fmt::Display for ConstraintViolation {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let message = match self {
-                Self::Pattern(_) => {
-                    format!(
-                        r#"Value provided for `ai.common#ActorRef` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
-                        r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#
-                    )
-                }
-            };
-            write!(f, "{message}")
-        }
-    }
-
-    impl ::std::error::Error for ConstraintViolation {}
-    impl ConstraintViolation {
-        pub(crate) fn as_validation_exception_field(
-            self,
-            path: ::std::string::String,
-        ) -> crate::model::ValidationExceptionField {
-            match self {
-                            #[allow(unused_variables)]
-    Self::Pattern(_) => crate::model::ValidationExceptionField {
-                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#),
-                            path
-                        },
-                        }
-        }
-    }
-}
 pub(crate) mod event_type_internal {
 
     #[derive(Debug, PartialEq)]
@@ -2430,45 +3427,6 @@ pub(crate) mod event_type_internal {
                             #[allow(unused_variables)]
     Self::Pattern(_) => crate::model::ValidationExceptionField {
                             message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^(entered|reentered|forked|compacted|cleared|exited|closed|reported_in|model_unreadable|retracted)$"#),
-                            path
-                        },
-                        }
-        }
-    }
-}
-pub(crate) mod link_type_internal {
-
-    #[derive(Debug, PartialEq)]
-    pub enum ConstraintViolation {
-        /// Error when a string doesn't satisfy its `@pattern`.
-        /// Contains the String that failed the pattern.
-        Pattern(String),
-    }
-
-    impl ::std::fmt::Display for ConstraintViolation {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let message = match self {
-                Self::Pattern(_) => {
-                    format!(
-                        r#"Value provided for `ai.castlist#LinkType` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
-                        r#"^(launched|continued)$"#
-                    )
-                }
-            };
-            write!(f, "{message}")
-        }
-    }
-
-    impl ::std::error::Error for ConstraintViolation {}
-    impl ConstraintViolation {
-        pub(crate) fn as_validation_exception_field(
-            self,
-            path: ::std::string::String,
-        ) -> crate::model::ValidationExceptionField {
-            match self {
-                            #[allow(unused_variables)]
-    Self::Pattern(_) => crate::model::ValidationExceptionField {
-                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^(launched|continued)$"#),
                             path
                         },
                         }
@@ -3199,6 +4157,283 @@ pub mod link {
                 clock_skew: self
                     .clock_skew
                     .ok_or(ConstraintViolation::MissingClockSkew)?,
+            })
+        }
+    }
+}
+pub(crate) mod label_filter_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        /// Error when a string doesn't satisfy its `@pattern`.
+        /// Contains the String that failed the pattern.
+        Pattern(String),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Pattern(_) => {
+                    format!(
+                        r#"Value provided for `ai.castlist#LabelFilter` failed to satisfy the constraint: Member must match the regular expression pattern: {}"#,
+                        r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#
+                    )
+                }
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            #[allow(unused_variables)]
+    Self::Pattern(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must satisfy regular expression pattern: {}", &path, r#"^[a-z0-9.-]{1,64}:[^\x00-\x1F\x7F-\x9F]{1,256}$"#),
+                            path
+                        },
+                        }
+        }
+    }
+}
+/// See [`ActorRow`](crate::model::ActorRow).
+pub mod actor_row {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `id` was not provided but it is required when building `ActorRow`.
+        MissingId,
+        /// `name` was not provided but it is required when building `ActorRow`.
+        MissingName,
+        /// `kind` was not provided but it is required when building `ActorRow`.
+        MissingKind,
+        /// `issuer` was not provided but it is required when building `ActorRow`.
+        MissingIssuer,
+        /// `sent_at` was not provided but it is required when building `ActorRow`.
+        MissingSentAt,
+        /// `received_at` was not provided but it is required when building `ActorRow`.
+        MissingReceivedAt,
+        /// `clock_skew` was not provided but it is required when building `ActorRow`.
+        MissingClockSkew,
+        /// `labels` was not provided but it is required when building `ActorRow`.
+        MissingLabels,
+        /// `present` was not provided but it is required when building `ActorRow`.
+        MissingPresent,
+        /// `inferred` was not provided but it is required when building `ActorRow`.
+        MissingInferred,
+        /// `url` was not provided but it is required when building `ActorRow`.
+        MissingUrl,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingId => write!(
+                    f,
+                    "`id` was not provided but it is required when building `ActorRow`"
+                ),
+                ConstraintViolation::MissingName => write!(
+                    f,
+                    "`name` was not provided but it is required when building `ActorRow`"
+                ),
+                ConstraintViolation::MissingKind => write!(
+                    f,
+                    "`kind` was not provided but it is required when building `ActorRow`"
+                ),
+                ConstraintViolation::MissingIssuer => write!(
+                    f,
+                    "`issuer` was not provided but it is required when building `ActorRow`"
+                ),
+                ConstraintViolation::MissingSentAt => write!(
+                    f,
+                    "`sent_at` was not provided but it is required when building `ActorRow`"
+                ),
+                ConstraintViolation::MissingReceivedAt => write!(
+                    f,
+                    "`received_at` was not provided but it is required when building `ActorRow`"
+                ),
+                ConstraintViolation::MissingClockSkew => write!(
+                    f,
+                    "`clock_skew` was not provided but it is required when building `ActorRow`"
+                ),
+                ConstraintViolation::MissingLabels => write!(
+                    f,
+                    "`labels` was not provided but it is required when building `ActorRow`"
+                ),
+                ConstraintViolation::MissingPresent => write!(
+                    f,
+                    "`present` was not provided but it is required when building `ActorRow`"
+                ),
+                ConstraintViolation::MissingInferred => write!(
+                    f,
+                    "`inferred` was not provided but it is required when building `ActorRow`"
+                ),
+                ConstraintViolation::MissingUrl => write!(
+                    f,
+                    "`url` was not provided but it is required when building `ActorRow`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::model::ActorRow {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ActorRow`](crate::model::ActorRow).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) name: ::std::option::Option<::std::string::String>,
+        pub(crate) kind: ::std::option::Option<::std::string::String>,
+        pub(crate) issuer: ::std::option::Option<::std::string::String>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) clock_skew: ::std::option::Option<bool>,
+        pub(crate) labels: ::std::option::Option<
+            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        >,
+        pub(crate) first_entered_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) last_exited_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) last_exit_type: ::std::option::Option<::std::string::String>,
+        pub(crate) present: ::std::option::Option<bool>,
+        pub(crate) inferred: ::std::option::Option<bool>,
+        pub(crate) model: ::std::option::Option<::std::string::String>,
+        pub(crate) effort: ::std::option::Option<::std::string::String>,
+        pub(crate) url: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn id(mut self, input: ::std::string::String) -> Self {
+            self.id = Some(input);
+            self
+        }
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn name(mut self, input: ::std::string::String) -> Self {
+            self.name = Some(input);
+            self
+        }
+        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
+        pub fn kind(mut self, input: ::std::string::String) -> Self {
+            self.kind = Some(input);
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn issuer(mut self, input: ::std::string::String) -> Self {
+            self.issuer = Some(input);
+            self
+        }
+        /// 登録の送り手の時刻。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 登録を受けた castlist の時刻。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn clock_skew(mut self, input: bool) -> Self {
+            self.clock_skew = Some(input);
+            self
+        }
+        /// ラベル（JSON の鍵の順は決まらない）。
+        pub fn labels(
+            mut self,
+            input: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        ) -> Self {
+            self.labels = Some(input);
+            self
+        }
+        /// 初めの登場（entered・reentered・forked）を受けた時刻。
+        pub fn first_entered_at(
+            mut self,
+            input: ::std::option::Option<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.first_entered_at = input;
+            self
+        }
+        /// 最後の退場（cleared・exited・closed）を受けた時刻。
+        pub fn last_exited_at(
+            mut self,
+            input: ::std::option::Option<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.last_exited_at = input;
+            self
+        }
+        /// 最後の退場の種類。
+        pub fn last_exit_type(
+            mut self,
+            input: ::std::option::Option<::std::string::String>,
+        ) -> Self {
+            self.last_exit_type = input;
+            self
+        }
+        /// 今稼働中か。
+        pub fn present(mut self, input: bool) -> Self {
+            self.present = Some(input);
+            self
+        }
+        /// 今の停止が推しか（GetActor の `state.inferred` と同じ）。
+        pub fn inferred(mut self, input: bool) -> Self {
+            self.inferred = Some(input);
+            self
+        }
+        /// 最新の model（受けた順で）。
+        pub fn model(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.model = input;
+            self
+        }
+        /// 最新の effort（受けた順で）。
+        pub fn effort(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.effort = input;
+            self
+        }
+        /// プロフィールの頁の path（`/actors/{id}`）。
+        pub fn url(mut self, input: ::std::string::String) -> Self {
+            self.url = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`ActorRow`](crate::model::ActorRow).
+        ///
+        /// The builder fails to construct a [`ActorRow`](crate::model::ActorRow) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::model::ActorRow, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::model::ActorRow, ConstraintViolation> {
+            Ok(crate::model::ActorRow {
+                id: self.id.ok_or(ConstraintViolation::MissingId)?,
+                name: self.name.ok_or(ConstraintViolation::MissingName)?,
+                kind: self.kind.ok_or(ConstraintViolation::MissingKind)?,
+                issuer: self.issuer.ok_or(ConstraintViolation::MissingIssuer)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                clock_skew: self
+                    .clock_skew
+                    .ok_or(ConstraintViolation::MissingClockSkew)?,
+                labels: self.labels.ok_or(ConstraintViolation::MissingLabels)?,
+                first_entered_at: self.first_entered_at,
+                last_exited_at: self.last_exited_at,
+                last_exit_type: self.last_exit_type,
+                present: self.present.ok_or(ConstraintViolation::MissingPresent)?,
+                inferred: self.inferred.ok_or(ConstraintViolation::MissingInferred)?,
+                model: self.model,
+                effort: self.effort,
+                url: self.url.ok_or(ConstraintViolation::MissingUrl)?,
             })
         }
     }
