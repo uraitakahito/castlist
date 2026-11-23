@@ -3,6 +3,7 @@
 //! 定義（model/）から作った骨（crates/castlist-sdk/）に処理（handler）を入れ、守りの層を前に掛ける。
 //! 手の道（画面・backup・logs）は、この後の PR で同じ Router に足す。
 pub mod db;
+mod errors;
 mod generated;
 mod register;
 

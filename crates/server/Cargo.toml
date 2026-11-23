@@ -19,6 +19,8 @@ http-body-util = "0.1"
 sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
 time = { version = "0.3", features = ["formatting", "parsing"] }
 tower = { version = "0.5", features = ["util"] }
+# 記録（root の crate と同じ版と features）。
+tracing = { version = "0.1", default-features = false, features = ["std"] }
 # アクターの id（UUID v7）。
 uuid = { version = "1", default-features = false, features = ["std", "v7"] }
 

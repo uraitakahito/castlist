@@ -7,6 +7,7 @@ use castlist_sdk::model::ActorSummary;
 use castlist_sdk::output::RegisterActorOutput;
 
 use crate::db::{Db, NewActor, Ref, WriteError};
+use crate::errors::internal;
 
 pub async fn register(
     db: Arc<Db>,
@@ -45,10 +46,7 @@ pub async fn register(
             }
             .into(),
             WriteError::Invalid(message) => invalid(message),
-            WriteError::Db(e) => Unavailable {
-                message: format!("DB の誤り: {e}"),
-            }
-            .into(),
+            WriteError::Db(e) => internal("RegisterActor", &e).into(),
         })?;
     Ok(RegisterActorOutput {
         actor: ActorSummary {
