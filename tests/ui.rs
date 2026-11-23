@@ -898,7 +898,7 @@ async fn 推しの幕引きで終わった者は_便りの後を推しの帯で�
     assert!(strip.matches("class=\"seg-label\"").count() <= 1, "{strip}");
     let legend = section(&body, "legend");
     assert!(
-        legend.contains("<span class=\"inferred-key\"></span>点線の帯: 便りが途絶えた後、tpm が落ちたと推して閉じた（推しの幕引きまで）"),
+        legend.contains("<span class=\"inferred-key\"></span>点線の帯: 便りが途絶えた後、roster が落ちたと推して閉じた（推しの幕引きまで）"),
         "{legend}"
     );
     let list = html(&app, "/").await;
