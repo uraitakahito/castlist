@@ -419,8 +419,8 @@ fn sent_text(t: OffsetDateTime) -> Result<String, WriteError> {
 /// 新しい server の移行（crates/server/migrations/）。
 static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
 
-/// `path` が、今の server（か別の版）の移行を当てた DB なら [`OpenError::Current`] で断る。読むだけ
-/// （`immutable`）で開き、DB にも隣の -wal・-shm にも書かない。file が無い・移行の表が無い時は通す（開く時に作る）。
+/// `path` が、今の server（か別の版）の移行を当てた DB なら [`OpenError::Current`] で断る。読むだけの接続
+/// （`read_only`）で開き、DB の中身は書き替えない（WAL の DB は -wal も読む）。file が無い・移行の表が無い時は通す（開く時に作る）。
 /// 移行の表の版のうち、新しい migrations に無い物か、中身の写し（checksum）が違う物があれば断る
 /// （今の server の DB は 0002・0003 が無く、0001 も中身が違う。sqlx の移行に任せると、断る前に DB を WAL にする）。
 pub async fn refuse_current(path: &Path) -> Result<(), OpenError> {
@@ -430,8 +430,9 @@ pub async fn refuse_current(path: &Path) -> Result<(), OpenError> {
     let mut conn = SqliteConnection::connect_with(
         &SqliteConnectOptions::new()
             .filename(path)
-            .read_only(true)
-            .immutable(true),
+            // immutable にしない: 新しい server の DB は WAL なので、checkpoint の前は本体の file だけでは読めない
+            // （CI で「database disk image is malformed」になった）。読むだけの接続は WAL も読み、file を書き替えない。
+            .read_only(true),
     )
     .await
     .map_err(OpenError::Db)?;
