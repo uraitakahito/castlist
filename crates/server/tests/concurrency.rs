@@ -1,13 +1,16 @@
 //! 並べて来る書き込みの試験: 同じ鍵は 1 つのアクターにまとめ、名の番号に穴も重なりも無い。
 //! 同じ id・同じ model と effort・同じ知らない名は、並べて来ても 1 行にまとめる。
+//! 書く鍵を握られている間も、読む操作は待たずに答える。
 mod common;
 
 use std::collections::BTreeSet;
+use std::time::{Duration, Instant};
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
-use common::{App, SE1, ai, event, post, put, setting};
-use serde_json::Value;
+use common::sample::{self, KEY, SONNET, sample};
+use common::{App, SE1, ai, at, event, get, post, put, setting};
+use serde_json::{Value, json};
 use tower::ServiceExt;
 
 /// 要求を別の task で送り、状態と JSON を返す。
@@ -160,4 +163,88 @@ async fn twenty_puts_of_the_same_event_at_once_add_one_row_and_answer_the_same()
     assert_eq!(answers.len(), 1, "{answers:?}");
     assert_eq!(app.count("events").await, 1);
     assert_foreign_keys(&app).await;
+}
+
+/// 今の server の tests/search.rs と同じ: 書く transaction を開いて書き、2 秒握っている間に、読む操作を 10 回ずつ並べて送る。
+/// どれも 200 で、100 ms のうちに答える（WAL なので、読む接続は書く鍵を待たない）。
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn reads_answer_within_100_ms_while_the_write_lock_is_held_for_2_seconds() {
+    let s = sample().await;
+    let app = &s.app;
+    let se2 = s.id("se.2").to_owned();
+    let tpm = s.id("tpm.1").to_owned();
+    let reads = |round: usize| -> Vec<(String, Request<Body>)> {
+        let resolve = json!({ "issuer": "tpm", "refs": [sample::SE2, sample::TPM] });
+        vec![
+            (
+                "ListActors".to_owned(),
+                get(&format!("/api/actors?label=tpm.key:{KEY}")),
+            ),
+            (
+                "GetLineage".to_owned(),
+                get(&format!("/api/actors/{se2}/lineage")),
+            ),
+            (
+                "GetActorSettingAt".to_owned(),
+                get(&format!(
+                    "/api/actors/{se2}/settings/at?time={}",
+                    s.model_changed
+                )),
+            ),
+            (
+                "ListSettings mismatch".to_owned(),
+                get("/api/settings?mismatch=true"),
+            ),
+            (
+                "ListSettings model".to_owned(),
+                get(&format!("/api/settings?model={SONNET}")),
+            ),
+            (
+                "ListEvents type".to_owned(),
+                get("/api/events?type=model_unreadable"),
+            ),
+            (
+                "ListEvents actor".to_owned(),
+                get(&format!("/api/events?actor={tpm}")),
+            ),
+            ("GetActor".to_owned(), get(&format!("/api/actors/{tpm}"))),
+            ("ResolveActors".to_owned(), post("/api/resolve", &resolve)),
+        ]
+        .into_iter()
+        .map(|(name, request)| (format!("{name}（{round} 回目）"), request))
+        .collect()
+    };
+    let mut tx = app.db.write().begin().await.unwrap();
+    sqlx::query("insert into models(name, first_seen_at) values('lock-holder', ?1)")
+        .bind(at(0))
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let held = Instant::now();
+    let mut slowest = Duration::ZERO;
+    for round in 1..=10 {
+        let tasks: Vec<_> = reads(round)
+            .into_iter()
+            .map(|(name, request)| {
+                let router = app.app.clone();
+                tokio::spawn(async move {
+                    let started = Instant::now();
+                    let response = router.oneshot(request).await.unwrap();
+                    (name, response.status(), started.elapsed())
+                })
+            })
+            .collect();
+        for task in tasks {
+            let (name, status, took) = task.await.unwrap();
+            assert_eq!(status, StatusCode::OK, "{name}");
+            assert!(took < Duration::from_millis(100), "{name}: {took:?}");
+            slowest = slowest.max(took);
+        }
+        tokio::time::sleep(Duration::from_millis(150)).await;
+    }
+    // 読む操作を送り終えるまで、書く鍵を握ったままだった。
+    assert!(held.elapsed() < Duration::from_secs(2) + Duration::from_millis(500));
+    tokio::time::sleep(Duration::from_secs(2).saturating_sub(held.elapsed())).await;
+    tx.rollback().await.unwrap();
+    println!("一番遅い読み: {slowest:?}");
 }
