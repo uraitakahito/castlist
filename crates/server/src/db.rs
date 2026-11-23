@@ -5,7 +5,8 @@
 //! - どの表も足すだけ。この file の SQL は insert と select だけで、`ci/check-sql.sh` が見張る。
 //!   「最新」は seq だけで決め、送り手の時刻（sent_at）では決めない。
 use std::fmt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use serde_json::json;
@@ -125,6 +126,8 @@ const CLOCK: &str = "select max(t) from (
        union all select (select received_at from settings order by seq desc limit 1))";
 
 pub struct Db {
+    /// DB の file（バックアップの一時の file を、この隣に作る）。
+    path: PathBuf,
     read: SqlitePool,
     /// 重い読みだけが使う、読むだけの接続（[`HEAVY_READS`] 本）。
     heavy: SqlitePool,
@@ -447,7 +450,12 @@ impl Db {
             .connect_with(options.read_only(true))
             .await
             .map_err(OpenError::Db)?;
-        Ok(Self { read, heavy, write })
+        Ok(Self {
+            path: path.to_owned(),
+            read,
+            heavy,
+            write,
+        })
     }
 
     /// 軽い読みの接続（[`READS`] 本・読むだけ）。
@@ -469,6 +477,26 @@ impl Db {
         self.read.close().await;
         self.heavy.close().await;
         self.write.close().await;
+    }
+
+    /// 揃ったバックアップを、DB の隣の一時の file（`<DB>.backup-<pid>-<番号>`）に `VACUUM INTO` で作り、その path を返す
+    /// （今の server と同じ）。DB 全体を読むので、重い読みの接続で作る（軽い読みの接続を取らない）。消すのは呼んだ側。
+    pub async fn backup(&self) -> Result<PathBuf, sqlx::Error> {
+        static SEQ: AtomicU64 = AtomicU64::new(0);
+        let mut name = self.path.clone().into_os_string();
+        name.push(format!(
+            ".backup-{}-{}",
+            std::process::id(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let out = PathBuf::from(name);
+        // VACUUM INTO は、在る file には書かない。
+        let _ = tokio::fs::remove_file(&out).await;
+        sqlx::query("vacuum into ?1")
+            .bind(out.to_string_lossy().into_owned())
+            .execute(&self.heavy)
+            .await?;
+        Ok(out)
     }
 }
 

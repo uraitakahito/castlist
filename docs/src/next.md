@@ -12,7 +12,7 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 | protocol | `aws.protocols#restJson1`。誤りの種類は header `X-Amzn-Errortype` と本文の `message` |
 | 欄の名 | camelCase（`sentAt`・`receivedAt`・`clockSkew`・`asOf`・`actorId`・`namePrefix`） |
 | 時刻 | RFC 3339 の UTC（末尾 `Z`。`ai.common#DateTime`）。Smithy の `date-time` は時差の付いた時刻（`+09:00`）を受けず、400 `SerializationException` で断る。送り手の時刻（`sentAt`）は UTC に直して残す（今の server は字のまま残していた）。答えの `receivedAt` は UTC・ミリ秒まで |
-| 誤り | 定義に書いた型だけ: 400 `ValidationException`（欄の path と訳）・404 `NotFound`・409 `Conflict`・500 `InternalError`（server の中の失敗。訳は記録に書き、答えは決まった字。送り直しても直らないので `@retryable` は付けない）・503 `Unavailable`（混んでいる・時間切れ。`@retryable`）。知らない道は生成した層が 404 `UnknownOperationException` |
+| 誤り | 定義に書いた型だけ: 400 `ValidationException`（欄の path と訳）・404 `NotFound`・409 `Conflict`・500 `InternalError`（server の中の失敗。訳は記録に書き、答えは決まった字。送り直しても直らないので `@retryable` は付けない）・503 `Unavailable`（混んでいる・時間切れ。`@retryable`）。知らない道は生成した層が 404 `UnknownOperationException`（道は在るが method の違う物は 405）。守りの層が断る 403 `Forbidden`・413 `PayloadTooLarge`・503 `Unavailable`（時間切れ）は、service の `errors` に置き、どの操作の誤りにも入る（下の「守りの層」） |
 | 書いて足す操作 | 呼ぶ側が id を決める物は `put`（`PUT /api/events/{eventId}` など。`@idempotent`。同じ id・同じ本文は 200、新しく足せば 201、同じ id で本文が違えば 409）。状態の数は `@httpResponseCode` で返し、本文は足した行（同じなら前の行）を GetActor の中の物と同じ形で返す。同じ id かは、本文のアクターを引くより先に見る（引けないアクターでも、同じ id なら 409） |
 | 引けないアクター | 本文の `by`・`from`・`to` が出し手の中の鍵で引けない時と、線の `from` と `to` が同じアクターの時は、400 `ValidationException`（訳は `message`。今の server は 422） |
 | ページ送り | `@paginated`。`maxResults`（1〜1000。既定 100）と、前の答えの `nextToken` をそのまま渡す |
@@ -42,6 +42,9 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 
 手の道（Smithy の外）: 画面（`/`・`/actors/{id}`・`/graph/…`・`/static/…`）・`GET /api/backup`（SQLite の file）・`GET /api/logs`（字）。
 
+- `GET /api/backup`（`crates/server/src/hand.rs`）: 今の server の `GET /v1/backup` と同じ。DB の隣の一時の file（`<DB>.backup-<pid>-<番号>`）に `VACUUM INTO` で揃ったバックアップを作り、開いてから名を消し、`application/vnd.sqlite3`（`Content-Disposition: attachment; filename="castlist.db"`）で読みながら送る。DB 全体を読むので、重い読みの接続で作る（今の server は読む接続。新しい server では、軽い読みの接続を取らないようにした）。誤りは restJson1 の形の 503 `Unavailable`・500 `InternalError`。
+- `GET /api/logs`: 今の server の `GET /v1/logs` と同じ字（`text/plain; charset=utf-8`。印と、古い順の記録）。記録の置き場を付けた時（binary）だけ在り、無い時（Router を直に呼ぶ試験）は生成した層の 404。
+
 ## 探す操作の決まり
 
 - `ListActors`（`GET /api/actors`）: 条件はどれも AND で、今の server の SQL のまま。索引で引ける条件（`label`・`binding`・`activeFrom`・`activeTo`・`active=true`・`model`・`effort`・`launchedBy`・`skewed`）が 1 つも無ければ 400（`kind` と `active=false` は数えない）。`at` は `binding` と一緒にだけ付ける（無ければ 400）。`skewed` は true だけを受け、false は 400（「時刻ずれの無いアクター」と読まれないように。今の server と同じ）。
@@ -62,8 +65,20 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 - 画面（`/`・`/actors/{id}`・`/graph/timeline`・`/graph/network`・`/static/…`）は、同じ axum の Router に手の道として並べる（`crates/server/src/ui.rs`）。URL の引数（snake_case の `active_from` など）・画面の字・誤りの訳は今の server のまま（画面の引数は、生成した層でなく画面が自分で読む）。DB は新しい DB の所で読み、タイムラインも重い読みの接続だけを使う。
 - 違うのは、相関図の `data-src` が `GET /api/graph` を指し、期間を UTC・ミリ秒までの字にして渡すこと（新しい API は時差の付いた時刻を受けない）。`static/network.js` は、今の server の欄の名（`as_of`・`current_settings`）と新しい欄の名（`asOf`・`currentSettings`）のどちらも読む。
 - `templates/` と `static/` は今の server と共に使う（`crates/server/askama.toml` が `templates/` を指し、配る file は repo の `static/` を埋め込む）。段 9 で今の crate を消しても、動かさなくてよい。タイムラインの並べ方（`crates/server/src/timeline.rs`）は今の `src/timeline.rs` の写しで、段 9 まで 2 つを同じ中身に保つ。
-- どの答えにも `X-Content-Type-Options: nosniff` と `Referrer-Policy: no-referrer` を、HTML の答えには CSP（[画面](ui.md)）を付ける（今の server の stamp と同じ。守りの層の残りは後の PR）。
-- 試しに起こす binary は `castlist-next`（`CASTLIST_DB`・`CASTLIST_LISTEN`。記録・止め方・時間切れは守りの層の PR で足す）。画面の browser の試験（`e2e/`）は、`CASTLIST_E2E_SERVER=../target/debug/castlist-next` で新しい server にも向く（見本を置く道と欄の名は `e2e/tests/wire.ts` が合わせる）。
+- 試しに起こす binary は `castlist-next`（`crates/server/src/main.rs`）。今の `castlist-server` と同じ振る舞い: 環境変数 `CASTLIST_DB`（既定 `/data/castlist.db`）と `CASTLIST_LISTEN`（既定 `0.0.0.0:8080`）・記録の置き場は DB の隣の `logs/`（大きさで回す記録の file・終わり方の印・生きている印。[動かす](run.md) の「落ちた後に調べる」）・起きて初めに前の回の終わり方の行（`previous: …`）と起きた行（`castlist <版> listen=… db=…`）・SIGTERM と SIGINT で新しい問い合わせを断り、走っている物を終えてから閉じる。記録の書き手（`crates/server/src/runlog.rs`）は今の `src/runlog.rs` の写しで、段 9 まで 2 つを同じ中身に保つ（違うのは読む道の名と、hook の試験が見る file の場所の字だけ）。画面の browser の試験（`e2e/`）は、`CASTLIST_E2E_SERVER=../target/debug/castlist-next` で新しい server にも向く（見本を置く道と欄の名は `e2e/tests/wire.ts` が合わせる）。
+
+## 守りの層
+
+生成した道と手の道の前に、外から順に掛ける（`crates/server/src/guard.rs`）。断る答えは、生成した層の誤りと同じ restJson1 の形（header `X-Amzn-Errortype` に定義の型の名・本文は JSON の `{"message":…}`）にする（今の server は `{"error":…}`）。型は `ai.common` の `Forbidden`（403）・`PayloadTooLarge`（413）・`Unavailable`（503）で、service の `errors` に置いたので、どの操作の誤りの型にも入る（送り手は型で受けられる）。
+
+| 順 | 守り | 振る舞い |
+|---|---|---|
+| 1 | 頭の印 | どの答えにも `X-Content-Type-Options: nosniff` と `Referrer-Policy: no-referrer` を、HTML の答えには CSP（[画面](ui.md)）を付ける（今の server の stamp と同じ。断った答えにも付く） |
+| 2 | 問い合わせの記録 | 1 つにつき 1 行（method・uri・status・latency。tower-http の TraceLayer を今の server と同じ設定で）。記録の file にだけ書き、stdout には出さない。断った物も残る |
+| 3 | Host と Origin | `Host` が 127.0.0.1・localhost でなければ、`GET`・`HEAD` のほかの要求に `Origin` が付いていれば、403 `Forbidden`（今の server と同じ決まり） |
+| 3 | HEAD | `GET` にして通し、本文を捨てる（状態と header は `GET` と同じ）。今の server は axum の `get` の道が HEAD にも答えていた。生成した骨の道は GET だけなので、ここで揃える（`HEAD /healthz` は 200）。GET の無い道の HEAD は、GET と同じ答え（405 か 404） |
+| 4 | 時間切れ | 答えの頭まで 5 秒（`REQUEST_TIMEOUT`）を過ぎれば 503 `Unavailable`（待っている物は捨てる。今の server と同じ）。本文を送る間は数えないので、大きな backup の file を送る途中では切らない（今の server と同じ）。試験は `Config` で短くする |
+| 5 | 本文の上限 | 2 MiB（`BODY_LIMIT`。axum の既定と同じ）。生成した骨は本文を自分で読むので axum の上限が掛からない。だから守りの層が上限まで先に読み切り、超えれば 413 `PayloadTooLarge`（`Content-Length` の有る無しを問わない。castlist の本文は小さな JSON）。途中で切れた本文は 400 `SerializationException`（生成した層が読めない本文に返すのと同じ型） |
 
 ## データ
 
@@ -81,6 +96,5 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 ## 後で決める物（候補）
 
 - 鍵でない付随する id に、鍵と同じ種類の物を入れられる（例 `[claude.session:s-1, claude.session:s-2]`。s-2 は鍵でない行で残り、後で s-2 を鍵にした登録は別のアクターを作る）。今の server と同じ振る舞いで、作り直しでは替えていない。
-- 本文の上限: 生成した service は本文を自分で読むので、axum の既定の上限（2 MB）が掛からない。守りの層の PR で、上限と 413 の試験を足す。
 - `asOf` は壁の時計から取るが、書く時の `receivedAt` は 6 つの表の最新より前にならないよう決める。機械の時計が戻ると、答えの `asOf` が同じ答えの行の `receivedAt` より前になり得る（今の server も同じ）。読む操作の PR で、読む transaction の中で表の最新を読み、今との遅い方を `asOf` にするかを決める。
 - `asOf` から後を問う時の抜け: 書く側は受けた時刻を transaction の初めに決め、その後で commit する。だから、受けた時刻が前の答えの `asOf` より前で、まだ commit していなかった行は、次に `from=<前の asOf>` で問うても入らない（今の server も同じ）。読み手は、前の `asOf` より書く鍵の待ち（2 秒）ほど前から重ねて問い、id で重なりを除く。直すなら、読む写しの中の 6 つの表の最新の `receivedAt` を「次の起点」として返す欄を足す（`asOf` の意味は替えない）。

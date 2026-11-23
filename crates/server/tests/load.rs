@@ -5,7 +5,7 @@
 //! tests/concurrency.rs（書く鍵を握った間も読む物が 100 ms の内に答える、など）が見る。ここは、詰まって誤りや
 //! 秒の単位の待ちが出ないかを見る。CI では一時の DB を memory の上（`TMPDIR=/dev/shm`）に置く。CI の機械の disk の
 //! 書き込みの詰まりで、書く接続の待ちが 2 秒を越えて落ちていたため（.github/workflows/ci.yml の job load）。
-//! `cargo test --locked --release -p castlist-next --test load -- --ignored --nocapture`
+//! `cargo test --locked --release -p castlist-next --test load -- --ignored --nocapture`（`-p` を外せば、今の server の物も流す。CI の job load）
 // 起こす道具（tests/common）は同期で書く。
 #![allow(clippy::disallowed_methods)]
 
@@ -111,7 +111,7 @@ fn register(session: &str, group: &str, workspace: usize) -> Value {
     })
 }
 
-#[ignore = "負荷の試験。手元で --release で流す（CI の job load が流すのは、切り替えまで今の server の物）"]
+#[ignore = "負荷の試験。CI の job load と、手元で --release で流す"]
 #[tokio::test(flavor = "multi_thread")]
 async fn 五十の客が_10_秒叩いても_誤りが無く_p99_が_1_秒未満() {
     let server = Server::start();

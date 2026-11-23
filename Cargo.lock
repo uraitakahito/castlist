@@ -521,8 +521,11 @@ dependencies = [
  "sqlx",
  "time",
  "tokio",
+ "tokio-util",
  "tower 0.5.3",
+ "tower-http 0.7.1",
  "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 

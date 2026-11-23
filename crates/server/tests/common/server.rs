@@ -131,7 +131,13 @@ impl Server {
             .position(|w| w == b"\r\n\r\n")
             .unwrap_or(bytes.len());
         let head = String::from_utf8_lossy(&bytes[..split]).into_owned();
-        let body = bytes.get(split + 4..).unwrap_or_default().to_vec();
+        let mut body = bytes.get(split + 4..).unwrap_or_default().to_vec();
+        if head
+            .to_ascii_lowercase()
+            .contains("\r\ntransfer-encoding: chunked")
+        {
+            body = dechunk(&body);
+        }
         let status = head
             .split_whitespace()
             .nth(1)
@@ -189,6 +195,26 @@ impl Server {
 
     pub fn try_wait(&mut self) -> Option<ExitStatus> {
         self.child.try_wait().expect("try_wait")
+    }
+}
+
+/// chunked の本文をつなぐ（長さを前に言わない答え。backup の file など）。
+fn dechunk(mut raw: &[u8]) -> Vec<u8> {
+    let mut body = Vec::new();
+    loop {
+        let Some(end) = raw.windows(2).position(|w| w == b"\r\n") else {
+            return body;
+        };
+        let size = std::str::from_utf8(&raw[..end])
+            .ok()
+            .and_then(|s| usize::from_str_radix(s.split(';').next().unwrap_or("").trim(), 16).ok())
+            .expect("chunk の長さ");
+        if size == 0 {
+            return body;
+        }
+        let start = end + 2;
+        body.extend_from_slice(&raw[start..start + size]);
+        raw = &raw[start + size + 2..];
     }
 }
 

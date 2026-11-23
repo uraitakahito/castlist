@@ -126,11 +126,13 @@ async fn head_is_answered_like_get_without_the_body() {
             "{path}"
         );
     }
-    // GET の無い道（書く操作）の HEAD は、GET と同じく知らない道。
-    let (status, _, _) = app
-        .send(with_host("HEAD", "/api/events/e-1", "127.0.0.1:8802"))
-        .await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
+    // GET の無い道（書く操作）の HEAD も、GET と同じ答え（生成した層の 405）。
+    for method in ["HEAD", "GET"] {
+        let (status, _, _) = app
+            .send(with_host(method, "/api/events/e-1", "127.0.0.1:8802"))
+            .await;
+        assert_eq!(status, StatusCode::METHOD_NOT_ALLOWED, "{method}");
+    }
     // HEAD で書かれはしない。
     assert_eq!(app.count("actors").await, 1);
 }
