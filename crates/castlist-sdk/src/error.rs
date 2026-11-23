@@ -906,6 +906,73 @@ impl ::std::convert::From<crate::error::InternalError> for crate::error::ListSet
     }
 }
 
+/// Error type for the `GetGraph` operation.
+/// Each variant represents an error that can occur for the `GetGraph` operation.
+#[derive(::std::fmt::Debug)]
+pub enum GetGraphError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for GetGraphError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            GetGraphError::ValidationException(_inner) => _inner.fmt(f),
+            GetGraphError::Unavailable(_inner) => _inner.fmt(f),
+            GetGraphError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl GetGraphError {
+    /// Returns `true` if the error kind is `GetGraphError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, GetGraphError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `GetGraphError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, GetGraphError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `GetGraphError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, GetGraphError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            GetGraphError::ValidationException(_inner) => _inner.name(),
+            GetGraphError::Unavailable(_inner) => _inner.name(),
+            GetGraphError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for GetGraphError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            GetGraphError::ValidationException(_inner) => Some(_inner),
+            GetGraphError::Unavailable(_inner) => Some(_inner),
+            GetGraphError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::GetGraphError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::GetGraphError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::GetGraphError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::GetGraphError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::GetGraphError {
+    fn from(variant: crate::error::InternalError) -> crate::error::GetGraphError {
+        Self::InternalError(variant)
+    }
+}
+
 /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,

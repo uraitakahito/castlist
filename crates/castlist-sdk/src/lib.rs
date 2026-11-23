@@ -178,6 +178,7 @@
 //!    let app = Castlist::builder(config)
 //!        .get_actor(get_actor)
 //!        .get_actor_setting_at(get_actor_setting_at)
+//!        .get_graph(get_graph)
 //!        .get_health(get_health)
 //!        .get_lineage(get_lineage)
 //!        .list_actors(list_actors)
@@ -211,6 +212,10 @@
 //! }
 //!
 //! async fn get_actor_setting_at(input: input::GetActorSettingAtInput) -> Result<output::GetActorSettingAtOutput, error::GetActorSettingAtError> {
+//!     todo!()
+//! }
+//!
+//! async fn get_graph(input: input::GetGraphInput) -> Result<output::GetGraphOutput, error::GetGraphError> {
 //!     todo!()
 //! }
 //!

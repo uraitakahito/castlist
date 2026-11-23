@@ -3,6 +3,8 @@ pub(crate) mod shape_get_actor;
 
 pub(crate) mod shape_get_actor_setting_at;
 
+pub(crate) mod shape_get_graph;
+
 pub(crate) mod shape_get_health;
 
 pub(crate) mod shape_get_lineage;
@@ -34,6 +36,10 @@ pub(crate) mod shape_get_actor_output;
 pub(crate) mod shape_get_actor_setting_at_input;
 
 pub(crate) mod shape_get_actor_setting_at_output;
+
+pub(crate) mod shape_get_graph_input;
+
+pub(crate) mod shape_get_graph_output;
 
 pub(crate) mod shape_get_health_output;
 
@@ -110,6 +116,8 @@ pub(crate) mod shape_binding;
 pub(crate) mod shape_event;
 
 pub(crate) mod shape_event_row;
+
+pub(crate) mod shape_graph_node;
 
 pub(crate) mod shape_link;
 

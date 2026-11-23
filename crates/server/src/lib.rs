@@ -9,6 +9,8 @@ pub mod db;
 mod errors;
 mod event;
 mod generated;
+mod get_graph;
+pub mod graph;
 mod lineage;
 mod link;
 mod list_actors;
@@ -33,6 +35,10 @@ use castlist_sdk::{Castlist, CastlistConfig};
 
 use crate::db::Db;
 use crate::generated::Generated;
+
+/// 画面の応答に付ける Content-Security-Policy。script と style は、castlist 自身が配る file だけを許す。
+/// form は castlist 自身へだけ送れる（一覧の絞りの form は GET で `/` に送る）。今の server（src/lib.rs）と同じ。
+pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
 /// 動かす Router。DB は、どの handler も同じ物を使う。
 pub fn app(db: Arc<Db>) -> Router {
@@ -81,6 +87,10 @@ pub fn app(db: Arc<Db>) -> Router {
         .put_link({
             let db = db.clone();
             move |input| link::put_link(db.clone(), input)
+        })
+        .get_graph({
+            let db = db.clone();
+            move |input| get_graph::get_graph(db.clone(), input)
         })
         .put_setting(move |input| setting::put_setting(db.clone(), input))
         .build()

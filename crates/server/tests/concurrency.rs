@@ -1,15 +1,18 @@
 //! 並べて来る書き込みの試験: 同じ鍵は 1 つのアクターにまとめ、名の番号に穴も重なりも無い。
 //! 同じ id・同じ model と effort・同じ知らない名は、並べて来ても 1 行にまとめる。
 //! 書く鍵を握られている間も、読む操作は待たずに答える。
+//! 重い読み（図の点と線・タイムライン）は重い読みの接続だけを使い、引き当てを待たせない。
 mod common;
 
 use std::collections::BTreeSet;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use common::sample::{self, KEY, SONNET, sample};
-use common::{App, SE1, ai, at, event, get, post, put, setting};
+use common::{App, PM, SE1, ai, at, event, get, human, link, post, put, setting};
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
@@ -247,4 +250,143 @@ async fn reads_answer_within_100_ms_while_the_write_lock_is_held_for_2_seconds()
     tokio::time::sleep(Duration::from_secs(2).saturating_sub(held.elapsed())).await;
     tx.rollback().await.unwrap();
     println!("一番遅い読み: {slowest:?}");
+}
+
+/// タイムラインを組む重い計算は、tokio の糸の外（spawn_blocking）で走り、DB は重い読みの接続だけで読む。
+/// 500 のアクター（登場と model の替わり目つき）のタイムラインを並べて組ませている間も、引き当て（ResolveActors）は 100 ms で答える。
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn resolving_answers_in_100_ms_while_timelines_of_500_actors_are_built() {
+    let app = App::start().await;
+    app.register(&human("pm")).await;
+    for i in 0..500 {
+        app.register(&ai("se", &format!("s-{i}"))).await;
+        let me = format!("claude.session:s-{i}");
+        let from = if i == 0 {
+            PM.to_owned()
+        } else {
+            format!("claude.session:s-{}", (i - 1) / 3)
+        };
+        for (uri, body) in [
+            (format!("/api/links/l-{i}"), link("launched", &from, &me)),
+            (format!("/api/events/e-{i}"), event(&me, "entered")),
+            (
+                format!("/api/settings/t-{i}"),
+                setting(&me, "claude-sonnet-5", "high"),
+            ),
+        ] {
+            let (status, _, answer) = app.put(&uri, &body).await;
+            assert_eq!(status, StatusCode::CREATED, "{uri}: {answer}");
+        }
+    }
+    let stop = Arc::new(AtomicBool::new(false));
+    let renders: Vec<_> = (0..4)
+        .map(|_| {
+            let router = app.app.clone();
+            let stop = stop.clone();
+            tokio::spawn(async move {
+                let mut done = 0;
+                while !stop.load(Ordering::Relaxed) {
+                    let response = router
+                        .clone()
+                        .oneshot(get("/graph/timeline"))
+                        .await
+                        .unwrap();
+                    assert_eq!(response.status(), StatusCode::OK);
+                    let bytes = http_body_util::BodyExt::collect(response.into_body())
+                        .await
+                        .unwrap()
+                        .to_bytes();
+                    let body = String::from_utf8(bytes.to_vec()).unwrap();
+                    assert_eq!(body.matches("href=\"/actors/").count(), 501);
+                    done += 1;
+                }
+                done
+            })
+        })
+        .collect();
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    let mut slowest = Duration::ZERO;
+    for _ in 0..20 {
+        let started = Instant::now();
+        let (status, _, answer) = app
+            .post(
+                "/api/resolve",
+                &json!({ "issuer": "tpm", "refs": ["claude.session:s-1"] }),
+            )
+            .await;
+        let took = started.elapsed();
+        assert_eq!(status, StatusCode::OK, "{answer}");
+        assert!(took < Duration::from_millis(100), "{took:?}");
+        slowest = slowest.max(took);
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    stop.store(true, Ordering::Relaxed);
+    let mut rendered = 0;
+    for task in renders {
+        rendered += task.await.unwrap();
+    }
+    assert!(rendered > 0, "タイムラインを 1 度も組めていない");
+    println!("一番遅い引き当て: {slowest:?}・組んだタイムライン: {rendered}");
+}
+
+/// 重い読み（図の点と線・タイムライン）は、重い読みの接続（HEAVY_READS 本）だけを使い、軽い読みの接続（READS 本）には触れない。
+/// 軽い読みの接続は、いつも引き当てなどに空いている（今の server で、重い読みが読む接続を占めて引き当てが 100 ms を超えた。2026-11-23 の CI）。
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn heavy_reads_use_only_the_heavy_read_connections() {
+    let app = App::start().await;
+    app.register(&human("pm")).await;
+    for i in 0..300 {
+        app.register(&ai("se", &format!("s-{i}"))).await;
+        let me = format!("claude.session:s-{i}");
+        for (uri, body) in [
+            (format!("/api/links/l-{i}"), link("launched", PM, &me)),
+            (format!("/api/events/e-{i}"), event(&me, "entered")),
+        ] {
+            let (status, _, answer) = app.put(&uri, &body).await;
+            assert_eq!(status, StatusCode::CREATED, "{uri}: {answer}");
+        }
+    }
+    let stop = Arc::new(AtomicBool::new(false));
+    let renders: Vec<_> = (0..8)
+        .map(|i| {
+            let router = app.app.clone();
+            let stop = stop.clone();
+            let path = if i % 2 == 0 {
+                "/graph/timeline"
+            } else {
+                "/api/graph"
+            };
+            tokio::spawn(async move {
+                let mut done = 0;
+                while !stop.load(Ordering::Relaxed) {
+                    let response = router.clone().oneshot(get(path)).await.unwrap();
+                    assert_eq!(response.status(), StatusCode::OK, "{path}");
+                    let _ = http_body_util::BodyExt::collect(response.into_body())
+                        .await
+                        .unwrap();
+                    done += 1;
+                }
+                done
+            })
+        })
+        .collect();
+    let (mut light, mut heavy) = (0, 0);
+    let started = Instant::now();
+    while started.elapsed() < Duration::from_secs(2) {
+        let in_use = |pool: &sqlx::SqlitePool| pool.size() as usize - pool.num_idle();
+        light = light.max(in_use(app.db.read()));
+        heavy = heavy.max(in_use(app.db.heavy()));
+        tokio::time::sleep(Duration::from_millis(2)).await;
+    }
+    stop.store(true, Ordering::Relaxed);
+    let mut rendered = 0;
+    for task in renders {
+        rendered += task.await.unwrap();
+    }
+    assert!(rendered > 0, "重い読みが 1 度も答えていない");
+    assert_eq!(light, 0, "重い読みが軽い読みの接続を使った");
+    assert!(
+        (1..=castlist_next::db::HEAVY_READS as usize).contains(&heavy),
+        "重い読みが同時に使った重い読みの接続: {heavy} 本"
+    );
 }
