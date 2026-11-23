@@ -117,7 +117,12 @@ fn jst_now() -> String {
 }
 
 fn utc_now() -> String {
-    OffsetDateTime::now_utc().format(&Rfc3339).unwrap()
+    // ナノ秒まで付ける（Linux の CI は 9 桁の時刻を送る。macOS は 6 桁なので、手元でも同じ形を作る）。
+    let now = OffsetDateTime::now_utc();
+    let now = now
+        .replace_nanosecond(now.nanosecond() / 1000 * 1000 + 123)
+        .unwrap_or(now);
+    now.format(&Rfc3339).unwrap()
 }
 
 /// 書いた物（移す元に入れた見本）。
