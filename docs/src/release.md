@@ -12,7 +12,11 @@ image は public で、だれでも取って中を見られる。**出すのは 
 8. Product Manager に、[動かす](run.md) の 1 行（初めてなら「初めて起こす」、2 度目からは「版を上げる」）を送る。castlist を起こすのは Product Manager だけ。
 
 - 出した tag は打ち直さない（digest が変わり、書き留めた値と合わなくなる）。直す時は、次の版を出す。
-- **rc（作り直しの間。AI-36）**: tag に `-rc.` の付く物（`v<版>-rc.<n>`。`Cargo.toml` の版も `CHANGELOG.md` の節も `<版>-rc.<n>`）は、新しい server の `Containerfile.next` で作り、`ci/smoke-image.sh <image> api`（新しい API の形）で確かめ、GitHub の pre-release にする。ほかの tag は、今までどおり `Containerfile` の今の server。確かめと置く job の分け方・版と CHANGELOG の突き合わせ・main の上にあるか・同じ tag を置き直さないことは、どちらも同じ。rc の image の中の binary も `/castlist-server`（`castlist-next` を、この名で置く）で、環境変数・port・volume も同じなので、[動かす](run.md) の命令はそのまま使える。今の DB を移す時は、同じ image に `migrate --from <写し> --to <新しい DB>` を付けて起こす（[新しい API の形](next.md) の「データ」）。
+- **rc（作り直しの間。AI-36）**: tag に `-rc.` の付く物（`v<版>-rc.<n>`。`Cargo.toml` の版も `CHANGELOG.md` の節も `<版>-rc.<n>`）は、新しい server の `Containerfile.next` で作り、`ci/smoke-image.sh <image> api`（新しい API の形）で確かめ、GitHub の pre-release にする。ほかの tag は、今までどおり `Containerfile` の今の server。確かめと置く job の分け方・版と CHANGELOG の突き合わせ・main の上にあるか・同じ tag を置き直さないことは、どちらも同じ。
+- **rc を動かす時と切り替え**: rc の image の中の binary も `/castlist-server`（`castlist-next` を、この名で置く）で、環境変数と port も同じなので、[動かす](run.md) の命令で替わるのは image の版と、**volume** だけ。
+  1. **volume は新しい物（`castlist-data-v1`）にする。新しい server を、今の volume（`castlist-data`）で起こさない。** 今の DB は新しい server の形でない（新しい server は、今の server の移行を当てた DB を、何も書かずに断って止まる）。今の volume は、戻す時のために、そのまま残す。
+  2. 先にデータを移す: 今の server の `GET /v1/backup` で写しを取り、新しい volume に置いて、同じ rc の image に `migrate --from <写し> --to /data/castlist.db` を付けて起こす（[新しい API の形](next.md) の「データ」。表ごとの突き合わせが 1 つでも合わなければ、何も足さずに 1 で終わる）。写しは `-wal`・`-shm` の無い 1 つの file で渡す。
+  3. 移し終えてから、新しい volume で rc の image を起こす。
 - **機微な物が出てしまった時**: GitHub の package の画面で、その版を消す。秘密なら、すぐ替える（消しても、pull した人の手元には残る前提で動く）。直して次の版を出し、`ci/` の決まりに、同じ物を止める形を足す。
 - **置いた時から public**: この repo は public で、image に repo を指す label を付けて置くので、package は初めの release から、だれでも pull できる（pagetray の v0.2.0 で確かめた。private の間に人が見る、という段は無い）。人が見られるのは、tag を打つ前だけ。だから、3 の確かめを push の前に置いてあり、決まりを緩める PR（`ci/` の file・`.dockerignore`・`Containerfile`）は、よく見てから merge する。
 
