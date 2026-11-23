@@ -19,8 +19,9 @@ use crate::body;
 
 /// 書く接続を待つ長さ。過ぎれば「混んでいる」で返す。
 pub const WRITE_WAIT: Duration = Duration::from_secs(2);
-/// 読む接続（軽い読み・重い読み）を待つ長さ。過ぎれば「混んでいる」で返す。
-pub const READ_WAIT: Duration = Duration::from_secs(5);
+/// 読む接続（軽い読み・重い読み）を待つ長さ。過ぎれば「混んでいる」で返す。問い合わせの時間切れ（5 秒）より短くし、
+/// 混んでいる時は「混んでいる」の 503 が、時間切れの 503 より先に答える。
+pub const READ_WAIT: Duration = Duration::from_secs(3);
 /// 軽い読みの接続の本数。
 pub const READS: u32 = 4;
 /// 重い読み（図の点と線・タイムライン）だけが使う、読むだけの接続の本数。軽い読みの接続とは別にして、
