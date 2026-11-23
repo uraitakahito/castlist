@@ -57,7 +57,7 @@ const LINKS_OUT: &str =
      where from_actor = ?1 order by seq";
 /// 今の停止を決めた出来事（最後の居る出来事より後の、初めの退場。停止中の後の退場は数えない）が、
 /// 推しの幕引き（`closed` で `detail.inferred` が JSON の true）か。居るままなら 0。
-/// `$actor` はアクターの id の列の式（一覧と図でも同じ決まりを使う）。
+/// `$actor` はアクターの id の列の式（一覧（search.rs）と図でも同じ決まりを使う）。
 macro_rules! inferred_sql {
     ($actor:literal) => {
         concat!(
@@ -72,6 +72,7 @@ macro_rules! inferred_sql {
         )
     };
 }
+pub(crate) use inferred_sql;
 const STATE: &str = concat!(
     "select presence, present, ",
     inferred_sql!("actor_state.actor_id"),

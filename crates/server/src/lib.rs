@@ -86,6 +86,15 @@ fn datetime(s: &str) -> Result<aws_smithy_types::DateTime, String> {
         .ok_or_else(|| format!("DB の時刻が読めない: {s}"))
 }
 
+/// 問いの時刻を、DB に残す字（UTC・ミリ秒まで・24 字。ミリ秒より下は切る）にする。字の順で比べられる。
+fn stored_time(name: &str, t: &aws_smithy_types::DateTime) -> Result<String, String> {
+    time::OffsetDateTime::from_unix_timestamp_nanos(t.as_nanos())
+        .ok()
+        .filter(|t| (0..=9999).contains(&t.year()))
+        .map(db::stamp)
+        .ok_or_else(|| format!("{name} は 0000 年から 9999 年までの時刻"))
+}
+
 /// 送り手の時刻を、time の時刻にする。扱えなければ、その訳。
 fn sent_time(t: &aws_smithy_types::DateTime) -> Result<time::OffsetDateTime, String> {
     time::OffsetDateTime::from_unix_timestamp_nanos(t.as_nanos())

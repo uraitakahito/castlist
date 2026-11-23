@@ -19,6 +19,7 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 | 探す答え | どれも `asOf`（castlist の今の時刻）を付ける |
 | 決まった字の欄 | `kind` などの決まった字は、enum でなく `@pattern` の字で書く（codegen-server 0.1.40 の作る protocol の試験が、要る enum を空の字から作って panic するため。wire の形は同じ）|
 | 知らない欄 | restJson1 は知らない欄を読み飛ばす（今の 422 はやめる）。id を外から紛れ込ませる道は、定義に欄が無いので無い |
+| 問い合わせの引数 | 名は camelCase（`activeFrom`・`launchedBy`・`maxResults`・`nextToken`）。値の形（時刻・`鍵:値`・id・決まった字・数の範囲）は生成した層が 400 で断る。restJson1 は知らない引数を読み飛ばし、重ねられない引数を 2 度付ければ初めの物を使う（今の server はどちらも 400。生成した層の前では断れない）。重ねられるのは list の引数（`label`）だけ。時刻の引数は DB に残す字（UTC・ミリ秒まで・24 字。ミリ秒より下は切る）に直して比べる |
 
 ## 操作
 
@@ -40,6 +41,14 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 | `GetGraph` | `GET /api/graph` | `GET /v1/graph` |
 
 手の道（Smithy の外）: 画面（`/`・`/actors/{id}`・`/graph/…`・`/static/…`）・`GET /api/backup`（SQLite の file）・`GET /api/logs`（字）。
+
+## 探す操作の決まり
+
+- `ListActors`（`GET /api/actors`）: 条件はどれも AND で、今の server の SQL のまま。索引で引ける条件（`label`・`binding`・`activeFrom`・`activeTo`・`active=true`・`model`・`effort`・`launchedBy`・`skewed`）が 1 つも無ければ 400（`kind` と `active=false` は数えない）。`at` は `binding` と一緒にだけ付ける（無ければ 400）。`skewed` は true だけを受け、false は 400（「時刻ずれの無いアクター」と読まれないように。今の server と同じ）。
+- 頁の印（`nextToken`）は、検索の種類・`sort`・`order`・最後の行の並べる値と seq を 16 進にした字。崩れた物・ほかの検索の物・`sort` か `order` の違う物は 400。ほかの条件は結ばない（今の server と同じ）。
+- `launchedBy` と道のアクターの id は `ActorId` の形（UUID）だけを受ける。形の違う id は 400（今の server は、線の上下では 404、`launched_by` では空の答え）。
+- `GetLineage`（`GET /api/actors/{actorId}/lineage`）: 点を引く所も、線を辿る所と同じ 1 つの読む transaction で読む（今の server は 2 つに分けていた）。答えの欄は `asOf`・`actorId`・`nodes`（一覧の行 `ActorRow`）・`edges`（GetActor の線と同じ形）。
+- 一覧の行（`ActorRow`）は、今の server の一覧の欄を camelCase にした物（`firstEnteredAt`・`lastExitedAt`・`lastExitType`・`present`・`inferred`・`model`・`effort`・`url`）。無い値は欄ごと無い（今の server は null）。
 
 ## データ
 
