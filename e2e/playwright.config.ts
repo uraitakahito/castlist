@@ -2,7 +2,9 @@
 //   CASTLIST_E2E_SERVER   起こす binary（既定は ../target/debug/castlist-server を cargo build してから）。
 //                         作り直している新しい server（AI-36）なら ../target/debug/castlist-next（cargo build --locked --bin castlist-next）
 //   CASTLIST_E2E_API      試験が API を叩く形（tests/wire.ts）。v1（今の server）か api（新しい server）。既定は、起こす binary の名が
-//                         castlist-next なら api、ほかは v1
+//                         castlist-next なら api、ほかは v1。名を替えた binary や包みの script を向ける時は、これを付ける
+//                         （付けないと v1 になり、見本を置く段が /v1/… に送って 404 で落ちる）
+//   CASTLIST_E2E_OUT      落ちた時の写しと report を置く folder の名の後ろに付ける字（2 つの server を続けて流す CI で分けるため）
 //   CASTLIST_E2E_PORT     待ち受ける port（既定は、空いている port を 1 つ選ぶ）
 //   CASTLIST_E2E_CHANNEL  この機械に入っている browser を使う時の名（chrome など）。無ければ Playwright の Chromium
 // 見本の記録は、tests/seed.setup.ts が API で置く（ほかの試験より先に 1 度だけ）。
@@ -34,7 +36,8 @@ export default defineConfig({
   // やり直さない（時々落ちる試験を隠さない）。
   retries: 0,
   forbidOnly: !!process.env.CI,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  outputDir: `test-results${process.env.CASTLIST_E2E_OUT ?? ''}`,
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never', outputFolder: `playwright-report${process.env.CASTLIST_E2E_OUT ?? ''}` }]] : 'list',
   use: {
     baseURL: `http://127.0.0.1:${port}`,
     channel: process.env.CASTLIST_E2E_CHANNEL,
