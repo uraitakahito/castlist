@@ -215,6 +215,249 @@ impl ::std::convert::From<crate::error::InternalError> for crate::error::Resolve
     }
 }
 
+/// Error type for the `PutEvent` operation.
+/// Each variant represents an error that can occur for the `PutEvent` operation.
+#[derive(::std::fmt::Debug)]
+pub enum PutEventError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 同じ id の物がもうあり、中身が違う。
+    Conflict(crate::error::Conflict),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for PutEventError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            PutEventError::ValidationException(_inner) => _inner.fmt(f),
+            PutEventError::Conflict(_inner) => _inner.fmt(f),
+            PutEventError::Unavailable(_inner) => _inner.fmt(f),
+            PutEventError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl PutEventError {
+    /// Returns `true` if the error kind is `PutEventError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, PutEventError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `PutEventError::Conflict`.
+    pub fn is_conflict(&self) -> bool {
+        matches!(&self, PutEventError::Conflict(_))
+    }
+    /// Returns `true` if the error kind is `PutEventError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, PutEventError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `PutEventError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, PutEventError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            PutEventError::ValidationException(_inner) => _inner.name(),
+            PutEventError::Conflict(_inner) => _inner.name(),
+            PutEventError::Unavailable(_inner) => _inner.name(),
+            PutEventError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for PutEventError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            PutEventError::ValidationException(_inner) => Some(_inner),
+            PutEventError::Conflict(_inner) => Some(_inner),
+            PutEventError::Unavailable(_inner) => Some(_inner),
+            PutEventError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::PutEventError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::PutEventError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Conflict> for crate::error::PutEventError {
+    fn from(variant: crate::error::Conflict) -> crate::error::PutEventError {
+        Self::Conflict(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::PutEventError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::PutEventError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::PutEventError {
+    fn from(variant: crate::error::InternalError) -> crate::error::PutEventError {
+        Self::InternalError(variant)
+    }
+}
+
+/// Error type for the `PutLink` operation.
+/// Each variant represents an error that can occur for the `PutLink` operation.
+#[derive(::std::fmt::Debug)]
+pub enum PutLinkError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 同じ id の物がもうあり、中身が違う。
+    Conflict(crate::error::Conflict),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for PutLinkError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            PutLinkError::ValidationException(_inner) => _inner.fmt(f),
+            PutLinkError::Conflict(_inner) => _inner.fmt(f),
+            PutLinkError::Unavailable(_inner) => _inner.fmt(f),
+            PutLinkError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl PutLinkError {
+    /// Returns `true` if the error kind is `PutLinkError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, PutLinkError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `PutLinkError::Conflict`.
+    pub fn is_conflict(&self) -> bool {
+        matches!(&self, PutLinkError::Conflict(_))
+    }
+    /// Returns `true` if the error kind is `PutLinkError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, PutLinkError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `PutLinkError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, PutLinkError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            PutLinkError::ValidationException(_inner) => _inner.name(),
+            PutLinkError::Conflict(_inner) => _inner.name(),
+            PutLinkError::Unavailable(_inner) => _inner.name(),
+            PutLinkError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for PutLinkError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            PutLinkError::ValidationException(_inner) => Some(_inner),
+            PutLinkError::Conflict(_inner) => Some(_inner),
+            PutLinkError::Unavailable(_inner) => Some(_inner),
+            PutLinkError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::PutLinkError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::PutLinkError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Conflict> for crate::error::PutLinkError {
+    fn from(variant: crate::error::Conflict) -> crate::error::PutLinkError {
+        Self::Conflict(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::PutLinkError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::PutLinkError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::PutLinkError {
+    fn from(variant: crate::error::InternalError) -> crate::error::PutLinkError {
+        Self::InternalError(variant)
+    }
+}
+
+/// Error type for the `PutSetting` operation.
+/// Each variant represents an error that can occur for the `PutSetting` operation.
+#[derive(::std::fmt::Debug)]
+pub enum PutSettingError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 同じ id の物がもうあり、中身が違う。
+    Conflict(crate::error::Conflict),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+}
+impl ::std::fmt::Display for PutSettingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            PutSettingError::ValidationException(_inner) => _inner.fmt(f),
+            PutSettingError::Conflict(_inner) => _inner.fmt(f),
+            PutSettingError::Unavailable(_inner) => _inner.fmt(f),
+            PutSettingError::InternalError(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl PutSettingError {
+    /// Returns `true` if the error kind is `PutSettingError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, PutSettingError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `PutSettingError::Conflict`.
+    pub fn is_conflict(&self) -> bool {
+        matches!(&self, PutSettingError::Conflict(_))
+    }
+    /// Returns `true` if the error kind is `PutSettingError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, PutSettingError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `PutSettingError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, PutSettingError::InternalError(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            PutSettingError::ValidationException(_inner) => _inner.name(),
+            PutSettingError::Conflict(_inner) => _inner.name(),
+            PutSettingError::Unavailable(_inner) => _inner.name(),
+            PutSettingError::InternalError(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for PutSettingError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            PutSettingError::ValidationException(_inner) => Some(_inner),
+            PutSettingError::Conflict(_inner) => Some(_inner),
+            PutSettingError::Unavailable(_inner) => Some(_inner),
+            PutSettingError::InternalError(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::PutSettingError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::PutSettingError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Conflict> for crate::error::PutSettingError {
+    fn from(variant: crate::error::Conflict) -> crate::error::PutSettingError {
+        Self::Conflict(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::PutSettingError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::PutSettingError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::PutSettingError {
+    fn from(variant: crate::error::InternalError) -> crate::error::PutSettingError {
+        Self::InternalError(variant)
+    }
+}
+
 /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
@@ -368,6 +611,42 @@ impl NotFound {
     /// Creates a new builder-style object to manufacture [`NotFound`](crate::error::NotFound).
     pub fn builder() -> crate::error::not_found::Builder {
         crate::error::not_found::Builder::default()
+    }
+}
+
+/// 同じ id の物がもうあり、中身が違う。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct Conflict {
+    #[allow(missing_docs)] // documentation missing in model
+    pub message: ::std::string::String,
+}
+impl Conflict {
+    /// Returns the error message.
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+    #[doc(hidden)]
+    /// Returns the error name.
+    pub fn name(&self) -> &'static str {
+        "Conflict"
+    }
+}
+impl ::std::fmt::Display for Conflict {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        ::std::write!(f, "Conflict")?;
+        {
+            ::std::write!(f, ": {}", &self.message)?;
+        }
+        Ok(())
+    }
+}
+impl ::std::error::Error for Conflict {}
+impl Conflict {
+    /// Creates a new builder-style object to manufacture [`Conflict`](crate::error::Conflict).
+    pub fn builder() -> crate::error::conflict::Builder {
+        crate::error::conflict::Builder::default()
     }
 }
 /// See [`ValidationException`](crate::error::ValidationException).
@@ -593,6 +872,61 @@ pub mod not_found {
             self,
         ) -> Result<crate::error::NotFound, ConstraintViolation> {
             Ok(crate::error::NotFound {
+                message: self.message.ok_or(ConstraintViolation::MissingMessage)?,
+            })
+        }
+    }
+}
+/// See [`Conflict`](crate::error::Conflict).
+pub mod conflict {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `message` was not provided but it is required when building `Conflict`.
+        MissingMessage,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingMessage => write!(
+                    f,
+                    "`message` was not provided but it is required when building `Conflict`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::error::Conflict {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`Conflict`](crate::error::Conflict).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) message: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn message(mut self, input: ::std::string::String) -> Self {
+            self.message = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`Conflict`](crate::error::Conflict).
+        ///
+        /// The builder fails to construct a [`Conflict`](crate::error::Conflict) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::error::Conflict, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::error::Conflict, ConstraintViolation> {
+            Ok(crate::error::Conflict {
                 message: self.message.ok_or(ConstraintViolation::MissingMessage)?,
             })
         }

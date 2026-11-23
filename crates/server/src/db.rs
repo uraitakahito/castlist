@@ -113,6 +113,23 @@ pub struct Ref {
     pub value: String,
 }
 
+impl Ref {
+    /// 参照の字（`種類:値`）を、初めの `:` で分ける（種類は `:` を持たない。形は定義が見てある）。
+    pub fn parse(s: &str) -> Self {
+        let (kind, value) = s.split_once(':').unwrap_or_default();
+        Ref {
+            kind: kind.to_owned(),
+            value: value.to_owned(),
+        }
+    }
+}
+
+impl fmt::Display for Ref {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.kind, self.value)
+    }
+}
+
 /// 登録の中身（形は定義が見てある）。
 pub struct NewActor<'a> {
     pub issuer: &'a str,
@@ -124,6 +141,44 @@ pub struct NewActor<'a> {
     pub sent_at: OffsetDateTime,
     /// 頼んだ model と effort。
     pub settings: Option<(&'a str, &'a str)>,
+}
+
+/// 出来事の中身（形は定義が見てある）。
+pub struct NewEvent<'a> {
+    pub issuer: &'a str,
+    pub by: &'a Ref,
+    pub kind: &'a str,
+    /// JSON の物。
+    pub detail: &'a serde_json::Value,
+    pub sent_at: OffsetDateTime,
+}
+
+/// 線の中身（形は定義が見てある）。
+pub struct NewLink<'a> {
+    pub issuer: &'a str,
+    pub kind: &'a str,
+    pub from: &'a Ref,
+    pub to: &'a Ref,
+    pub sent_at: OffsetDateTime,
+}
+
+/// model と effort の中身（形は定義が見てある）。
+pub struct NewSetting<'a> {
+    pub issuer: &'a str,
+    pub by: &'a Ref,
+    pub model: &'a str,
+    pub effort: &'a str,
+    pub source: &'a str,
+    pub sent_at: OffsetDateTime,
+}
+
+/// 送り手の id で足した結果。
+#[derive(Debug)]
+pub enum Put<T> {
+    /// 新しく足した。
+    Created(T),
+    /// 同じ物が既にあった（足していない）。
+    Same(T),
 }
 
 /// アクターを指す時の短い形。
@@ -228,8 +283,10 @@ pub struct ActorDetail {
 pub enum WriteError {
     /// 書く接続が空かない（混んでいる）。
     Busy,
-    /// 定義の形では言えない、中身の誤り。
+    /// 定義の形では言えない、中身の誤り（指すアクターが無いなど）。
     Invalid(String),
+    /// 同じ id で違う中身・2 度目の起こされるなど。
+    Conflict(String),
     Db(sqlx::Error),
 }
 
@@ -561,6 +618,39 @@ impl Db {
         }
         tx.commit().await?;
         Ok((actor, created))
+    }
+}
+
+// --- 送り手の id で足す ---
+
+impl Db {
+    /// 出来事を足す。同じ id で同じ本文なら Same、違えば Conflict。
+    pub async fn put_event(
+        &self,
+        _id: &str,
+        _new: &NewEvent<'_>,
+    ) -> Result<Put<Event>, WriteError> {
+        Err(WriteError::Db(sqlx::Error::Protocol(
+            "まだ書けない".to_owned(),
+        )))
+    }
+
+    /// 線を足す。起こされる（launched）のは、1 つのアクターに 1 度だけ。
+    pub async fn put_link(&self, _id: &str, _new: &NewLink<'_>) -> Result<Put<Link>, WriteError> {
+        Err(WriteError::Db(sqlx::Error::Protocol(
+            "まだ書けない".to_owned(),
+        )))
+    }
+
+    /// model と effort を足す。同じ id で同じ本文か、そのアクターの最新と同じなら、足さずに Same。
+    pub async fn put_setting(
+        &self,
+        _id: &str,
+        _new: &NewSetting<'_>,
+    ) -> Result<Put<Setting>, WriteError> {
+        Err(WriteError::Db(sqlx::Error::Protocol(
+            "まだ書けない".to_owned(),
+        )))
     }
 }
 

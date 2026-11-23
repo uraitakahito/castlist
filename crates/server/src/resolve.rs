@@ -16,18 +16,7 @@ pub async fn resolve(
     db: Arc<Db>,
     input: ResolveActorsInput,
 ) -> Result<ResolveActorsOutput, ResolveActorsError> {
-    // 種類は `:` を持たないので、初めの `:` で分ける（`:` の無い参照は定義が断ってある）。
-    let refs: Vec<Ref> = input
-        .refs
-        .iter()
-        .map(|r| {
-            let (kind, value) = r.split_once(':').unwrap_or_default();
-            Ref {
-                kind: kind.to_owned(),
-                value: value.to_owned(),
-            }
-        })
-        .collect();
+    let refs: Vec<Ref> = input.refs.iter().map(|r| Ref::parse(r)).collect();
     let as_of = datetime(&db::now()).map_err(|e| Failure::data(OPERATION, &e))?;
     let found = db
         .resolve(&input.issuer, &refs)

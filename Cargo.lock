@@ -516,6 +516,7 @@ dependencies = [
  "http-body",
  "http-body-util",
  "serde_json",
+ "sha2",
  "sqlx",
  "time",
  "tokio",

@@ -17,6 +17,8 @@ http-body = "1"
 http-body-util = "0.1"
 # 出来事の detail（DB の JSON の字）を、答えの Document に直す。
 serde_json = "1"
+# 同じ id で同じ本文かを見る写し（body_hash。SHA-256。root の crate と同じ版）。
+sha2 = { version = "0.11.1", default-features = false }
 # SQL は動く時に組む形（query・query_as）だけを使う。macros は、移行の SQL を埋め込む migrate!() のため（今の server と同じ）。
 sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
 time = { version = "0.3", features = ["formatting", "parsing"] }

@@ -285,6 +285,10 @@ async fn lookups_use_an_index_and_do_not_scan_a_big_table() {
         "links_in",
         "links_out",
         "state",
+        "event",
+        "link",
+        "setting",
+        "latest_setting",
     ] {
         assert!(names.contains(&want), "{want} が LOOKUPS に無い: {names:?}");
     }

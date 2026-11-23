@@ -1,20 +1,19 @@
 //! RegisterActor: アクターを登録する。形は定義（model/）が見てあるので、ここでは DB に渡して、答えの形に直す。
 use std::sync::Arc;
 
-use castlist_sdk::error::{RegisterActorError, Unavailable, ValidationException};
+use castlist_sdk::error::{RegisterActorError, ValidationException};
 use castlist_sdk::input::RegisterActorInput;
 use castlist_sdk::model::ActorSummary;
 use castlist_sdk::output::RegisterActorOutput;
 
 use crate::db::{Db, NewActor, Ref, WriteError};
-use crate::errors::internal;
+use crate::errors::{busy, internal};
 
 pub async fn register(
     db: Arc<Db>,
     input: RegisterActorInput,
 ) -> Result<RegisterActorOutput, RegisterActorError> {
-    let sent_at = time::OffsetDateTime::from_unix_timestamp_nanos(input.sent_at.as_nanos())
-        .map_err(|_| invalid("sentAt が扱える時刻の外"))?;
+    let sent_at = crate::sent_time(&input.sent_at).map_err(invalid)?;
     // 札は鍵の順に書く（同じ本文なら、行の並びも同じになる）。
     let mut labels: Vec<(String, String)> = input.labels.unwrap_or_default().into_iter().collect();
     labels.sort();
@@ -41,11 +40,10 @@ pub async fn register(
         })
         .await
         .map_err(|e| match e {
-            WriteError::Busy => Unavailable {
-                message: "混んでいる。少し待ってから送り直す".to_owned(),
-            }
-            .into(),
+            WriteError::Busy => busy().into(),
             WriteError::Invalid(message) => invalid(message),
+            // 登録は同じ鍵なら前のアクターを返すので、409 にはならない（なれば中の失敗）。
+            WriteError::Conflict(message) => internal("RegisterActor", &message).into(),
             WriteError::Db(e) => internal("RegisterActor", &e).into(),
         })?;
     Ok(RegisterActorOutput {

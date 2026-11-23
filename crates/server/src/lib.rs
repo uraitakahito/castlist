@@ -3,11 +3,16 @@
 //! 定義（model/）から作った骨（crates/castlist-sdk/）に処理（handler）を入れ、守りの層を前に掛ける。
 //! 手の道（画面・backup・logs）は、この後の PR で同じ Router に足す。
 mod actor;
+mod body;
 pub mod db;
 mod errors;
+mod event;
 mod generated;
+mod link;
 mod register;
 mod resolve;
+mod rows;
+mod setting;
 
 use std::sync::Arc;
 
@@ -34,7 +39,19 @@ pub fn app(db: Arc<Db>) -> Router {
             let db = db.clone();
             move |input| actor::get_actor(db.clone(), input)
         })
-        .resolve_actors(move |input| resolve::resolve(db.clone(), input))
+        .resolve_actors({
+            let db = db.clone();
+            move |input| resolve::resolve(db.clone(), input)
+        })
+        .put_event({
+            let db = db.clone();
+            move |input| event::put_event(db.clone(), input)
+        })
+        .put_link({
+            let db = db.clone();
+            move |input| link::put_link(db.clone(), input)
+        })
+        .put_setting(move |input| setting::put_setting(db.clone(), input))
         .build()
         .expect("どの操作にも handler がある");
     Router::new()
@@ -56,6 +73,12 @@ fn datetime(s: &str) -> Result<aws_smithy_types::DateTime, String> {
         .ok()
         .and_then(|t| aws_smithy_types::DateTime::from_nanos(t.unix_timestamp_nanos()).ok())
         .ok_or_else(|| format!("DB の時刻が読めない: {s}"))
+}
+
+/// 送り手の時刻を、time の時刻にする。扱えなければ、その訳。
+fn sent_time(t: &aws_smithy_types::DateTime) -> Result<time::OffsetDateTime, String> {
+    time::OffsetDateTime::from_unix_timestamp_nanos(t.as_nanos())
+        .map_err(|_| "sentAt が扱える時刻の外".to_owned())
 }
 
 /// host（castlist を動かす機械）の中からの要求だけを受ける（今の castlist の Host と Origin の守り）。
