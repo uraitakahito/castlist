@@ -138,6 +138,187 @@ impl ResolveActorsInput {
         crate::input::resolve_actors_input::Builder::default()
     }
 }
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct PutEventInput {
+    /// 送り手の決める id。
+    pub event_id: ::std::string::String,
+    /// 出し手。`by` は出し手の中で引く。
+    pub issuer: ::std::string::String,
+    /// 出来事のアクター（鍵の付随する id）。
+    pub by: ::std::string::String,
+    /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+    pub r#type: ::std::string::String,
+    /// JSON の物（無ければ `{}`）。 無い時の要求の例は書かない: smithy-rs（codegen-server 0.1.40）は、例の params に無い Document を、 無い物（None）でなく JSON の null（Some(Null)）として比べる試験を作り、読んだ物（None）と合わずに落ちるため。 無い時の振る舞いは、server の試験（crates/server/tests/events.rs）が見る。
+    pub detail: ::std::option::Option<::aws_smithy_types::Document>,
+    /// 送り手の時刻。
+    pub sent_at: ::aws_smithy_types::DateTime,
+}
+impl PutEventInput {
+    /// 送り手の決める id。
+    pub fn event_id(&self) -> &str {
+        use std::ops::Deref;
+        self.event_id.deref()
+    }
+    /// 出し手。`by` は出し手の中で引く。
+    pub fn issuer(&self) -> &str {
+        use std::ops::Deref;
+        self.issuer.deref()
+    }
+    /// 出来事のアクター（鍵の付随する id）。
+    pub fn by(&self) -> &str {
+        use std::ops::Deref;
+        self.by.deref()
+    }
+    /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+    pub fn r#type(&self) -> &str {
+        use std::ops::Deref;
+        self.r#type.deref()
+    }
+    /// JSON の物（無ければ `{}`）。 無い時の要求の例は書かない: smithy-rs（codegen-server 0.1.40）は、例の params に無い Document を、 無い物（None）でなく JSON の null（Some(Null)）として比べる試験を作り、読んだ物（None）と合わずに落ちるため。 無い時の振る舞いは、server の試験（crates/server/tests/events.rs）が見る。
+    pub fn detail(&self) -> ::std::option::Option<&::aws_smithy_types::Document> {
+        self.detail.as_ref()
+    }
+    /// 送り手の時刻。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+}
+impl crate::constrained::Constrained for crate::input::PutEventInput {
+    type Unconstrained = crate::input::put_event_input_internal::Builder;
+}
+impl PutEventInput {
+    /// Creates a new builder-style object to manufacture [`PutEventInput`](crate::input::PutEventInput).
+    pub fn builder() -> crate::input::put_event_input::Builder {
+        crate::input::put_event_input::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct PutLinkInput {
+    /// 送り手の決める id。
+    pub link_id: ::std::string::String,
+    /// 出し手。`from` と `to` は出し手の中で引く。
+    pub issuer: ::std::string::String,
+    /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
+    pub r#type: ::std::string::String,
+    /// 起こした・前のアクター（鍵の付随する id）。
+    pub from: ::std::string::String,
+    /// 起こされた・後を継いだアクター（鍵の付随する id）。
+    pub to: ::std::string::String,
+    /// 送り手の時刻。
+    pub sent_at: ::aws_smithy_types::DateTime,
+}
+impl PutLinkInput {
+    /// 送り手の決める id。
+    pub fn link_id(&self) -> &str {
+        use std::ops::Deref;
+        self.link_id.deref()
+    }
+    /// 出し手。`from` と `to` は出し手の中で引く。
+    pub fn issuer(&self) -> &str {
+        use std::ops::Deref;
+        self.issuer.deref()
+    }
+    /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
+    pub fn r#type(&self) -> &str {
+        use std::ops::Deref;
+        self.r#type.deref()
+    }
+    /// 起こした・前のアクター（鍵の付随する id）。
+    pub fn from(&self) -> &str {
+        use std::ops::Deref;
+        self.from.deref()
+    }
+    /// 起こされた・後を継いだアクター（鍵の付随する id）。
+    pub fn to(&self) -> &str {
+        use std::ops::Deref;
+        self.to.deref()
+    }
+    /// 送り手の時刻。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+}
+impl crate::constrained::Constrained for crate::input::PutLinkInput {
+    type Unconstrained = crate::input::put_link_input_internal::Builder;
+}
+impl PutLinkInput {
+    /// Creates a new builder-style object to manufacture [`PutLinkInput`](crate::input::PutLinkInput).
+    pub fn builder() -> crate::input::put_link_input::Builder {
+        crate::input::put_link_input::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct PutSettingInput {
+    /// 送り手の決める id。
+    pub setting_id: ::std::string::String,
+    /// 出し手。`by` は出し手の中で引く。
+    pub issuer: ::std::string::String,
+    /// model と effort のアクター（鍵の付随する id）。
+    pub by: ::std::string::String,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub model: ::std::string::String,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub effort: ::std::string::String,
+    /// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+    pub source: ::std::string::String,
+    /// 送り手の時刻。
+    pub sent_at: ::aws_smithy_types::DateTime,
+}
+impl PutSettingInput {
+    /// 送り手の決める id。
+    pub fn setting_id(&self) -> &str {
+        use std::ops::Deref;
+        self.setting_id.deref()
+    }
+    /// 出し手。`by` は出し手の中で引く。
+    pub fn issuer(&self) -> &str {
+        use std::ops::Deref;
+        self.issuer.deref()
+    }
+    /// model と effort のアクター（鍵の付随する id）。
+    pub fn by(&self) -> &str {
+        use std::ops::Deref;
+        self.by.deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn model(&self) -> &str {
+        use std::ops::Deref;
+        self.model.deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn effort(&self) -> &str {
+        use std::ops::Deref;
+        self.effort.deref()
+    }
+    /// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+    pub fn source(&self) -> &str {
+        use std::ops::Deref;
+        self.source.deref()
+    }
+    /// 送り手の時刻。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+}
+impl crate::constrained::Constrained for crate::input::PutSettingInput {
+    type Unconstrained = crate::input::put_setting_input_internal::Builder;
+}
+impl PutSettingInput {
+    /// Creates a new builder-style object to manufacture [`PutSettingInput`](crate::input::PutSettingInput).
+    pub fn builder() -> crate::input::put_setting_input::Builder {
+        crate::input::put_setting_input::Builder::default()
+    }
+}
 /// See [`GetHealthInput`](crate::input::GetHealthInput).
 pub(crate) mod get_health_input_internal {
 
@@ -959,6 +1140,1156 @@ pub mod resolve_actors_input {
             Ok(crate::input::ResolveActorsInput {
                 issuer: self.issuer.ok_or(ConstraintViolation::MissingIssuer)?,
                 refs: self.refs.ok_or(ConstraintViolation::MissingRefs)?,
+            })
+        }
+    }
+}
+/// See [`PutEventInput`](crate::input::PutEventInput).
+pub(crate) mod put_event_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `event_id` was not provided but it is required when building `PutEventInput`.
+        MissingEventId,
+        /// Constraint violation occurred building member `event_id` when building `PutEventInput`.
+        #[doc(hidden)]
+        EventId(crate::model::sender_id_internal::ConstraintViolation),
+        /// `issuer` was not provided but it is required when building `PutEventInput`.
+        MissingIssuer,
+        /// Constraint violation occurred building member `issuer` when building `PutEventInput`.
+        #[doc(hidden)]
+        Issuer(crate::model::name_internal::ConstraintViolation),
+        /// `by` was not provided but it is required when building `PutEventInput`.
+        MissingBy,
+        /// Constraint violation occurred building member `by` when building `PutEventInput`.
+        #[doc(hidden)]
+        By(crate::model::actor_ref_internal::ConstraintViolation),
+        /// `r#type` was not provided but it is required when building `PutEventInput`.
+        MissingType,
+        /// Constraint violation occurred building member `r#type` when building `PutEventInput`.
+        #[doc(hidden)]
+        Type(crate::model::event_type_internal::ConstraintViolation),
+        /// `sent_at` was not provided but it is required when building `PutEventInput`.
+        MissingSentAt,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingEventId => write!(f, "`event_id` was not provided but it is required when building `PutEventInput`"),
+                ConstraintViolation::EventId(_) => write!(f, "constraint violation occurred building member `event_id` when building `PutEventInput`"),
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `PutEventInput`"),
+                ConstraintViolation::Issuer(_) => write!(f, "constraint violation occurred building member `issuer` when building `PutEventInput`"),
+                ConstraintViolation::MissingBy => write!(f, "`by` was not provided but it is required when building `PutEventInput`"),
+                ConstraintViolation::By(_) => write!(f, "constraint violation occurred building member `by` when building `PutEventInput`"),
+                ConstraintViolation::MissingType => write!(f, "`r#type` was not provided but it is required when building `PutEventInput`"),
+                ConstraintViolation::Type(_) => write!(f, "constraint violation occurred building member `r#type` when building `PutEventInput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `PutEventInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingEventId => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/eventId' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/eventId",
+                                            },
+            ConstraintViolation::EventId(inner) => inner.as_validation_exception_field(path + "/eventId"),
+            ConstraintViolation::MissingIssuer => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/issuer' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/issuer",
+                                            },
+            ConstraintViolation::Issuer(inner) => inner.as_validation_exception_field(path + "/issuer"),
+            ConstraintViolation::MissingBy => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/by' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/by",
+                                            },
+            ConstraintViolation::By(inner) => inner.as_validation_exception_field(path + "/by"),
+            ConstraintViolation::MissingType => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/type' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/type",
+                                            },
+            ConstraintViolation::Type(inner) => inner.as_validation_exception_field(path + "/type"),
+            ConstraintViolation::MissingSentAt => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/sentAt' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/sentAt",
+                                            },
+        }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::PutEventInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::PutEventInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutEventInput`](crate::input::PutEventInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) event_id:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::SenderId>>,
+        pub(crate) issuer:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) by:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorRef>>,
+        pub(crate) r#type:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::EventType>>,
+        pub(crate) detail: ::std::option::Option<::aws_smithy_types::Document>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// 送り手の決める id。
+        pub(crate) fn set_event_id(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::SenderId>,
+            >,
+        ) -> Self {
+            self.event_id = Some(input.into());
+            self
+        }
+        /// 出し手。`by` は出し手の中で引く。
+        pub(crate) fn set_issuer(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        ) -> Self {
+            self.issuer = Some(input.into());
+            self
+        }
+        /// 出来事のアクター（鍵の付随する id）。
+        pub(crate) fn set_by(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorRef>,
+            >,
+        ) -> Self {
+            self.by = Some(input.into());
+            self
+        }
+        /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+        pub(crate) fn set_type(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::EventType>,
+            >,
+        ) -> Self {
+            self.r#type = Some(input.into());
+            self
+        }
+        /// JSON の物（無ければ `{}`）。 無い時の要求の例は書かない: smithy-rs（codegen-server 0.1.40）は、例の params に無い Document を、 無い物（None）でなく JSON の null（Some(Null)）として比べる試験を作り、読んだ物（None）と合わずに落ちるため。 無い時の振る舞いは、server の試験（crates/server/tests/events.rs）が見る。
+        pub(crate) fn set_detail(
+            mut self,
+            input: Option<impl ::std::convert::Into<::aws_smithy_types::Document>>,
+        ) -> Self {
+            self.detail = input.map(|v| v.into());
+            self
+        }
+        /// 送り手の時刻。
+        pub(crate) fn set_sent_at(
+            mut self,
+            input: impl ::std::convert::Into<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.sent_at = Some(input.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`PutEventInput`](crate::input::PutEventInput).
+        ///
+        /// The builder fails to construct a [`PutEventInput`](crate::input::PutEventInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::PutEventInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::PutEventInput, ConstraintViolation> {
+            Ok(crate::input::PutEventInput {
+                event_id: self
+                    .event_id
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::EventId))
+                    .transpose()?
+                    .map(|v: crate::model::SenderId| v.into())
+                    .ok_or(ConstraintViolation::MissingEventId)?,
+                issuer: self
+                    .issuer
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Issuer))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into())
+                    .ok_or(ConstraintViolation::MissingIssuer)?,
+                by: self
+                    .by
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::By))
+                    .transpose()?
+                    .map(|v: crate::model::ActorRef| v.into())
+                    .ok_or(ConstraintViolation::MissingBy)?,
+                r#type: self
+                    .r#type
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Type))
+                    .transpose()?
+                    .map(|v: crate::model::EventType| v.into())
+                    .ok_or(ConstraintViolation::MissingType)?,
+                detail: self.detail,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+            })
+        }
+    }
+}
+/// See [`PutEventInput`](crate::input::PutEventInput).
+pub mod put_event_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `event_id` was not provided but it is required when building `PutEventInput`.
+        MissingEventId,
+        /// `issuer` was not provided but it is required when building `PutEventInput`.
+        MissingIssuer,
+        /// `by` was not provided but it is required when building `PutEventInput`.
+        MissingBy,
+        /// `r#type` was not provided but it is required when building `PutEventInput`.
+        MissingType,
+        /// `sent_at` was not provided but it is required when building `PutEventInput`.
+        MissingSentAt,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingEventId => write!(
+                    f,
+                    "`event_id` was not provided but it is required when building `PutEventInput`"
+                ),
+                ConstraintViolation::MissingIssuer => write!(
+                    f,
+                    "`issuer` was not provided but it is required when building `PutEventInput`"
+                ),
+                ConstraintViolation::MissingBy => write!(
+                    f,
+                    "`by` was not provided but it is required when building `PutEventInput`"
+                ),
+                ConstraintViolation::MissingType => write!(
+                    f,
+                    "`r#type` was not provided but it is required when building `PutEventInput`"
+                ),
+                ConstraintViolation::MissingSentAt => write!(
+                    f,
+                    "`sent_at` was not provided but it is required when building `PutEventInput`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::PutEventInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutEventInput`](crate::input::PutEventInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) event_id: ::std::option::Option<::std::string::String>,
+        pub(crate) issuer: ::std::option::Option<::std::string::String>,
+        pub(crate) by: ::std::option::Option<::std::string::String>,
+        pub(crate) r#type: ::std::option::Option<::std::string::String>,
+        pub(crate) detail: ::std::option::Option<::aws_smithy_types::Document>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// 送り手の決める id。
+        pub fn event_id(mut self, input: ::std::string::String) -> Self {
+            self.event_id = Some(input);
+            self
+        }
+        /// 出し手。`by` は出し手の中で引く。
+        pub fn issuer(mut self, input: ::std::string::String) -> Self {
+            self.issuer = Some(input);
+            self
+        }
+        /// 出来事のアクター（鍵の付随する id）。
+        pub fn by(mut self, input: ::std::string::String) -> Self {
+            self.by = Some(input);
+            self
+        }
+        /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+        pub fn r#type(mut self, input: ::std::string::String) -> Self {
+            self.r#type = Some(input);
+            self
+        }
+        /// JSON の物（無ければ `{}`）。 無い時の要求の例は書かない: smithy-rs（codegen-server 0.1.40）は、例の params に無い Document を、 無い物（None）でなく JSON の null（Some(Null)）として比べる試験を作り、読んだ物（None）と合わずに落ちるため。 無い時の振る舞いは、server の試験（crates/server/tests/events.rs）が見る。
+        pub fn detail(
+            mut self,
+            input: ::std::option::Option<::aws_smithy_types::Document>,
+        ) -> Self {
+            self.detail = input;
+            self
+        }
+        /// 送り手の時刻。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`PutEventInput`](crate::input::PutEventInput).
+        ///
+        /// The builder fails to construct a [`PutEventInput`](crate::input::PutEventInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::PutEventInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::PutEventInput, ConstraintViolation> {
+            Ok(crate::input::PutEventInput {
+                event_id: self.event_id.ok_or(ConstraintViolation::MissingEventId)?,
+                issuer: self.issuer.ok_or(ConstraintViolation::MissingIssuer)?,
+                by: self.by.ok_or(ConstraintViolation::MissingBy)?,
+                r#type: self.r#type.ok_or(ConstraintViolation::MissingType)?,
+                detail: self.detail,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+            })
+        }
+    }
+}
+/// See [`PutLinkInput`](crate::input::PutLinkInput).
+pub(crate) mod put_link_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `link_id` was not provided but it is required when building `PutLinkInput`.
+        MissingLinkId,
+        /// Constraint violation occurred building member `link_id` when building `PutLinkInput`.
+        #[doc(hidden)]
+        LinkId(crate::model::sender_id_internal::ConstraintViolation),
+        /// `issuer` was not provided but it is required when building `PutLinkInput`.
+        MissingIssuer,
+        /// Constraint violation occurred building member `issuer` when building `PutLinkInput`.
+        #[doc(hidden)]
+        Issuer(crate::model::name_internal::ConstraintViolation),
+        /// `r#type` was not provided but it is required when building `PutLinkInput`.
+        MissingType,
+        /// Constraint violation occurred building member `r#type` when building `PutLinkInput`.
+        #[doc(hidden)]
+        Type(crate::model::link_type_internal::ConstraintViolation),
+        /// `from` was not provided but it is required when building `PutLinkInput`.
+        MissingFrom,
+        /// Constraint violation occurred building member `from` when building `PutLinkInput`.
+        #[doc(hidden)]
+        From(crate::model::actor_ref_internal::ConstraintViolation),
+        /// `to` was not provided but it is required when building `PutLinkInput`.
+        MissingTo,
+        /// Constraint violation occurred building member `to` when building `PutLinkInput`.
+        #[doc(hidden)]
+        To(crate::model::actor_ref_internal::ConstraintViolation),
+        /// `sent_at` was not provided but it is required when building `PutLinkInput`.
+        MissingSentAt,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingLinkId => write!(f, "`link_id` was not provided but it is required when building `PutLinkInput`"),
+                ConstraintViolation::LinkId(_) => write!(f, "constraint violation occurred building member `link_id` when building `PutLinkInput`"),
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `PutLinkInput`"),
+                ConstraintViolation::Issuer(_) => write!(f, "constraint violation occurred building member `issuer` when building `PutLinkInput`"),
+                ConstraintViolation::MissingType => write!(f, "`r#type` was not provided but it is required when building `PutLinkInput`"),
+                ConstraintViolation::Type(_) => write!(f, "constraint violation occurred building member `r#type` when building `PutLinkInput`"),
+                ConstraintViolation::MissingFrom => write!(f, "`from` was not provided but it is required when building `PutLinkInput`"),
+                ConstraintViolation::From(_) => write!(f, "constraint violation occurred building member `from` when building `PutLinkInput`"),
+                ConstraintViolation::MissingTo => write!(f, "`to` was not provided but it is required when building `PutLinkInput`"),
+                ConstraintViolation::To(_) => write!(f, "constraint violation occurred building member `to` when building `PutLinkInput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `PutLinkInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingLinkId => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/linkId' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/linkId",
+                                            },
+            ConstraintViolation::LinkId(inner) => inner.as_validation_exception_field(path + "/linkId"),
+            ConstraintViolation::MissingIssuer => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/issuer' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/issuer",
+                                            },
+            ConstraintViolation::Issuer(inner) => inner.as_validation_exception_field(path + "/issuer"),
+            ConstraintViolation::MissingType => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/type' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/type",
+                                            },
+            ConstraintViolation::Type(inner) => inner.as_validation_exception_field(path + "/type"),
+            ConstraintViolation::MissingFrom => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/from' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/from",
+                                            },
+            ConstraintViolation::From(inner) => inner.as_validation_exception_field(path + "/from"),
+            ConstraintViolation::MissingTo => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/to' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/to",
+                                            },
+            ConstraintViolation::To(inner) => inner.as_validation_exception_field(path + "/to"),
+            ConstraintViolation::MissingSentAt => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/sentAt' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/sentAt",
+                                            },
+        }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::PutLinkInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::PutLinkInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutLinkInput`](crate::input::PutLinkInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) link_id:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::SenderId>>,
+        pub(crate) issuer:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) r#type:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::LinkType>>,
+        pub(crate) from:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorRef>>,
+        pub(crate) to:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorRef>>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// 送り手の決める id。
+        pub(crate) fn set_link_id(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::SenderId>,
+            >,
+        ) -> Self {
+            self.link_id = Some(input.into());
+            self
+        }
+        /// 出し手。`from` と `to` は出し手の中で引く。
+        pub(crate) fn set_issuer(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        ) -> Self {
+            self.issuer = Some(input.into());
+            self
+        }
+        /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
+        pub(crate) fn set_type(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::LinkType>,
+            >,
+        ) -> Self {
+            self.r#type = Some(input.into());
+            self
+        }
+        /// 起こした・前のアクター（鍵の付随する id）。
+        pub(crate) fn set_from(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorRef>,
+            >,
+        ) -> Self {
+            self.from = Some(input.into());
+            self
+        }
+        /// 起こされた・後を継いだアクター（鍵の付随する id）。
+        pub(crate) fn set_to(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorRef>,
+            >,
+        ) -> Self {
+            self.to = Some(input.into());
+            self
+        }
+        /// 送り手の時刻。
+        pub(crate) fn set_sent_at(
+            mut self,
+            input: impl ::std::convert::Into<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.sent_at = Some(input.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`PutLinkInput`](crate::input::PutLinkInput).
+        ///
+        /// The builder fails to construct a [`PutLinkInput`](crate::input::PutLinkInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::PutLinkInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::PutLinkInput, ConstraintViolation> {
+            Ok(crate::input::PutLinkInput {
+                link_id: self
+                    .link_id
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::LinkId))
+                    .transpose()?
+                    .map(|v: crate::model::SenderId| v.into())
+                    .ok_or(ConstraintViolation::MissingLinkId)?,
+                issuer: self
+                    .issuer
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Issuer))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into())
+                    .ok_or(ConstraintViolation::MissingIssuer)?,
+                r#type: self
+                    .r#type
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Type))
+                    .transpose()?
+                    .map(|v: crate::model::LinkType| v.into())
+                    .ok_or(ConstraintViolation::MissingType)?,
+                from: self
+                    .from
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::From))
+                    .transpose()?
+                    .map(|v: crate::model::ActorRef| v.into())
+                    .ok_or(ConstraintViolation::MissingFrom)?,
+                to: self
+                    .to
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::To))
+                    .transpose()?
+                    .map(|v: crate::model::ActorRef| v.into())
+                    .ok_or(ConstraintViolation::MissingTo)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+            })
+        }
+    }
+}
+/// See [`PutLinkInput`](crate::input::PutLinkInput).
+pub mod put_link_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `link_id` was not provided but it is required when building `PutLinkInput`.
+        MissingLinkId,
+        /// `issuer` was not provided but it is required when building `PutLinkInput`.
+        MissingIssuer,
+        /// `r#type` was not provided but it is required when building `PutLinkInput`.
+        MissingType,
+        /// `from` was not provided but it is required when building `PutLinkInput`.
+        MissingFrom,
+        /// `to` was not provided but it is required when building `PutLinkInput`.
+        MissingTo,
+        /// `sent_at` was not provided but it is required when building `PutLinkInput`.
+        MissingSentAt,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingLinkId => write!(
+                    f,
+                    "`link_id` was not provided but it is required when building `PutLinkInput`"
+                ),
+                ConstraintViolation::MissingIssuer => write!(
+                    f,
+                    "`issuer` was not provided but it is required when building `PutLinkInput`"
+                ),
+                ConstraintViolation::MissingType => write!(
+                    f,
+                    "`r#type` was not provided but it is required when building `PutLinkInput`"
+                ),
+                ConstraintViolation::MissingFrom => write!(
+                    f,
+                    "`from` was not provided but it is required when building `PutLinkInput`"
+                ),
+                ConstraintViolation::MissingTo => write!(
+                    f,
+                    "`to` was not provided but it is required when building `PutLinkInput`"
+                ),
+                ConstraintViolation::MissingSentAt => write!(
+                    f,
+                    "`sent_at` was not provided but it is required when building `PutLinkInput`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::PutLinkInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutLinkInput`](crate::input::PutLinkInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) link_id: ::std::option::Option<::std::string::String>,
+        pub(crate) issuer: ::std::option::Option<::std::string::String>,
+        pub(crate) r#type: ::std::option::Option<::std::string::String>,
+        pub(crate) from: ::std::option::Option<::std::string::String>,
+        pub(crate) to: ::std::option::Option<::std::string::String>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// 送り手の決める id。
+        pub fn link_id(mut self, input: ::std::string::String) -> Self {
+            self.link_id = Some(input);
+            self
+        }
+        /// 出し手。`from` と `to` は出し手の中で引く。
+        pub fn issuer(mut self, input: ::std::string::String) -> Self {
+            self.issuer = Some(input);
+            self
+        }
+        /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
+        pub fn r#type(mut self, input: ::std::string::String) -> Self {
+            self.r#type = Some(input);
+            self
+        }
+        /// 起こした・前のアクター（鍵の付随する id）。
+        pub fn from(mut self, input: ::std::string::String) -> Self {
+            self.from = Some(input);
+            self
+        }
+        /// 起こされた・後を継いだアクター（鍵の付随する id）。
+        pub fn to(mut self, input: ::std::string::String) -> Self {
+            self.to = Some(input);
+            self
+        }
+        /// 送り手の時刻。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`PutLinkInput`](crate::input::PutLinkInput).
+        ///
+        /// The builder fails to construct a [`PutLinkInput`](crate::input::PutLinkInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::PutLinkInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::PutLinkInput, ConstraintViolation> {
+            Ok(crate::input::PutLinkInput {
+                link_id: self.link_id.ok_or(ConstraintViolation::MissingLinkId)?,
+                issuer: self.issuer.ok_or(ConstraintViolation::MissingIssuer)?,
+                r#type: self.r#type.ok_or(ConstraintViolation::MissingType)?,
+                from: self.from.ok_or(ConstraintViolation::MissingFrom)?,
+                to: self.to.ok_or(ConstraintViolation::MissingTo)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+            })
+        }
+    }
+}
+/// See [`PutSettingInput`](crate::input::PutSettingInput).
+pub(crate) mod put_setting_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `setting_id` was not provided but it is required when building `PutSettingInput`.
+        MissingSettingId,
+        /// Constraint violation occurred building member `setting_id` when building `PutSettingInput`.
+        #[doc(hidden)]
+        SettingId(crate::model::sender_id_internal::ConstraintViolation),
+        /// `issuer` was not provided but it is required when building `PutSettingInput`.
+        MissingIssuer,
+        /// Constraint violation occurred building member `issuer` when building `PutSettingInput`.
+        #[doc(hidden)]
+        Issuer(crate::model::name_internal::ConstraintViolation),
+        /// `by` was not provided but it is required when building `PutSettingInput`.
+        MissingBy,
+        /// Constraint violation occurred building member `by` when building `PutSettingInput`.
+        #[doc(hidden)]
+        By(crate::model::actor_ref_internal::ConstraintViolation),
+        /// `model` was not provided but it is required when building `PutSettingInput`.
+        MissingModel,
+        /// Constraint violation occurred building member `model` when building `PutSettingInput`.
+        #[doc(hidden)]
+        Model(crate::model::name_internal::ConstraintViolation),
+        /// `effort` was not provided but it is required when building `PutSettingInput`.
+        MissingEffort,
+        /// Constraint violation occurred building member `effort` when building `PutSettingInput`.
+        #[doc(hidden)]
+        Effort(crate::model::name_internal::ConstraintViolation),
+        /// `source` was not provided but it is required when building `PutSettingInput`.
+        MissingSource,
+        /// Constraint violation occurred building member `source` when building `PutSettingInput`.
+        #[doc(hidden)]
+        Source(crate::model::setting_source_internal::ConstraintViolation),
+        /// `sent_at` was not provided but it is required when building `PutSettingInput`.
+        MissingSentAt,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingSettingId => write!(f, "`setting_id` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::SettingId(_) => write!(f, "constraint violation occurred building member `setting_id` when building `PutSettingInput`"),
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::Issuer(_) => write!(f, "constraint violation occurred building member `issuer` when building `PutSettingInput`"),
+                ConstraintViolation::MissingBy => write!(f, "`by` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::By(_) => write!(f, "constraint violation occurred building member `by` when building `PutSettingInput`"),
+                ConstraintViolation::MissingModel => write!(f, "`model` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::Model(_) => write!(f, "constraint violation occurred building member `model` when building `PutSettingInput`"),
+                ConstraintViolation::MissingEffort => write!(f, "`effort` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::Effort(_) => write!(f, "constraint violation occurred building member `effort` when building `PutSettingInput`"),
+                ConstraintViolation::MissingSource => write!(f, "`source` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::Source(_) => write!(f, "constraint violation occurred building member `source` when building `PutSettingInput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `PutSettingInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingSettingId => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/settingId' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/settingId",
+                                            },
+            ConstraintViolation::SettingId(inner) => inner.as_validation_exception_field(path + "/settingId"),
+            ConstraintViolation::MissingIssuer => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/issuer' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/issuer",
+                                            },
+            ConstraintViolation::Issuer(inner) => inner.as_validation_exception_field(path + "/issuer"),
+            ConstraintViolation::MissingBy => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/by' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/by",
+                                            },
+            ConstraintViolation::By(inner) => inner.as_validation_exception_field(path + "/by"),
+            ConstraintViolation::MissingModel => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/model' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/model",
+                                            },
+            ConstraintViolation::Model(inner) => inner.as_validation_exception_field(path + "/model"),
+            ConstraintViolation::MissingEffort => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/effort' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/effort",
+                                            },
+            ConstraintViolation::Effort(inner) => inner.as_validation_exception_field(path + "/effort"),
+            ConstraintViolation::MissingSource => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/source' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/source",
+                                            },
+            ConstraintViolation::Source(inner) => inner.as_validation_exception_field(path + "/source"),
+            ConstraintViolation::MissingSentAt => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/sentAt' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/sentAt",
+                                            },
+        }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::PutSettingInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::PutSettingInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutSettingInput`](crate::input::PutSettingInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) setting_id:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::SenderId>>,
+        pub(crate) issuer:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) by:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorRef>>,
+        pub(crate) model:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) effort:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) source: ::std::option::Option<
+            crate::constrained::MaybeConstrained<crate::model::SettingSource>,
+        >,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// 送り手の決める id。
+        pub(crate) fn set_setting_id(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::SenderId>,
+            >,
+        ) -> Self {
+            self.setting_id = Some(input.into());
+            self
+        }
+        /// 出し手。`by` は出し手の中で引く。
+        pub(crate) fn set_issuer(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        ) -> Self {
+            self.issuer = Some(input.into());
+            self
+        }
+        /// model と effort のアクター（鍵の付随する id）。
+        pub(crate) fn set_by(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorRef>,
+            >,
+        ) -> Self {
+            self.by = Some(input.into());
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub(crate) fn set_model(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        ) -> Self {
+            self.model = Some(input.into());
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub(crate) fn set_effort(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        ) -> Self {
+            self.effort = Some(input.into());
+            self
+        }
+        /// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+        pub(crate) fn set_source(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::SettingSource>,
+            >,
+        ) -> Self {
+            self.source = Some(input.into());
+            self
+        }
+        /// 送り手の時刻。
+        pub(crate) fn set_sent_at(
+            mut self,
+            input: impl ::std::convert::Into<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.sent_at = Some(input.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`PutSettingInput`](crate::input::PutSettingInput).
+        ///
+        /// The builder fails to construct a [`PutSettingInput`](crate::input::PutSettingInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::PutSettingInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::PutSettingInput, ConstraintViolation> {
+            Ok(crate::input::PutSettingInput {
+                setting_id: self
+                    .setting_id
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::SettingId))
+                    .transpose()?
+                    .map(|v: crate::model::SenderId| v.into())
+                    .ok_or(ConstraintViolation::MissingSettingId)?,
+                issuer: self
+                    .issuer
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Issuer))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into())
+                    .ok_or(ConstraintViolation::MissingIssuer)?,
+                by: self
+                    .by
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::By))
+                    .transpose()?
+                    .map(|v: crate::model::ActorRef| v.into())
+                    .ok_or(ConstraintViolation::MissingBy)?,
+                model: self
+                    .model
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Model))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into())
+                    .ok_or(ConstraintViolation::MissingModel)?,
+                effort: self
+                    .effort
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Effort))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into())
+                    .ok_or(ConstraintViolation::MissingEffort)?,
+                source: self
+                    .source
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Source))
+                    .transpose()?
+                    .map(|v: crate::model::SettingSource| v.into())
+                    .ok_or(ConstraintViolation::MissingSource)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+            })
+        }
+    }
+}
+/// See [`PutSettingInput`](crate::input::PutSettingInput).
+pub mod put_setting_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `setting_id` was not provided but it is required when building `PutSettingInput`.
+        MissingSettingId,
+        /// `issuer` was not provided but it is required when building `PutSettingInput`.
+        MissingIssuer,
+        /// `by` was not provided but it is required when building `PutSettingInput`.
+        MissingBy,
+        /// `model` was not provided but it is required when building `PutSettingInput`.
+        MissingModel,
+        /// `effort` was not provided but it is required when building `PutSettingInput`.
+        MissingEffort,
+        /// `source` was not provided but it is required when building `PutSettingInput`.
+        MissingSource,
+        /// `sent_at` was not provided but it is required when building `PutSettingInput`.
+        MissingSentAt,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingSettingId => write!(f, "`setting_id` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::MissingBy => write!(f, "`by` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::MissingModel => write!(f, "`model` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::MissingEffort => write!(f, "`effort` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::MissingSource => write!(f, "`source` was not provided but it is required when building `PutSettingInput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `PutSettingInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::PutSettingInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutSettingInput`](crate::input::PutSettingInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) setting_id: ::std::option::Option<::std::string::String>,
+        pub(crate) issuer: ::std::option::Option<::std::string::String>,
+        pub(crate) by: ::std::option::Option<::std::string::String>,
+        pub(crate) model: ::std::option::Option<::std::string::String>,
+        pub(crate) effort: ::std::option::Option<::std::string::String>,
+        pub(crate) source: ::std::option::Option<::std::string::String>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// 送り手の決める id。
+        pub fn setting_id(mut self, input: ::std::string::String) -> Self {
+            self.setting_id = Some(input);
+            self
+        }
+        /// 出し手。`by` は出し手の中で引く。
+        pub fn issuer(mut self, input: ::std::string::String) -> Self {
+            self.issuer = Some(input);
+            self
+        }
+        /// model と effort のアクター（鍵の付随する id）。
+        pub fn by(mut self, input: ::std::string::String) -> Self {
+            self.by = Some(input);
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn model(mut self, input: ::std::string::String) -> Self {
+            self.model = Some(input);
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn effort(mut self, input: ::std::string::String) -> Self {
+            self.effort = Some(input);
+            self
+        }
+        /// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+        pub fn source(mut self, input: ::std::string::String) -> Self {
+            self.source = Some(input);
+            self
+        }
+        /// 送り手の時刻。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`PutSettingInput`](crate::input::PutSettingInput).
+        ///
+        /// The builder fails to construct a [`PutSettingInput`](crate::input::PutSettingInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::PutSettingInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::PutSettingInput, ConstraintViolation> {
+            Ok(crate::input::PutSettingInput {
+                setting_id: self
+                    .setting_id
+                    .ok_or(ConstraintViolation::MissingSettingId)?,
+                issuer: self.issuer.ok_or(ConstraintViolation::MissingIssuer)?,
+                by: self.by.ok_or(ConstraintViolation::MissingBy)?,
+                model: self.model.ok_or(ConstraintViolation::MissingModel)?,
+                effort: self.effort.ok_or(ConstraintViolation::MissingEffort)?,
+                source: self.source.ok_or(ConstraintViolation::MissingSource)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
             })
         }
     }

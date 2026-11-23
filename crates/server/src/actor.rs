@@ -1,7 +1,6 @@
 //! GetActor: 1 つのアクターの全部。DB の行を、答えの形に直す。
 use std::sync::Arc;
 
-use aws_smithy_types::{Document, Number};
 use castlist_sdk::error::{GetActorError, NotFound};
 use castlist_sdk::input::GetActorInput;
 use castlist_sdk::model::{ActorBinding, ActorState, Event, Link, Setting};
@@ -9,6 +8,7 @@ use castlist_sdk::output::GetActorOutput;
 
 use crate::db::{self, Db};
 use crate::errors::Failure;
+use crate::rows;
 
 const OPERATION: &str = "GetActor";
 
@@ -91,67 +91,15 @@ fn bindings(rows: Vec<db::Binding>) -> Result<Vec<ActorBinding>, Failure> {
 }
 
 fn event(e: db::Event) -> Result<Event, Failure> {
-    let detail = serde_json::from_str(&e.detail).map_err(|err| {
-        Failure::data(
-            OPERATION,
-            &format!("出来事 {} の detail が読めない: {err}", e.id),
-        )
-    })?;
-    Ok(Event {
-        sent_at: datetime(&e.sent_at)?,
-        received_at: datetime(&e.received_at)?,
-        id: e.id,
-        actor_id: e.actor_id,
-        r#type: e.kind,
-        detail: document(detail),
-        clock_skew: e.clock_skew,
-    })
+    rows::event(e).map_err(|e| Failure::data(OPERATION, &e))
 }
 
 fn setting(s: db::Setting) -> Result<Setting, Failure> {
-    Ok(Setting {
-        sent_at: datetime(&s.sent_at)?,
-        received_at: datetime(&s.received_at)?,
-        id: s.id,
-        actor_id: s.actor_id,
-        model: s.model,
-        effort: s.effort,
-        source: s.source,
-        clock_skew: s.clock_skew,
-    })
+    rows::setting(s).map_err(|e| Failure::data(OPERATION, &e))
 }
 
 fn links(rows: Vec<db::Link>) -> Result<Vec<Link>, Failure> {
     rows.into_iter()
-        .map(|l| {
-            Ok(Link {
-                sent_at: datetime(&l.sent_at)?,
-                received_at: datetime(&l.received_at)?,
-                id: l.id,
-                r#type: l.kind,
-                from: l.from_actor,
-                to: l.to_actor,
-                clock_skew: l.clock_skew,
-            })
-        })
+        .map(|l| rows::link(l).map_err(|e| Failure::data(OPERATION, &e)))
         .collect()
-}
-
-/// JSON の値を、答えの Document にする（数は、符号の無い整数・負の整数・小数のどれかに）。
-fn document(value: serde_json::Value) -> Document {
-    use serde_json::Value;
-    match value {
-        Value::Null => Document::Null,
-        Value::Bool(b) => Document::Bool(b),
-        Value::Number(n) => Document::Number(match (n.as_u64(), n.as_i64()) {
-            (Some(u), _) => Number::PosInt(u),
-            (None, Some(i)) => Number::NegInt(i),
-            (None, None) => Number::Float(n.as_f64().unwrap_or(f64::NAN)),
-        }),
-        Value::String(s) => Document::String(s),
-        Value::Array(items) => Document::Array(items.into_iter().map(document).collect()),
-        Value::Object(map) => {
-            Document::Object(map.into_iter().map(|(k, v)| (k, document(v))).collect())
-        }
-    }
 }

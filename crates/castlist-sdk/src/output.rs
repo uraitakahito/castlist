@@ -221,6 +221,210 @@ impl ResolveActorsOutput {
         crate::output::resolve_actors_output::Builder::default()
     }
 }
+
+/// 出来事の欄（GetActor の出来事と、PutEvent の答えで同じ形）。
+#[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct PutEventOutput {
+    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    pub id: ::std::string::String,
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+    pub r#type: ::std::string::String,
+    /// 送られた JSON の物と同じ中身（無ければ空の物）。鍵の順と字の並びは、送られた物と同じとは限らない。
+    pub detail: ::aws_smithy_types::Document,
+    /// 時刻（RFC 3339）。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 時刻（RFC 3339）。
+    pub received_at: ::aws_smithy_types::DateTime,
+    #[allow(missing_docs)] // documentation missing in model
+    pub clock_skew: bool,
+    /// 新しく足せば 201、同じ id で同じ本文なら 200。
+    pub status: i32,
+}
+impl PutEventOutput {
+    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    pub fn id(&self) -> &str {
+        use std::ops::Deref;
+        self.id.deref()
+    }
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+    pub fn r#type(&self) -> &str {
+        use std::ops::Deref;
+        self.r#type.deref()
+    }
+    /// 送られた JSON の物と同じ中身（無ければ空の物）。鍵の順と字の並びは、送られた物と同じとは限らない。
+    pub fn detail(&self) -> &::aws_smithy_types::Document {
+        &self.detail
+    }
+    /// 時刻（RFC 3339）。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 時刻（RFC 3339）。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    #[allow(missing_docs)] // documentation missing in model
+    pub fn clock_skew(&self) -> bool {
+        self.clock_skew
+    }
+    /// 新しく足せば 201、同じ id で同じ本文なら 200。
+    pub fn status(&self) -> i32 {
+        self.status
+    }
+}
+impl PutEventOutput {
+    /// Creates a new builder-style object to manufacture [`PutEventOutput`](crate::output::PutEventOutput).
+    pub fn builder() -> crate::output::put_event_output::Builder {
+        crate::output::put_event_output::Builder::default()
+    }
+}
+
+/// 線の欄（`from` が `to` を起こした・`to` が `from` の後を継いだ）。GetActor の線と、PutLink の答えで同じ形。 答えの `from`・`to` はアクターの id（PutLink の要求の `from`・`to` は付随する id の参照 `種類:値` で、castlist が引き当てた物）。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct PutLinkOutput {
+    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    pub id: ::std::string::String,
+    /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
+    pub r#type: ::std::string::String,
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub from: ::std::string::String,
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub to: ::std::string::String,
+    /// 時刻（RFC 3339）。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 時刻（RFC 3339）。
+    pub received_at: ::aws_smithy_types::DateTime,
+    #[allow(missing_docs)] // documentation missing in model
+    pub clock_skew: bool,
+    /// 新しく足せば 201、同じ id で同じ本文なら 200。
+    pub status: i32,
+}
+impl PutLinkOutput {
+    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    pub fn id(&self) -> &str {
+        use std::ops::Deref;
+        self.id.deref()
+    }
+    /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
+    pub fn r#type(&self) -> &str {
+        use std::ops::Deref;
+        self.r#type.deref()
+    }
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn from(&self) -> &str {
+        use std::ops::Deref;
+        self.from.deref()
+    }
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn to(&self) -> &str {
+        use std::ops::Deref;
+        self.to.deref()
+    }
+    /// 時刻（RFC 3339）。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 時刻（RFC 3339）。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    #[allow(missing_docs)] // documentation missing in model
+    pub fn clock_skew(&self) -> bool {
+        self.clock_skew
+    }
+    /// 新しく足せば 201、同じ id で同じ本文なら 200。
+    pub fn status(&self) -> i32 {
+        self.status
+    }
+}
+impl PutLinkOutput {
+    /// Creates a new builder-style object to manufacture [`PutLinkOutput`](crate::output::PutLinkOutput).
+    pub fn builder() -> crate::output::put_link_output::Builder {
+        crate::output::put_link_output::Builder::default()
+    }
+}
+
+/// model と effort の欄（GetActor の model と effort と、PutSetting の答えで同じ形）。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct PutSettingOutput {
+    /// 送り手の id。登録の時に頼んだ物には無い。
+    pub id: ::std::option::Option<::std::string::String>,
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub model: ::std::string::String,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub effort: ::std::string::String,
+    /// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+    pub source: ::std::string::String,
+    /// 時刻（RFC 3339）。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 時刻（RFC 3339）。
+    pub received_at: ::aws_smithy_types::DateTime,
+    #[allow(missing_docs)] // documentation missing in model
+    pub clock_skew: bool,
+    /// 新しく足せば 201、同じ id で同じ本文か、最新と同じなら 200。
+    pub status: i32,
+}
+impl PutSettingOutput {
+    /// 送り手の id。登録の時に頼んだ物には無い。
+    pub fn id(&self) -> ::std::option::Option<&str> {
+        self.id.as_deref()
+    }
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn model(&self) -> &str {
+        use std::ops::Deref;
+        self.model.deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn effort(&self) -> &str {
+        use std::ops::Deref;
+        self.effort.deref()
+    }
+    /// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+    pub fn source(&self) -> &str {
+        use std::ops::Deref;
+        self.source.deref()
+    }
+    /// 時刻（RFC 3339）。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 時刻（RFC 3339）。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    #[allow(missing_docs)] // documentation missing in model
+    pub fn clock_skew(&self) -> bool {
+        self.clock_skew
+    }
+    /// 新しく足せば 201、同じ id で同じ本文か、最新と同じなら 200。
+    pub fn status(&self) -> i32 {
+        self.status
+    }
+}
+impl PutSettingOutput {
+    /// Creates a new builder-style object to manufacture [`PutSettingOutput`](crate::output::PutSettingOutput).
+    pub fn builder() -> crate::output::put_setting_output::Builder {
+        crate::output::put_setting_output::Builder::default()
+    }
+}
 /// See [`GetHealthOutput`](crate::output::GetHealthOutput).
 pub mod get_health_output {
 
@@ -659,6 +863,391 @@ pub mod resolve_actors_output {
             Ok(crate::output::ResolveActorsOutput {
                 as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
                 results: self.results.ok_or(ConstraintViolation::MissingResults)?,
+            })
+        }
+    }
+}
+/// See [`PutEventOutput`](crate::output::PutEventOutput).
+pub mod put_event_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `id` was not provided but it is required when building `PutEventOutput`.
+        MissingId,
+        /// `actor_id` was not provided but it is required when building `PutEventOutput`.
+        MissingActorId,
+        /// `r#type` was not provided but it is required when building `PutEventOutput`.
+        MissingType,
+        /// `detail` was not provided but it is required when building `PutEventOutput`.
+        MissingDetail,
+        /// `sent_at` was not provided but it is required when building `PutEventOutput`.
+        MissingSentAt,
+        /// `received_at` was not provided but it is required when building `PutEventOutput`.
+        MissingReceivedAt,
+        /// `clock_skew` was not provided but it is required when building `PutEventOutput`.
+        MissingClockSkew,
+        /// `status` was not provided but it is required when building `PutEventOutput`.
+        MissingStatus,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingId => write!(f, "`id` was not provided but it is required when building `PutEventOutput`"),
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `PutEventOutput`"),
+                ConstraintViolation::MissingType => write!(f, "`r#type` was not provided but it is required when building `PutEventOutput`"),
+                ConstraintViolation::MissingDetail => write!(f, "`detail` was not provided but it is required when building `PutEventOutput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `PutEventOutput`"),
+                ConstraintViolation::MissingReceivedAt => write!(f, "`received_at` was not provided but it is required when building `PutEventOutput`"),
+                ConstraintViolation::MissingClockSkew => write!(f, "`clock_skew` was not provided but it is required when building `PutEventOutput`"),
+                ConstraintViolation::MissingStatus => write!(f, "`status` was not provided but it is required when building `PutEventOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::PutEventOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutEventOutput`](crate::output::PutEventOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) r#type: ::std::option::Option<::std::string::String>,
+        pub(crate) detail: ::std::option::Option<::aws_smithy_types::Document>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) clock_skew: ::std::option::Option<bool>,
+        pub(crate) status: ::std::option::Option<i32>,
+    }
+    impl Builder {
+        /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+        pub fn id(mut self, input: ::std::string::String) -> Self {
+            self.id = Some(input);
+            self
+        }
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+        pub fn r#type(mut self, input: ::std::string::String) -> Self {
+            self.r#type = Some(input);
+            self
+        }
+        /// 送られた JSON の物と同じ中身（無ければ空の物）。鍵の順と字の並びは、送られた物と同じとは限らない。
+        pub fn detail(mut self, input: ::aws_smithy_types::Document) -> Self {
+            self.detail = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn clock_skew(mut self, input: bool) -> Self {
+            self.clock_skew = Some(input);
+            self
+        }
+        /// 新しく足せば 201、同じ id で同じ本文なら 200。
+        pub fn status(mut self, input: i32) -> Self {
+            self.status = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`PutEventOutput`](crate::output::PutEventOutput).
+        ///
+        /// The builder fails to construct a [`PutEventOutput`](crate::output::PutEventOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::PutEventOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::PutEventOutput, ConstraintViolation> {
+            Ok(crate::output::PutEventOutput {
+                id: self.id.ok_or(ConstraintViolation::MissingId)?,
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                r#type: self.r#type.ok_or(ConstraintViolation::MissingType)?,
+                detail: self.detail.ok_or(ConstraintViolation::MissingDetail)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                clock_skew: self
+                    .clock_skew
+                    .ok_or(ConstraintViolation::MissingClockSkew)?,
+                status: self.status.ok_or(ConstraintViolation::MissingStatus)?,
+            })
+        }
+    }
+}
+/// See [`PutLinkOutput`](crate::output::PutLinkOutput).
+pub mod put_link_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `id` was not provided but it is required when building `PutLinkOutput`.
+        MissingId,
+        /// `r#type` was not provided but it is required when building `PutLinkOutput`.
+        MissingType,
+        /// `from` was not provided but it is required when building `PutLinkOutput`.
+        MissingFrom,
+        /// `to` was not provided but it is required when building `PutLinkOutput`.
+        MissingTo,
+        /// `sent_at` was not provided but it is required when building `PutLinkOutput`.
+        MissingSentAt,
+        /// `received_at` was not provided but it is required when building `PutLinkOutput`.
+        MissingReceivedAt,
+        /// `clock_skew` was not provided but it is required when building `PutLinkOutput`.
+        MissingClockSkew,
+        /// `status` was not provided but it is required when building `PutLinkOutput`.
+        MissingStatus,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingId => write!(f, "`id` was not provided but it is required when building `PutLinkOutput`"),
+                ConstraintViolation::MissingType => write!(f, "`r#type` was not provided but it is required when building `PutLinkOutput`"),
+                ConstraintViolation::MissingFrom => write!(f, "`from` was not provided but it is required when building `PutLinkOutput`"),
+                ConstraintViolation::MissingTo => write!(f, "`to` was not provided but it is required when building `PutLinkOutput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `PutLinkOutput`"),
+                ConstraintViolation::MissingReceivedAt => write!(f, "`received_at` was not provided but it is required when building `PutLinkOutput`"),
+                ConstraintViolation::MissingClockSkew => write!(f, "`clock_skew` was not provided but it is required when building `PutLinkOutput`"),
+                ConstraintViolation::MissingStatus => write!(f, "`status` was not provided but it is required when building `PutLinkOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::PutLinkOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutLinkOutput`](crate::output::PutLinkOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) r#type: ::std::option::Option<::std::string::String>,
+        pub(crate) from: ::std::option::Option<::std::string::String>,
+        pub(crate) to: ::std::option::Option<::std::string::String>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) clock_skew: ::std::option::Option<bool>,
+        pub(crate) status: ::std::option::Option<i32>,
+    }
+    impl Builder {
+        /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+        pub fn id(mut self, input: ::std::string::String) -> Self {
+            self.id = Some(input);
+            self
+        }
+        /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
+        pub fn r#type(mut self, input: ::std::string::String) -> Self {
+            self.r#type = Some(input);
+            self
+        }
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn from(mut self, input: ::std::string::String) -> Self {
+            self.from = Some(input);
+            self
+        }
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn to(mut self, input: ::std::string::String) -> Self {
+            self.to = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn clock_skew(mut self, input: bool) -> Self {
+            self.clock_skew = Some(input);
+            self
+        }
+        /// 新しく足せば 201、同じ id で同じ本文なら 200。
+        pub fn status(mut self, input: i32) -> Self {
+            self.status = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`PutLinkOutput`](crate::output::PutLinkOutput).
+        ///
+        /// The builder fails to construct a [`PutLinkOutput`](crate::output::PutLinkOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::PutLinkOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::PutLinkOutput, ConstraintViolation> {
+            Ok(crate::output::PutLinkOutput {
+                id: self.id.ok_or(ConstraintViolation::MissingId)?,
+                r#type: self.r#type.ok_or(ConstraintViolation::MissingType)?,
+                from: self.from.ok_or(ConstraintViolation::MissingFrom)?,
+                to: self.to.ok_or(ConstraintViolation::MissingTo)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                clock_skew: self
+                    .clock_skew
+                    .ok_or(ConstraintViolation::MissingClockSkew)?,
+                status: self.status.ok_or(ConstraintViolation::MissingStatus)?,
+            })
+        }
+    }
+}
+/// See [`PutSettingOutput`](crate::output::PutSettingOutput).
+pub mod put_setting_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `PutSettingOutput`.
+        MissingActorId,
+        /// `model` was not provided but it is required when building `PutSettingOutput`.
+        MissingModel,
+        /// `effort` was not provided but it is required when building `PutSettingOutput`.
+        MissingEffort,
+        /// `source` was not provided but it is required when building `PutSettingOutput`.
+        MissingSource,
+        /// `sent_at` was not provided but it is required when building `PutSettingOutput`.
+        MissingSentAt,
+        /// `received_at` was not provided but it is required when building `PutSettingOutput`.
+        MissingReceivedAt,
+        /// `clock_skew` was not provided but it is required when building `PutSettingOutput`.
+        MissingClockSkew,
+        /// `status` was not provided but it is required when building `PutSettingOutput`.
+        MissingStatus,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `PutSettingOutput`"),
+                ConstraintViolation::MissingModel => write!(f, "`model` was not provided but it is required when building `PutSettingOutput`"),
+                ConstraintViolation::MissingEffort => write!(f, "`effort` was not provided but it is required when building `PutSettingOutput`"),
+                ConstraintViolation::MissingSource => write!(f, "`source` was not provided but it is required when building `PutSettingOutput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `PutSettingOutput`"),
+                ConstraintViolation::MissingReceivedAt => write!(f, "`received_at` was not provided but it is required when building `PutSettingOutput`"),
+                ConstraintViolation::MissingClockSkew => write!(f, "`clock_skew` was not provided but it is required when building `PutSettingOutput`"),
+                ConstraintViolation::MissingStatus => write!(f, "`status` was not provided but it is required when building `PutSettingOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::PutSettingOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutSettingOutput`](crate::output::PutSettingOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) model: ::std::option::Option<::std::string::String>,
+        pub(crate) effort: ::std::option::Option<::std::string::String>,
+        pub(crate) source: ::std::option::Option<::std::string::String>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) clock_skew: ::std::option::Option<bool>,
+        pub(crate) status: ::std::option::Option<i32>,
+    }
+    impl Builder {
+        /// 送り手の id。登録の時に頼んだ物には無い。
+        pub fn id(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.id = input;
+            self
+        }
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn model(mut self, input: ::std::string::String) -> Self {
+            self.model = Some(input);
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn effort(mut self, input: ::std::string::String) -> Self {
+            self.effort = Some(input);
+            self
+        }
+        /// model と effort の出: 頼んだ（`requested`）・見た（`observed`）。
+        pub fn source(mut self, input: ::std::string::String) -> Self {
+            self.source = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn clock_skew(mut self, input: bool) -> Self {
+            self.clock_skew = Some(input);
+            self
+        }
+        /// 新しく足せば 201、同じ id で同じ本文か、最新と同じなら 200。
+        pub fn status(mut self, input: i32) -> Self {
+            self.status = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`PutSettingOutput`](crate::output::PutSettingOutput).
+        ///
+        /// The builder fails to construct a [`PutSettingOutput`](crate::output::PutSettingOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::PutSettingOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::PutSettingOutput, ConstraintViolation> {
+            Ok(crate::output::PutSettingOutput {
+                id: self.id,
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                model: self.model.ok_or(ConstraintViolation::MissingModel)?,
+                effort: self.effort.ok_or(ConstraintViolation::MissingEffort)?,
+                source: self.source.ok_or(ConstraintViolation::MissingSource)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                clock_skew: self
+                    .clock_skew
+                    .ok_or(ConstraintViolation::MissingClockSkew)?,
+                status: self.status.ok_or(ConstraintViolation::MissingStatus)?,
             })
         }
     }

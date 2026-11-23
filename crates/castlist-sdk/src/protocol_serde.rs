@@ -3,9 +3,17 @@ pub(crate) mod shape_get_actor;
 
 pub(crate) mod shape_get_health;
 
+pub(crate) mod shape_put_event;
+
+pub(crate) mod shape_put_link;
+
+pub(crate) mod shape_put_setting;
+
 pub(crate) mod shape_register_actor;
 
 pub(crate) mod shape_resolve_actors;
+
+pub(crate) mod shape_conflict;
 
 pub(crate) mod shape_get_actor_input;
 
@@ -24,6 +32,18 @@ pub(crate) fn or_empty_doc(data: &[u8]) -> &[u8] {
         data
     }
 }
+
+pub(crate) mod shape_put_event_input;
+
+pub(crate) mod shape_put_event_output;
+
+pub(crate) mod shape_put_link_input;
+
+pub(crate) mod shape_put_link_output;
+
+pub(crate) mod shape_put_setting_input;
+
+pub(crate) mod shape_put_setting_output;
 
 pub(crate) mod shape_register_actor_output;
 

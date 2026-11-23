@@ -153,3 +153,117 @@ impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for Res
         ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
     }
 }
+
+/// 出来事を足す。id は送り手が決める。同じ id で同じ本文（写しは docs/src/next.md の「データ」）なら、足さずに前の行を 200 で返し、 本文が違えば 409（前の行はそのまま）。同じ id かは `by` を引くより先に見る。新しく足せば 201。 `by` は出し手の中の鍵の付随する id で引き、引けなければ 400。`detail` は JSON の物（無ければ `{}`）で、ほかの形は 400。
+pub struct PutEvent;
+
+impl ::aws_smithy_http_server::operation::OperationShape for PutEvent {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#PutEvent",
+            "ai.castlist",
+            "PutEvent",
+        );
+
+    type Input = crate::input::PutEventInput;
+    type Output = crate::output::PutEventOutput;
+    type Error = crate::error::PutEventError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for PutEvent {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
+
+/// 線を足す。id は送り手が決める。同じ id の扱いは PutEvent と同じ（同じ本文は 200・違えば 409・`from` と `to` を引くより先に見る）。 `from` と `to` は出し手の中の鍵の付随する id で引き、引けなければ 400。同じアクターを指せば 400。 起こされる（`launched` の `to` になる）のは、1 つのアクターに 1 度だけ（2 度目は別の id でも 409）。
+pub struct PutLink;
+
+impl ::aws_smithy_http_server::operation::OperationShape for PutLink {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#PutLink",
+            "ai.castlist",
+            "PutLink",
+        );
+
+    type Input = crate::input::PutLinkInput;
+    type Output = crate::output::PutLinkOutput;
+    type Error = crate::error::PutLinkError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for PutLink {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
+
+/// model と effort を足す。id は送り手が決める。同じ id の扱いは PutEvent と同じ（同じ本文は 200・違えば 409・`by` を引くより先に見る）。 新しい id でも、そのアクターの最新（受けた順で。`source` は比べない）と model と effort が同じなら、足さずに最新の行を 200 で返す （その時の id は残らない。なので同じ id を後で送り直すと、その時の最新と比べ直し、間に別の設定が入っていれば新しい行として足す）。 知らない model と effort の名は、初めて来た時に一覧に足す。
+pub struct PutSetting;
+
+impl ::aws_smithy_http_server::operation::OperationShape for PutSetting {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#PutSetting",
+            "ai.castlist",
+            "PutSetting",
+        );
+
+    type Input = crate::input::PutSettingInput;
+    type Output = crate::output::PutSettingOutput;
+    type Error = crate::error::PutSettingError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for PutSetting {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}

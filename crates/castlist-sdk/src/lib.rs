@@ -178,6 +178,9 @@
 //!    let app = Castlist::builder(config)
 //!        .get_actor(get_actor)
 //!        .get_health(get_health)
+//!        .put_event(put_event)
+//!        .put_link(put_link)
+//!        .put_setting(put_setting)
 //!        .register_actor(register_actor)
 //!        .resolve_actors(resolve_actors)
 //!        .build()
@@ -202,6 +205,18 @@
 //! }
 //!
 //! async fn get_health(input: input::GetHealthInput) -> output::GetHealthOutput {
+//!     todo!()
+//! }
+//!
+//! async fn put_event(input: input::PutEventInput) -> Result<output::PutEventOutput, error::PutEventError> {
+//!     todo!()
+//! }
+//!
+//! async fn put_link(input: input::PutLinkInput) -> Result<output::PutLinkOutput, error::PutLinkError> {
+//!     todo!()
+//! }
+//!
+//! async fn put_setting(input: input::PutSettingInput) -> Result<output::PutSettingOutput, error::PutSettingError> {
 //!     todo!()
 //! }
 //!

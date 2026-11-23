@@ -93,6 +93,16 @@ impl App {
         )
     }
 
+    /// `PUT`（本文は JSON）。答えの本文は JSON に読む（読めなければ Null）。
+    pub async fn put(&self, uri: &str, body: &Value) -> (StatusCode, HeaderMap, Value) {
+        let (status, headers, body) = self.send(put(uri, body)).await;
+        (
+            status,
+            headers,
+            serde_json::from_str(&body).unwrap_or(Value::Null),
+        )
+    }
+
     /// アクターを登録し、答え（actor・created）を返す。
     pub async fn register(&self, body: &Value) -> Value {
         let (status, _, answer) = self.post("/api/actors", body).await;
@@ -122,7 +132,7 @@ impl App {
             .unwrap_or_else(|e| panic!("{sql}: {e}"))
     }
 
-    /// 出来事を 1 つ、書く接続で直に置く（出来事の道はまだ無い）。受けた時刻は castlist の今。
+    /// 出来事を 1 つ、アクターの id で書く接続に直に置く（受けた時刻を決めて置く試験のため）。受けた時刻は castlist の今。
     pub async fn event(&self, id: &str, actor: &str, kind: &str, detail: &str) {
         self.event_at(id, actor, kind, detail, &castlist_next::db::now())
             .await;
@@ -144,7 +154,7 @@ impl App {
         .unwrap_or_else(|e| panic!("出来事 {id}: {e}"));
     }
 
-    /// 線を 1 つ、書く接続で直に置く（線の道はまだ無い）。
+    /// 線を 1 つ、アクターの id で書く接続に直に置く。
     pub async fn link(&self, id: &str, kind: &str, from: &str, to: &str) {
         let now = castlist_next::db::now();
         sqlx::query(
@@ -161,7 +171,7 @@ impl App {
         .unwrap_or_else(|e| panic!("線 {id}: {e}"));
     }
 
-    /// 見た model と effort を 1 つ、書く接続で直に置く（設定の道はまだ無い）。知らない名は一覧に足す。
+    /// 見た model と effort を 1 つ、アクターの id で書く接続に直に置く。知らない名は一覧に足す。
     pub async fn observed(&self, id: &str, actor: &str, model: &str, effort: &str) {
         let now = castlist_next::db::now();
         for (table, name) in [("models", model), ("efforts", effort)] {
@@ -220,6 +230,25 @@ pub fn post(path: &str, body: &Value) -> Request<Body> {
         .unwrap()
 }
 
+pub fn put(path: &str, body: &Value) -> Request<Body> {
+    Request::put(path)
+        .header(header::HOST, "127.0.0.1:8802")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(body.to_string()))
+        .unwrap()
+}
+
+/// 1 つの値を全部読む SQL（読む接続）。
+pub async fn scalar<T>(app: &App, sql: &str) -> T
+where
+    T: for<'r> sqlx::Decode<'r, sqlx::Sqlite> + sqlx::Type<sqlx::Sqlite> + Send + Unpin,
+{
+    sqlx::query_scalar(sqlx::AssertSqlSafe(sql.to_owned()))
+        .fetch_one(app.db.read())
+        .await
+        .unwrap_or_else(|e| panic!("{sql}: {e}"))
+}
+
 /// 今から `secs` 秒ずらした時刻（RFC 3339・UTC）。
 pub fn at(secs: i64) -> String {
     (OffsetDateTime::now_utc() + Duration::seconds(secs))
@@ -247,6 +276,35 @@ pub fn human(person: &str) -> Value {
         "namePrefix": "pm",
         "labels": { "role": "pm" },
         "bindings": [{ "type": "tpm.person", "value": person }],
+        "sentAt": at(0),
+    })
+}
+
+/// `ai("se", "s-1")` の鍵。
+pub const SE1: &str = "claude.session:s-1";
+/// `ai("se", "s-2")` の鍵。
+pub const SE2: &str = "claude.session:s-2";
+/// `human("pm")` の鍵。
+pub const PM: &str = "tpm.person:pm";
+
+/// 出来事の本文（出し手は tpm・送り手の時刻は今）。
+pub fn event(by: &str, kind: &str) -> Value {
+    json!({ "issuer": "tpm", "by": by, "type": kind, "sentAt": at(0) })
+}
+
+/// 線の本文（出し手は tpm・送り手の時刻は今）。
+pub fn link(kind: &str, from: &str, to: &str) -> Value {
+    json!({ "issuer": "tpm", "type": kind, "from": from, "to": to, "sentAt": at(0) })
+}
+
+/// 見た model と effort の本文（出し手は tpm・送り手の時刻は今）。
+pub fn setting(by: &str, model: &str, effort: &str) -> Value {
+    json!({
+        "issuer": "tpm",
+        "by": by,
+        "model": model,
+        "effort": effort,
+        "source": "observed",
         "sentAt": at(0),
     })
 }

@@ -7,6 +7,7 @@ use ai.common#ActorId
 use ai.common#ActorKind
 use ai.common#ActorRef
 use ai.common#ActorSummary
+use ai.common#Conflict
 use ai.common#DateTime
 use ai.common#InternalError
 use ai.common#NotFound
@@ -20,7 +21,7 @@ use smithy.test#httpResponseTests
 @title("castlist")
 service Castlist {
     version: "1.0"
-    operations: [GetHealth, RegisterActor, GetActor, ResolveActors]
+    operations: [GetHealth, RegisterActor, GetActor, ResolveActors, PutEvent, PutLink, PutSetting]
 }
 
 /// 動いているかと、castlist の今の時刻（送り手が、自分の時計との差を測る）。
@@ -472,6 +473,323 @@ operation ResolveActors {
     ]
 }
 
+/// 出来事を足す。id は送り手が決める。同じ id で同じ本文（写しは docs/src/next.md の「データ」）なら、足さずに前の行を 200 で返し、
+/// 本文が違えば 409（前の行はそのまま）。同じ id かは `by` を引くより先に見る。新しく足せば 201。
+/// `by` は出し手の中の鍵の付随する id で引き、引けなければ 400。`detail` は JSON の物（無ければ `{}`）で、ほかの形は 400。
+@idempotent
+@http(method: "PUT", uri: "/api/events/{eventId}")
+@httpRequestTests([
+    {
+        id: "PutEventRequest"
+        documentation: "id は道に、本文は camelCase。by は鍵の付随する id"
+        protocol: restJson1
+        method: "PUT"
+        uri: "/api/events/e-1"
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"issuer":"tpm","by":"claude.session:s-1","type":"closed","detail":{"inferred":true,"reason":"workspace_gone"},"sentAt":"2026-11-24T00:00:00Z"}"""
+        bodyMediaType: "application/json"
+        params: {
+            eventId: "e-1"
+            issuer: "tpm"
+            by: "claude.session:s-1"
+            type: "closed"
+            detail: { inferred: true, reason: "workspace_gone" }
+            sentAt: 1795478400
+        }
+    }
+])
+@httpResponseTests([
+    {
+        id: "PutEventCreated"
+        documentation: "新しく足せば 201 で、足した行を返す"
+        protocol: restJson1
+        code: 201
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"id":"e-1","actorId":"019abcde-0000-7000-8000-000000000001","type":"closed","detail":{"inferred":true,"reason":"workspace_gone"},"sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false}"""
+        bodyMediaType: "application/json"
+        params: {
+            id: "e-1"
+            actorId: "019abcde-0000-7000-8000-000000000001"
+            type: "closed"
+            detail: { inferred: true, reason: "workspace_gone" }
+            sentAt: 1795478400
+            receivedAt: 1795478401
+            clockSkew: false
+            status: 201
+        }
+    }
+    {
+        id: "PutEventSame"
+        documentation: "同じ id で同じ本文なら 200 で、前の行を返す"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"id":"e-2","actorId":"019abcde-0000-7000-8000-000000000001","type":"entered","detail":{},"sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false}"""
+        bodyMediaType: "application/json"
+        params: {
+            id: "e-2"
+            actorId: "019abcde-0000-7000-8000-000000000001"
+            type: "entered"
+            detail: {}
+            sentAt: 1795478400
+            receivedAt: 1795478401
+            clockSkew: false
+            status: 200
+        }
+    }
+])
+operation PutEvent {
+    input := {
+        /// 送り手の決める id。
+        @required
+        @httpLabel
+        eventId: SenderId
+
+        /// 出し手。`by` は出し手の中で引く。
+        @required
+        issuer: Name
+
+        /// 出来事のアクター（鍵の付随する id）。
+        @required
+        by: ActorRef
+
+        @required
+        type: EventType
+
+        /// JSON の物（無ければ `{}`）。
+        /// 無い時の要求の例は書かない: smithy-rs（codegen-server 0.1.40）は、例の params に無い Document を、
+        /// 無い物（None）でなく JSON の null（Some(Null)）として比べる試験を作り、読んだ物（None）と合わずに落ちるため。
+        /// 無い時の振る舞いは、server の試験（crates/server/tests/events.rs）が見る。
+        detail: Document
+
+        /// 送り手の時刻。
+        @required
+        sentAt: DateTime
+    }
+
+    output := with [EventFields] {
+        /// 新しく足せば 201、同じ id で同じ本文なら 200。
+        @required
+        @httpResponseCode
+        status: Integer
+    }
+
+    errors: [
+        ValidationException
+        Conflict
+        Unavailable
+        InternalError
+    ]
+}
+
+/// 線を足す。id は送り手が決める。同じ id の扱いは PutEvent と同じ（同じ本文は 200・違えば 409・`from` と `to` を引くより先に見る）。
+/// `from` と `to` は出し手の中の鍵の付随する id で引き、引けなければ 400。同じアクターを指せば 400。
+/// 起こされる（`launched` の `to` になる）のは、1 つのアクターに 1 度だけ（2 度目は別の id でも 409）。
+@idempotent
+@http(method: "PUT", uri: "/api/links/{linkId}")
+@httpRequestTests([
+    {
+        id: "PutLinkRequest"
+        documentation: "id は道に、本文は camelCase。from と to は鍵の付随する id"
+        protocol: restJson1
+        method: "PUT"
+        uri: "/api/links/l-1"
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"issuer":"tpm","type":"launched","from":"tpm.person:pm","to":"claude.session:s-1","sentAt":"2026-11-24T00:00:00Z"}"""
+        bodyMediaType: "application/json"
+        params: {
+            linkId: "l-1"
+            issuer: "tpm"
+            type: "launched"
+            from: "tpm.person:pm"
+            to: "claude.session:s-1"
+            sentAt: 1795478400
+        }
+    }
+])
+@httpResponseTests([
+    {
+        id: "PutLinkCreated"
+        documentation: "新しく足せば 201 で、足した行を返す（from と to はアクターの id）"
+        protocol: restJson1
+        code: 201
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"id":"l-1","type":"launched","from":"019abcde-0000-7000-8000-000000000002","to":"019abcde-0000-7000-8000-000000000001","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false}"""
+        bodyMediaType: "application/json"
+        params: {
+            id: "l-1"
+            type: "launched"
+            from: "019abcde-0000-7000-8000-000000000002"
+            to: "019abcde-0000-7000-8000-000000000001"
+            sentAt: 1795478400
+            receivedAt: 1795478401
+            clockSkew: false
+            status: 201
+        }
+    }
+])
+operation PutLink {
+    input := {
+        /// 送り手の決める id。
+        @required
+        @httpLabel
+        linkId: SenderId
+
+        /// 出し手。`from` と `to` は出し手の中で引く。
+        @required
+        issuer: Name
+
+        @required
+        type: LinkType
+
+        /// 起こした・前のアクター（鍵の付随する id）。
+        @required
+        from: ActorRef
+
+        /// 起こされた・後を継いだアクター（鍵の付随する id）。
+        @required
+        to: ActorRef
+
+        /// 送り手の時刻。
+        @required
+        sentAt: DateTime
+    }
+
+    output := with [LinkFields] {
+        /// 新しく足せば 201、同じ id で同じ本文なら 200。
+        @required
+        @httpResponseCode
+        status: Integer
+    }
+
+    errors: [
+        ValidationException
+        Conflict
+        Unavailable
+        InternalError
+    ]
+}
+
+/// model と effort を足す。id は送り手が決める。同じ id の扱いは PutEvent と同じ（同じ本文は 200・違えば 409・`by` を引くより先に見る）。
+/// 新しい id でも、そのアクターの最新（受けた順で。`source` は比べない）と model と effort が同じなら、足さずに最新の行を 200 で返す
+/// （その時の id は残らない。なので同じ id を後で送り直すと、その時の最新と比べ直し、間に別の設定が入っていれば新しい行として足す）。
+/// 知らない model と effort の名は、初めて来た時に一覧に足す。
+@idempotent
+@http(method: "PUT", uri: "/api/settings/{settingId}")
+@httpRequestTests([
+    {
+        id: "PutSettingRequest"
+        documentation: "id は道に、本文は camelCase。by は鍵の付随する id"
+        protocol: restJson1
+        method: "PUT"
+        uri: "/api/settings/o-1"
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"issuer":"tpm","by":"claude.session:s-1","model":"claude-opus-5-5","effort":"high","source":"observed","sentAt":"2026-11-24T00:00:00Z"}"""
+        bodyMediaType: "application/json"
+        params: {
+            settingId: "o-1"
+            issuer: "tpm"
+            by: "claude.session:s-1"
+            model: "claude-opus-5-5"
+            effort: "high"
+            source: "observed"
+            sentAt: 1795478400
+        }
+    }
+])
+@httpResponseTests([
+    {
+        id: "PutSettingCreated"
+        documentation: "新しく足せば 201 で、足した行を返す"
+        protocol: restJson1
+        code: 201
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"id":"o-1","actorId":"019abcde-0000-7000-8000-000000000001","model":"claude-opus-5-5","effort":"high","source":"observed","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false}"""
+        bodyMediaType: "application/json"
+        params: {
+            id: "o-1"
+            actorId: "019abcde-0000-7000-8000-000000000001"
+            model: "claude-opus-5-5"
+            effort: "high"
+            source: "observed"
+            sentAt: 1795478400
+            receivedAt: 1795478401
+            clockSkew: false
+            status: 201
+        }
+    }
+    {
+        id: "PutSettingSameAsLatest"
+        documentation: "最新と同じなら 200 で最新の行を返す（登録の時に頼んだ物なら id が無い）"
+        protocol: restJson1
+        code: 200
+        headers: { "Content-Type": "application/json" }
+        body: """
+            {"actorId":"019abcde-0000-7000-8000-000000000001","model":"claude-opus-5-5","effort":"high","source":"requested","sentAt":"2026-11-24T00:00:00Z","receivedAt":"2026-11-24T00:00:01Z","clockSkew":false}"""
+        bodyMediaType: "application/json"
+        params: {
+            actorId: "019abcde-0000-7000-8000-000000000001"
+            model: "claude-opus-5-5"
+            effort: "high"
+            source: "requested"
+            sentAt: 1795478400
+            receivedAt: 1795478401
+            clockSkew: false
+            status: 200
+        }
+    }
+])
+operation PutSetting {
+    input := {
+        /// 送り手の決める id。
+        @required
+        @httpLabel
+        settingId: SenderId
+
+        /// 出し手。`by` は出し手の中で引く。
+        @required
+        issuer: Name
+
+        /// model と effort のアクター（鍵の付随する id）。
+        @required
+        by: ActorRef
+
+        @required
+        model: Name
+
+        @required
+        effort: Name
+
+        @required
+        source: SettingSource
+
+        /// 送り手の時刻。
+        @required
+        sentAt: DateTime
+    }
+
+    output := with [SettingFields] {
+        /// 新しく足せば 201、同じ id で同じ本文か、最新と同じなら 200。
+        @required
+        @httpResponseCode
+        status: Integer
+    }
+
+    errors: [
+        ValidationException
+        Conflict
+        Unavailable
+        InternalError
+    ]
+}
+
 /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
 @pattern("^[\\x21-\\x7E]{1,128}$")
 string SenderId
@@ -515,8 +833,12 @@ list ActorBindings {
     member: ActorBinding
 }
 
-/// 出来事 1 つ。
-structure Event {
+/// 出来事 1 つ（欄は EventFields）。
+structure Event with [EventFields] {}
+
+/// 出来事の欄（GetActor の出来事と、PutEvent の答えで同じ形）。
+@mixin
+structure EventFields {
     @required
     id: SenderId
 
@@ -544,8 +866,12 @@ list Events {
     member: Event
 }
 
-/// model と effort 1 つ。
-structure Setting {
+/// model と effort 1 つ（欄は SettingFields）。
+structure Setting with [SettingFields] {}
+
+/// model と effort の欄（GetActor の model と effort と、PutSetting の答えで同じ形）。
+@mixin
+structure SettingFields {
     /// 送り手の id。登録の時に頼んだ物には無い。
     id: SenderId
 
@@ -575,8 +901,13 @@ list Settings {
     member: Setting
 }
 
-/// 線 1 つ（`from` が `to` を起こした・`to` が `from` の後を継いだ）。
-structure Link {
+/// 線 1 つ（欄は LinkFields）。
+structure Link with [LinkFields] {}
+
+/// 線の欄（`from` が `to` を起こした・`to` が `from` の後を継いだ）。GetActor の線と、PutLink の答えで同じ形。
+/// 答えの `from`・`to` はアクターの id（PutLink の要求の `from`・`to` は付随する id の参照 `種類:値` で、castlist が引き当てた物）。
+@mixin
+structure LinkFields {
     @required
     id: SenderId
 
