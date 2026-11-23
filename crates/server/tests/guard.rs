@@ -242,3 +242,11 @@ async fn a_request_over_the_time_limit_is_answered_with_unavailable() {
     assert_eq!(status, StatusCode::CREATED, "{body}");
     assert_eq!(app.count("actors").await, 1);
 }
+
+/// 接続を待つ長さは、問い合わせの時間切れより短い。等しいと、混んでいる時に時間切れ（503 の別の訳）が先に答え、
+/// 送り手が「混んでいる」と「時間がかかりすぎた」を見分けられない（AI-36 の review-13）。
+#[test]
+fn waiting_for_a_connection_is_shorter_than_the_request_timeout() {
+    assert!(castlist_next::db::WRITE_WAIT < castlist_next::REQUEST_TIMEOUT);
+    assert!(castlist_next::db::READ_WAIT < castlist_next::REQUEST_TIMEOUT);
+}

@@ -19,6 +19,8 @@ use crate::body;
 
 /// 書く接続を待つ長さ。過ぎれば「混んでいる」で返す。
 pub const WRITE_WAIT: Duration = Duration::from_secs(2);
+/// 読む接続（軽い読み・重い読み）を待つ長さ。過ぎれば「混んでいる」で返す。
+pub const READ_WAIT: Duration = Duration::from_secs(5);
 /// 軽い読みの接続の本数。
 pub const READS: u32 = 4;
 /// 重い読み（図の点と線・タイムライン）だけが使う、読むだけの接続の本数。軽い読みの接続とは別にして、
@@ -440,13 +442,13 @@ impl Db {
         }
         let heavy = SqlitePoolOptions::new()
             .max_connections(HEAVY_READS)
-            .acquire_timeout(Duration::from_secs(5))
+            .acquire_timeout(READ_WAIT)
             .connect_with(options.clone().read_only(true))
             .await
             .map_err(OpenError::Db)?;
         let read = SqlitePoolOptions::new()
             .max_connections(READS)
-            .acquire_timeout(Duration::from_secs(5))
+            .acquire_timeout(READ_WAIT)
             .connect_with(options.read_only(true))
             .await
             .map_err(OpenError::Db)?;
