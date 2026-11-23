@@ -6,6 +6,7 @@ namespace ai.castlist
 use ai.common#ActorKind
 use ai.common#ActorSummary
 use ai.common#DateTime
+use ai.common#InternalError
 use ai.common#Unavailable
 use aws.protocols#restJson1
 use smithy.framework#ValidationException
@@ -186,6 +187,7 @@ operation RegisterActor {
     errors: [
         ValidationException
         Unavailable
+        InternalError
     ]
 }
 

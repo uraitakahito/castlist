@@ -5,6 +5,8 @@ pub(crate) mod shape_register_actor;
 
 pub(crate) mod shape_get_health_output;
 
+pub(crate) mod shape_internal_error;
+
 pub(crate) fn or_empty_doc(data: &[u8]) -> &[u8] {
     if data.is_empty() {
         b"{}"

@@ -1,7 +1,8 @@
 //! RegisterActor の振る舞い（処理より先に書く）。試験ごとに一時の DB を作り、Router を通して要求を送り、DB の行を見る。
 mod common;
 
-use axum::http::StatusCode;
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
 use common::{App, ai, at, error_type, human};
 use serde_json::{Value, json};
 
@@ -466,5 +467,52 @@ async fn a_registration_waiting_too_long_for_the_write_connection_is_503_unavail
         "{answer}"
     );
     drop(held);
+    assert_eq!(app.count("actors").await, 0);
+}
+
+/// DB の誤り（混んでいる以外）は、500 の InternalError で、決まった字を返す（中の誤りの字を外に出さない）。
+/// 503（@retryable の Unavailable）にすると、直らない誤りで送り手が送り直し続け、roster の guard が Bash を止めるため。
+#[tokio::test]
+async fn a_db_error_is_a_500_internal_error_with_a_fixed_message() {
+    let app = App::start().await;
+    // 札の表を外して、札のある登録の insert を落とす。
+    app.execute("alter table labels rename to labels_gone")
+        .await;
+    let mut body = ai("se", "s-1");
+    body["labels"] = json!({ "project": "castlist" });
+    let (status, headers, answer) = app.post("/api/actors", &body).await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR, "{answer}");
+    assert_eq!(error_type(&headers), "InternalError");
+    let message = answer["message"].as_str().unwrap_or_default();
+    assert!(
+        !message.contains("labels"),
+        "中の誤りの字が出ている: {message}"
+    );
+    assert_eq!(app.count("actors").await, 0, "transaction ごと戻る");
+}
+
+/// 本文の形が崩れた時（JSON でない・要る欄が無い）も 400 で、何も書かない。制御文字は ValidationException。
+#[tokio::test]
+async fn broken_bodies_are_400_and_write_nothing() {
+    let app = App::start().await;
+    let not_json = Request::post("/api/actors")
+        .header("host", "127.0.0.1:8802")
+        .header("content-type", "application/json")
+        .body(Body::from("JSON の物でない"))
+        .unwrap();
+    let (status, _, answer) = app.send(not_json).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{answer}");
+
+    let mut no_bindings = ai("se", "s-1");
+    no_bindings.as_object_mut().unwrap().remove("bindings");
+    let (status, _, answer) = app.post("/api/actors", &no_bindings).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{answer}");
+
+    let mut c1 = ai("se", "s-1");
+    c1["bindings"] = json!([{ "type": "claude.session", "value": "a\u{85}b" }]);
+    let (status, headers, answer) = app.post("/api/actors", &c1).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{answer}");
+    assert_eq!(error_type(&headers), "ValidationException");
+
     assert_eq!(app.count("actors").await, 0);
 }

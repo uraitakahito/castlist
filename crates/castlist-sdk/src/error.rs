@@ -8,12 +8,15 @@ pub enum RegisterActorError {
     ValidationException(crate::error::ValidationException),
     /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。
     Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
 }
 impl ::std::fmt::Display for RegisterActorError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
             RegisterActorError::ValidationException(_inner) => _inner.fmt(f),
             RegisterActorError::Unavailable(_inner) => _inner.fmt(f),
+            RegisterActorError::InternalError(_inner) => _inner.fmt(f),
         }
     }
 }
@@ -26,11 +29,16 @@ impl RegisterActorError {
     pub fn is_unavailable(&self) -> bool {
         matches!(&self, RegisterActorError::Unavailable(_))
     }
+    /// Returns `true` if the error kind is `RegisterActorError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, RegisterActorError::InternalError(_))
+    }
     /// Returns the error name string by matching the correct variant.
     pub fn name(&self) -> &'static str {
         match &self {
             RegisterActorError::ValidationException(_inner) => _inner.name(),
             RegisterActorError::Unavailable(_inner) => _inner.name(),
+            RegisterActorError::InternalError(_inner) => _inner.name(),
         }
     }
 }
@@ -39,6 +47,7 @@ impl ::std::error::Error for RegisterActorError {
         match &self {
             RegisterActorError::ValidationException(_inner) => Some(_inner),
             RegisterActorError::Unavailable(_inner) => Some(_inner),
+            RegisterActorError::InternalError(_inner) => Some(_inner),
         }
     }
 }
@@ -50,6 +59,11 @@ impl ::std::convert::From<crate::error::ValidationException> for crate::error::R
 impl ::std::convert::From<crate::error::Unavailable> for crate::error::RegisterActorError {
     fn from(variant: crate::error::Unavailable) -> crate::error::RegisterActorError {
         Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::RegisterActorError {
+    fn from(variant: crate::error::InternalError) -> crate::error::RegisterActorError {
+        Self::InternalError(variant)
     }
 }
 
@@ -134,6 +148,42 @@ impl Unavailable {
     /// Creates a new builder-style object to manufacture [`Unavailable`](crate::error::Unavailable).
     pub fn builder() -> crate::error::unavailable::Builder {
         crate::error::unavailable::Builder::default()
+    }
+}
+
+/// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct InternalError {
+    #[allow(missing_docs)] // documentation missing in model
+    pub message: ::std::string::String,
+}
+impl InternalError {
+    /// Returns the error message.
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+    #[doc(hidden)]
+    /// Returns the error name.
+    pub fn name(&self) -> &'static str {
+        "InternalError"
+    }
+}
+impl ::std::fmt::Display for InternalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        ::std::write!(f, "InternalError")?;
+        {
+            ::std::write!(f, ": {}", &self.message)?;
+        }
+        Ok(())
+    }
+}
+impl ::std::error::Error for InternalError {}
+impl InternalError {
+    /// Creates a new builder-style object to manufacture [`InternalError`](crate::error::InternalError).
+    pub fn builder() -> crate::error::internal_error::Builder {
+        crate::error::internal_error::Builder::default()
     }
 }
 /// See [`ValidationException`](crate::error::ValidationException).
@@ -249,6 +299,61 @@ pub mod unavailable {
             self,
         ) -> Result<crate::error::Unavailable, ConstraintViolation> {
             Ok(crate::error::Unavailable {
+                message: self.message.ok_or(ConstraintViolation::MissingMessage)?,
+            })
+        }
+    }
+}
+/// See [`InternalError`](crate::error::InternalError).
+pub mod internal_error {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `message` was not provided but it is required when building `InternalError`.
+        MissingMessage,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingMessage => write!(
+                    f,
+                    "`message` was not provided but it is required when building `InternalError`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::error::InternalError {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`InternalError`](crate::error::InternalError).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) message: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn message(mut self, input: ::std::string::String) -> Self {
+            self.message = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`InternalError`](crate::error::InternalError).
+        ///
+        /// The builder fails to construct a [`InternalError`](crate::error::InternalError) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::error::InternalError, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::error::InternalError, ConstraintViolation> {
+            Ok(crate::error::InternalError {
                 message: self.message.ok_or(ConstraintViolation::MissingMessage)?,
             })
         }

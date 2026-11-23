@@ -19,7 +19,7 @@ impl GetHealthInput {
 pub struct RegisterActorInput {
     /// 出し手（tpm・pagetray など）。名の番号と鍵は、出し手ごとに分かれる。
     pub issuer: ::std::string::String,
-    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字なので、直った版で enum に替えても壊す変わりにならない。
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
     pub kind: ::std::string::String,
     /// 名の接頭辞（名は `&lt;接頭辞&gt;.&lt;番号&gt;`）。
     pub name_prefix: ::std::string::String,
@@ -40,7 +40,7 @@ impl RegisterActorInput {
         use std::ops::Deref;
         self.issuer.deref()
     }
-    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字なので、直った版で enum に替えても壊す変わりにならない。
+    /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
     pub fn kind(&self) -> &str {
         use std::ops::Deref;
         self.kind.deref()
@@ -276,7 +276,7 @@ pub(crate) mod register_actor_input_internal {
             self.issuer = Some(input.into());
             self
         }
-        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字なので、直った版で enum に替えても壊す変わりにならない。
+        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
         pub(crate) fn set_kind(
             mut self,
             input: impl ::std::convert::Into<
@@ -469,7 +469,7 @@ pub mod register_actor_input {
             self.issuer = Some(input);
             self
         }
-        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字なので、直った版で enum に替えても壊す変わりにならない。
+        /// アクターの種類: `ai` か `human`。 enum にしないのは、smithy-rs（codegen-server 0.1.40）が、答えに要る enum のある操作の要求の例（`@httpRequestTests`）から、 空の字の enum を作って落ちる試験を作るため。wire の形は enum と同じ字。ただし smithy diff は、string から enum への型の替えを 壊す変わり（ERROR。ChangedShapeType）とする（2026-11-24 に確かめた）ので、enum に替えるなら v1.0.0 を出す前にする。
         pub fn kind(mut self, input: ::std::string::String) -> Self {
             self.kind = Some(input);
             self
