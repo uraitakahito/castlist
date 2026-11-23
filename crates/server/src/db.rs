@@ -29,8 +29,66 @@ pub const SKEW: time::Duration = time::Duration::minutes(5);
 const RESOLVE: &str =
     "select a.id, a.name, a.kind from bindings b join actors a on a.id = b.actor_id
      where b.issuer = ?1 and b.type = ?2 and b.value = ?3 and b.is_key = 1";
+const ACTOR: &str =
+    "select id, name, kind, issuer, sent_at, received_at, clock_skew from actors where id = ?1";
+const LABELS: &str = "select key, value from labels where actor_id = ?1 order by key";
+const BINDINGS: &str = "select issuer, type, value, is_key, sent_at, received_at from bindings
+     where actor_id = ?1 order by seq";
+const CURRENT_BINDINGS: &str = "select issuer, type, value, is_key, sent_at, received_at
+     from actor_current_bindings where actor_id = ?1 order by type";
+const EVENTS: &str =
+    "select id, actor_id, type, detail, sent_at, received_at, clock_skew from events
+     where actor_id = ?1 order by seq";
+const SETTINGS: &str = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.sent_at, s.received_at, s.clock_skew
+     from settings s join models m on m.id = s.model_id join efforts f on f.id = s.effort_id
+     where s.actor_id = ?1 order by s.seq";
+/// model と effort の最新（seq で）。
+const CURRENT_SETTINGS: &str = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.sent_at, s.received_at, s.clock_skew
+     from settings s join models m on m.id = s.model_id join efforts f on f.id = s.effort_id
+     where s.actor_id = ?1 order by s.seq desc limit 1";
+const LINKS_IN: &str =
+    "select id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links
+     where to_actor = ?1 order by seq";
+const LINKS_OUT: &str =
+    "select id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links
+     where from_actor = ?1 order by seq";
+/// 今の停止を決めた出来事（最後の居る出来事より後の、初めの退場。停止中の後の退場は数えない）が、
+/// 推しの幕引き（`closed` で `detail.inferred` が JSON の true）か。居るままなら 0。
+/// `$actor` はアクターの id の列の式（一覧と図でも同じ決まりを使う）。
+macro_rules! inferred_sql {
+    ($actor:literal) => {
+        concat!(
+            "coalesce((select e.type = 'closed' and coalesce(json_type(e.detail, '$.inferred') = 'true', 0) from events e
+             where e.actor_id = ",
+            $actor,
+            " and e.type in ('cleared', 'exited', 'closed')
+               and e.seq > coalesce((select i.seq from events i where i.actor_id = ",
+            $actor,
+            " and i.type in ('entered', 'reentered', 'forked') order by i.seq desc limit 1), 0)
+             order by e.seq limit 1), 0)"
+        )
+    };
+}
+const STATE: &str = concat!(
+    "select presence, present, ",
+    inferred_sql!("actor_state.actor_id"),
+    " as inferred, entered_at, exited_at from actor_state where actor_id = ?1"
+);
+
 /// 引き当てと見る SQL（名と SQL）。試験が `explain query plan` で、大きな表を端から読まないかを見る。
-pub const LOOKUPS: &[(&str, &str)] = &[];
+pub const LOOKUPS: &[(&str, &str)] = &[
+    ("resolve", RESOLVE),
+    ("actor", ACTOR),
+    ("labels", LABELS),
+    ("bindings", BINDINGS),
+    ("current_bindings", CURRENT_BINDINGS),
+    ("events", EVENTS),
+    ("settings", SETTINGS),
+    ("current_settings", CURRENT_SETTINGS),
+    ("links_in", LINKS_IN),
+    ("links_out", LINKS_OUT),
+    ("state", STATE),
+];
 
 /// どの表の最新の received_at より前にならないよう、表ごとの最新（seq の大きい方）を見る。
 const CLOCK: &str = "select max(t) from (
@@ -512,15 +570,67 @@ impl Db {
     /// 鍵の付随する id から、出し手の中のアクターを引く（引けなければ None）。答えは問いと同じ順。
     pub async fn resolve(
         &self,
-        _issuer: &str,
-        _refs: &[Ref],
+        issuer: &str,
+        refs: &[Ref],
     ) -> Result<Vec<Option<ActorRef>>, sqlx::Error> {
-        Err(sqlx::Error::Protocol("まだ引けない".to_owned()))
+        let mut tx = self.read.begin().await?;
+        let mut found = Vec::with_capacity(refs.len());
+        for r in refs {
+            found.push(
+                sqlx::query_as(RESOLVE)
+                    .bind(issuer)
+                    .bind(&r.kind)
+                    .bind(&r.value)
+                    .fetch_optional(&mut *tx)
+                    .await?,
+            );
+        }
+        tx.commit().await?;
+        Ok(found)
     }
 
     /// 1 つのアクターの全部（無ければ None）。1 つの読む transaction の中で、揃った写しを読む。
-    pub async fn actor(&self, _id: &str) -> Result<Option<ActorDetail>, sqlx::Error> {
-        Err(sqlx::Error::Protocol("まだ読めない".to_owned()))
+    pub async fn actor(&self, id: &str) -> Result<Option<ActorDetail>, sqlx::Error> {
+        let mut tx = self.read.begin().await?;
+        let Some(actor) = sqlx::query_as::<_, Actor>(ACTOR)
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?
+        else {
+            return Ok(None);
+        };
+        let detail = ActorDetail {
+            labels: sqlx::query_as(LABELS).bind(id).fetch_all(&mut *tx).await?,
+            bindings: sqlx::query_as(BINDINGS)
+                .bind(id)
+                .fetch_all(&mut *tx)
+                .await?,
+            current_bindings: sqlx::query_as(CURRENT_BINDINGS)
+                .bind(id)
+                .fetch_all(&mut *tx)
+                .await?,
+            events: sqlx::query_as(EVENTS).bind(id).fetch_all(&mut *tx).await?,
+            settings: sqlx::query_as(SETTINGS)
+                .bind(id)
+                .fetch_all(&mut *tx)
+                .await?,
+            current_settings: sqlx::query_as(CURRENT_SETTINGS)
+                .bind(id)
+                .fetch_optional(&mut *tx)
+                .await?,
+            links_in: sqlx::query_as(LINKS_IN)
+                .bind(id)
+                .fetch_all(&mut *tx)
+                .await?,
+            links_out: sqlx::query_as(LINKS_OUT)
+                .bind(id)
+                .fetch_all(&mut *tx)
+                .await?,
+            state: sqlx::query_as(STATE).bind(id).fetch_one(&mut *tx).await?,
+            actor,
+        };
+        tx.commit().await?;
+        Ok(Some(detail))
     }
 }
 
