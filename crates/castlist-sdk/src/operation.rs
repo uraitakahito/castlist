@@ -691,7 +691,7 @@ mod get_actor_test {
         );
     }
 
-    /// 欄の名は camelCase。出来事の detail は送られた JSON の物のまま
+    /// 欄の名は camelCase。出来事の detail は送られた JSON の物と同じ中身（鍵の順は決まらない）
     /// Test ID: GetActorResponse
     #[::tokio::test]
     #[::tracing_test::traced_test]

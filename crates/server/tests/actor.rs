@@ -482,3 +482,25 @@ async fn waiting_too_long_for_a_read_connection_is_503_unavailable() {
     drop(held);
     app.actor(&se1).await;
 }
+
+/// 今の DB から移した行には、時差の付いた送り手の時刻（`+09:00`）が残る。読む所は UTC に直して返す（next.md の「データ」）。
+/// 読めずに 500 になると、そのアクターの GetActor が全部読めなくなるので、ここで止める。
+#[tokio::test]
+async fn a_stored_time_with_an_offset_is_read_as_utc() {
+    let app = App::start().await;
+    let actor = app.register(&ai("se", "s-1")).await;
+    let id = actor["actor"]["id"].as_str().unwrap().to_owned();
+    app.event_at(
+        "e-offset",
+        &id,
+        "entered",
+        "{}",
+        "2026-01-02T03:04:05.678+09:00",
+    )
+    .await;
+    let (status, _, detail) = app.get(&format!("/api/actors/{id}")).await;
+    assert_eq!(status, StatusCode::OK, "{detail}");
+    let event = &detail["events"][0];
+    assert_eq!(event["sentAt"], "2026-01-01T18:04:05.678Z", "{event}");
+    assert_eq!(event["receivedAt"], "2026-01-01T18:04:05.678Z", "{event}");
+}

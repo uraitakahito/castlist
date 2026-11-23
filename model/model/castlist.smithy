@@ -238,7 +238,7 @@ structure RequestedSettings {
 }
 
 /// 1 つのアクターの全部（札・付随する id・出来事・model と effort・線・今の状態）。1 つの読む transaction の中で、揃った写しを読む。
-/// 札は鍵の順、ほかの並びは受けた順（seq）。`currentBindings` は種類ごとの最新を種類の順に、`currentSettings` は最新の 1 つ（無ければ無い）。
+/// 札は map（JSON の鍵の順は決まらない。並べる時は client の側で）、ほかの並びは受けた順（seq）。`currentBindings` は種類ごとの最新を種類の順に、`currentSettings` は最新の 1 つ（無ければ無い）。
 @readonly
 @http(method: "GET", uri: "/api/actors/{actorId}")
 @httpRequestTests([
@@ -254,7 +254,7 @@ structure RequestedSettings {
 @httpResponseTests([
     {
         id: "GetActorResponse"
-        documentation: "欄の名は camelCase。出来事の detail は送られた JSON の物のまま"
+        documentation: "欄の名は camelCase。出来事の detail は送られた JSON の物と同じ中身（鍵の順は決まらない）"
         protocol: restJson1
         code: 200
         headers: { "Content-Type": "application/json" }
@@ -526,7 +526,7 @@ structure Event {
     @required
     type: EventType
 
-    /// 送られた JSON の物（無ければ空の物）。
+    /// 送られた JSON の物と同じ中身（無ければ空の物）。鍵の順と字の並びは、送られた物と同じとは限らない。
     @required
     detail: Document
 

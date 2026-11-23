@@ -907,7 +907,7 @@ pub struct Event {
     pub actor_id: ::std::string::String,
     /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
     pub r#type: ::std::string::String,
-    /// 送られた JSON の物（無ければ空の物）。
+    /// 送られた JSON の物と同じ中身（無ければ空の物）。鍵の順と字の並びは、送られた物と同じとは限らない。
     pub detail: ::aws_smithy_types::Document,
     /// 時刻（RFC 3339）。
     pub sent_at: ::aws_smithy_types::DateTime,
@@ -932,7 +932,7 @@ impl Event {
         use std::ops::Deref;
         self.r#type.deref()
     }
-    /// 送られた JSON の物（無ければ空の物）。
+    /// 送られた JSON の物と同じ中身（無ければ空の物）。鍵の順と字の並びは、送られた物と同じとは限らない。
     pub fn detail(&self) -> &::aws_smithy_types::Document {
         &self.detail
     }
@@ -2825,7 +2825,7 @@ pub mod event {
             self.r#type = Some(input);
             self
         }
-        /// 送られた JSON の物（無ければ空の物）。
+        /// 送られた JSON の物と同じ中身（無ければ空の物）。鍵の順と字の並びは、送られた物と同じとは限らない。
         pub fn detail(mut self, input: ::aws_smithy_types::Document) -> Self {
             self.detail = Some(input);
             self
