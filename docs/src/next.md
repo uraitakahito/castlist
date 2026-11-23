@@ -11,7 +11,7 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 | 道の頭 | API は `/api/` の下（画面の `/actors/{id}` などと重ならないように）。`/healthz` だけは外 |
 | protocol | `aws.protocols#restJson1`。誤りの種類は header `X-Amzn-Errortype` と本文の `message` |
 | 欄の名 | camelCase（`sentAt`・`receivedAt`・`clockSkew`・`asOf`・`actorId`・`namePrefix`） |
-| 時刻 | RFC 3339 の UTC（末尾 `Z`。`ai.common#DateTime`）。Smithy の `date-time` は時差の付いた時刻（`+09:00`）を受けず、400 `SerializationException` で断る。送り手の時刻（`sentAt`）は UTC に直して残す（今の server は字のまま残していた）。答えの `receivedAt` は UTC・ミリ秒まで |
+| 時刻 | RFC 3339 の UTC（末尾 `Z`。`ai.common#DateTime`）。Smithy の `date-time` は時差の付いた時刻（`+09:00`）を受けず、400 `SerializationException` で断る。送り手の時刻（`sentAt`）は UTC に直して残す（今の server は字のまま残していた）。答えの `receivedAt` は UTC・ミリ秒まで。答えの時刻はマイクロ秒まで（Smithy の `date-time` の書き方。残す字は切らない）|
 | 誤り | 定義に書いた型だけ: 400 `ValidationException`（欄の path と訳）・404 `NotFound`・409 `Conflict`・500 `InternalError`（server の中の失敗。訳は記録に書き、答えは決まった字。送り直しても直らないので `@retryable` は付けない）・503 `Unavailable`（混んでいる・時間切れ。`@retryable`）。知らない道は生成した層が 404 `UnknownOperationException`（道は在るが method の違う物は 405）。守りの層が断る 403 `Forbidden`・413 `PayloadTooLarge`・503 `Unavailable`（時間切れ）は、service の `errors` に置き、どの操作の誤りにも入る（下の「守りの層」） |
 | 書いて足す操作 | 呼ぶ側が id を決める物は `put`（`PUT /api/events/{eventId}` など。`@idempotent`。同じ id・同じ本文は 200、新しく足せば 201、同じ id で本文が違えば 409）。状態の数は `@httpResponseCode` で返し、本文は足した行（同じなら前の行）を GetActor の中の物と同じ形で返す。同じ id かは、本文のアクターを引くより先に見る（引けないアクターでも、同じ id なら 409） |
 | 引けないアクター | 本文の `by`・`from`・`to` が出し手の中の鍵で引けない時と、線の `from` と `to` が同じアクターの時は、400 `ValidationException`（訳は `message`。今の server は 422） |

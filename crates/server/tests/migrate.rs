@@ -411,7 +411,14 @@ fn norm(v: &Value) -> Value {
         }
         Value::Array(items) => Value::Array(items.iter().map(norm).collect()),
         Value::String(s) => match OffsetDateTime::parse(s, &Rfc3339) {
-            Ok(t) => Value::String(t.to_offset(UtcOffset::UTC).format(&Rfc3339).unwrap()),
+            // 新しい API は時刻をマイクロ秒まで返す（Smithy の date-time の書き方）。残す字はそのままなので、比べる時はマイクロ秒に切る。
+            Ok(t) => {
+                let t = t.to_offset(UtcOffset::UTC);
+                let t = t
+                    .replace_nanosecond(t.nanosecond() / 1000 * 1000)
+                    .unwrap_or(t);
+                Value::String(t.format(&Rfc3339).unwrap())
+            }
             Err(_) => v.clone(),
         },
         _ => v.clone(),
