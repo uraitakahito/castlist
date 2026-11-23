@@ -17,6 +17,7 @@ image は public で、だれでも取って中を見られる。**出すのは 
   1. **volume は新しい物（`castlist-data-v1`）にする。新しい server を、今の volume（`castlist-data`）で起こさない。** 今の DB は新しい server の形でない（新しい server は、今の server の移行を当てた DB を、何も書かずに断って止まる）。今の volume は、戻す時のために、そのまま残す。
   2. 先にデータを移す: 今の server の `GET /v1/backup` で写しを取り、新しい volume に置いて、同じ rc の image に `migrate --from <写し> --to /data/castlist.db` を付けて起こす（[新しい API の形](next.md) の「データ」。表ごとの突き合わせが 1 つでも合わなければ、何も足さずに 1 で終わる）。写しは `-wal`・`-shm` の無い 1 つの file で渡す。
   3. 移し終えてから、新しい volume で rc の image を起こす。
+- **段 8 までに今の server を直して出す時**: 版は workspace で 1 つ（`Cargo.toml` の `[workspace.package]`）なので、main の版は rc のまま。今の server の直しを出すには、版を `0.4.<n>` にして `CHANGELOG.md` に節を足す PR を merge し、`v0.4.<n>` を打つ（`-rc.` の無い tag は今の `Containerfile` で作る）。次の rc は、また版を上げて打つ。
 - **機微な物が出てしまった時**: GitHub の package の画面で、その版を消す。秘密なら、すぐ替える（消しても、pull した人の手元には残る前提で動く）。直して次の版を出し、`ci/` の決まりに、同じ物を止める形を足す。
 - **置いた時から public**: この repo は public で、image に repo を指す label を付けて置くので、package は初めの release から、だれでも pull できる（pagetray の v0.2.0 で確かめた。private の間に人が見る、という段は無い）。人が見られるのは、tag を打つ前だけ。だから、3 の確かめを push の前に置いてあり、決まりを緩める PR（`ci/` の file・`.dockerignore`・`Containerfile`）は、よく見てから merge する。
 

@@ -2,6 +2,15 @@
 
 版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/v1/`）と DB の移行（`migrations/`）が変わったかを書く。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
 
+## 1.0.0-rc.1
+
+AI-36 の作り直しの初めの候補（pre-release）。この版の image は、新しい server（`crates/server`。Smithy の定義 `model/` から作った骨の上に処理を入れた物）を `Containerfile.next` で作った物で、今の server（0.4.0）とは別の物。動いている castlist（`castlist.box`）は替えない。切り替え（AI-36 の段 8）までは、試しと予行にだけ使う。
+
+- **API がみな替わった**（今の server との互換は無い。Product Manager の決め: AI-36）: 道は `/api/…`（`/healthz` だけは外）、protocol は restJson1、欄の名は camelCase、誤りは定義に書いた型（`X-Amzn-Errortype` と `{"message":…}`）、ページ送りは `nextToken`・`maxResults`、時刻は UTC だけ。形は [新しい API の形](https://uraitakahito.github.io/castlist/next.html)（`docs/src/next.md`）。
+- **DB の移行の SQL が替わった**: 新しい server は、新しい migrations（`crates/server/migrations/`）で新しい DB を作る。**今の volume（`castlist-data`）では起こさない**（新しい server は今の server の DB を開かずに止める）。今のデータは、今の server の `GET /v1/backup` の写しから `castlist-next migrate --from … --to …` で新しい volume に移す（id・順・時刻の字・本文の写しを守り、数と中身の digest と外のキーを照らす）。手順は [release を出す](https://uraitakahito.github.io/castlist/release.html) の「rc を動かす時と切り替え」。
+- 画面（一覧・プロフィール・タイムライン・相関図）は今と同じ。相関図は `/api/graph` を読む。
+- image の中身・環境変数・port は今と同じ（binary は `/castlist-server`）。起こし方は、volume のほかは今と同じ（volume は新しい物にする）。
+
 ## 0.4.0
 
 落ちた session の終わりを、送り手（tpm）が推して後から送る「推しの幕引き」を描き分ける（t-3ec4。PM の答え: 案 B）。API（`/v1/`）は答えに欄を 1 つ足しただけで、移行の SQL は替わらない（0.3.0 と同じ volume で起き、0.3.0 へもそのまま戻せる）。起こし方・環境変数・image の中身も変わらない。
