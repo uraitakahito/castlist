@@ -878,7 +878,7 @@ fn lost_reason(reason: Option<&str>) -> &'static str {
     match reason {
         Some("workspace_gone") => "居場所が消えた",
         Some("superseded") => "居場所に別の session が入った",
-        _ => "tpm が落ちたと推した",
+        _ => "roster が落ちたと推した",
     }
 }
 
