@@ -8,10 +8,13 @@ use std::fmt;
 use std::path::Path;
 use std::time::Duration;
 
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
+use serde_json::json;
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteRow};
 use sqlx::{FromRow, Sqlite, SqlitePool, Transaction};
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
+
+use crate::body;
 
 /// 書く接続を待つ長さ。過ぎれば「混んでいる」で返す。
 pub const WRITE_WAIT: Duration = Duration::from_secs(2);
@@ -75,6 +78,20 @@ const STATE: &str = concat!(
     " as inferred, entered_at, exited_at from actor_state where actor_id = ?1"
 );
 
+/// 送り手の id で、足した行を引く（答えの形）と、その本文の写しを引く。
+const EVENT: &str =
+    "select id, actor_id, type, detail, sent_at, received_at, clock_skew from events where id = ?1";
+const EVENT_HASH: &str = "select body_hash from events where id = ?1";
+const LINK: &str = "select id, type, from_actor, to_actor, sent_at, received_at, clock_skew from links where id = ?1";
+const LINK_HASH: &str = "select body_hash from links where id = ?1";
+const SETTING: &str = "select s.id, s.actor_id, m.name as model, f.name as effort, s.source, s.sent_at, s.received_at, s.clock_skew
+     from settings s join models m on m.id = s.model_id join efforts f on f.id = s.effort_id
+     where s.id = ?1";
+const SETTING_HASH: &str = "select body_hash from settings where id = ?1";
+/// そのアクターの最新（seq で）の model と effort の番号。
+const LATEST_SETTING: &str =
+    "select model_id, effort_id from settings where actor_id = ?1 order by seq desc limit 1";
+
 /// 引き当てと見る SQL（名と SQL）。試験が `explain query plan` で、大きな表を端から読まないかを見る。
 pub const LOOKUPS: &[(&str, &str)] = &[
     ("resolve", RESOLVE),
@@ -88,6 +105,13 @@ pub const LOOKUPS: &[(&str, &str)] = &[
     ("links_in", LINKS_IN),
     ("links_out", LINKS_OUT),
     ("state", STATE),
+    ("event", EVENT),
+    ("event_hash", EVENT_HASH),
+    ("link", LINK),
+    ("link_hash", LINK_HASH),
+    ("setting", SETTING),
+    ("setting_hash", SETTING_HASH),
+    ("latest_setting", LATEST_SETTING),
 ];
 
 /// どの表の最新の received_at より前にならないよう、表ごとの最新（seq の大きい方）を見る。
@@ -595,12 +619,10 @@ impl Db {
         if let Some((model, effort)) = new.settings {
             let model_id = master(&mut tx, Master::Models, model, &received).await?;
             let effort_id = master(&mut tx, Master::Efforts, effort, &received).await?;
-            let latest: Option<(i64, i64)> = sqlx::query_as(
-                "select model_id, effort_id from settings where actor_id = ?1 order by seq desc limit 1",
-            )
-            .bind(&actor.id)
-            .fetch_optional(&mut *tx)
-            .await?;
+            let latest: Option<(i64, i64)> = sqlx::query_as(LATEST_SETTING)
+                .bind(&actor.id)
+                .fetch_optional(&mut *tx)
+                .await?;
             if latest != Some((model_id, effort_id)) {
                 sqlx::query(
                     "insert into settings(actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew)
@@ -623,34 +645,204 @@ impl Db {
 
 // --- 送り手の id で足す ---
 
+/// 同じ id の行の、本文の写し（行が無ければ None。写しの無い行は Some(None)）。
+async fn stored_hash(
+    tx: &mut Transaction<'_, Sqlite>,
+    sql: &'static str,
+    id: &str,
+) -> Result<Option<Option<String>>, sqlx::Error> {
+    sqlx::query_scalar(sql)
+        .bind(id)
+        .fetch_optional(&mut **tx)
+        .await
+}
+
+/// 同じ id の行が既にある時: 本文の写しが同じなら Same（その行を返す）、違えば Conflict（行はそのまま）。
+async fn same_or_conflict<T>(
+    mut tx: Transaction<'_, Sqlite>,
+    stored: Option<String>,
+    sent: &str,
+    select: &'static str,
+    id: &str,
+    what: &str,
+) -> Result<Put<T>, WriteError>
+where
+    T: for<'r> FromRow<'r, SqliteRow> + Send + Unpin,
+{
+    if stored.as_deref() != Some(sent) {
+        return Err(WriteError::Conflict(format!(
+            "同じ id（{id}）の{what}が、違う中身で既にある"
+        )));
+    }
+    let row = sqlx::query_as(select).bind(id).fetch_one(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(Put::Same(row))
+}
+
+/// 出し手の中の鍵の付随する id で、アクターを引く。引けなければ中身の誤り（`field` は本文の欄の名）。
+async fn must_resolve(
+    tx: &mut Transaction<'_, Sqlite>,
+    issuer: &str,
+    r: &Ref,
+    field: &str,
+) -> Result<ActorRef, WriteError> {
+    sqlx::query_as(RESOLVE)
+        .bind(issuer)
+        .bind(&r.kind)
+        .bind(&r.value)
+        .fetch_optional(&mut **tx)
+        .await?
+        .ok_or_else(|| {
+            WriteError::Invalid(format!(
+                "{field} のアクター（{r}）が、出し手 {issuer} の鍵の付随する id に無い"
+            ))
+        })
+}
+
 impl Db {
-    /// 出来事を足す。同じ id で同じ本文なら Same、違えば Conflict。
-    pub async fn put_event(
-        &self,
-        _id: &str,
-        _new: &NewEvent<'_>,
-    ) -> Result<Put<Event>, WriteError> {
-        Err(WriteError::Db(sqlx::Error::Protocol(
-            "まだ書けない".to_owned(),
-        )))
+    /// 出来事を足す。同じ id で同じ本文なら Same、違えば Conflict（by を引くより先に見る）。
+    pub async fn put_event(&self, id: &str, new: &NewEvent<'_>) -> Result<Put<Event>, WriteError> {
+        let sent_at = sent_text(new.sent_at)?;
+        let detail = body::canonical(new.detail);
+        let hash = body::hash(&json!({
+            "issuer": new.issuer,
+            "by": new.by.to_string(),
+            "type": new.kind,
+            "detail": new.detail,
+            "sentAt": sent_at,
+        }));
+        let mut tx = self.write.begin().await?;
+        if let Some(stored) = stored_hash(&mut tx, EVENT_HASH, id).await? {
+            return same_or_conflict(tx, stored, &hash, EVENT, id, "出来事").await;
+        }
+        let actor = must_resolve(&mut tx, new.issuer, new.by, "by").await?;
+        let received = received_at(&mut tx).await?;
+        sqlx::query(
+            "insert into events(id, actor_id, type, detail, sent_at, received_at, clock_skew, body_hash)
+             values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        )
+        .bind(id)
+        .bind(&actor.id)
+        .bind(new.kind)
+        .bind(&detail)
+        .bind(&sent_at)
+        .bind(&received)
+        .bind(skewed(new.sent_at, &received))
+        .bind(&hash)
+        .execute(&mut *tx)
+        .await?;
+        let event = sqlx::query_as(EVENT).bind(id).fetch_one(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(Put::Created(event))
     }
 
-    /// 線を足す。起こされる（launched）のは、1 つのアクターに 1 度だけ。
-    pub async fn put_link(&self, _id: &str, _new: &NewLink<'_>) -> Result<Put<Link>, WriteError> {
-        Err(WriteError::Db(sqlx::Error::Protocol(
-            "まだ書けない".to_owned(),
-        )))
+    /// 線を足す。同じ id の扱いは出来事と同じ。from と to が同じアクターなら中身の誤り（同じ id かを見た後）。
+    /// 起こされる（launched）のは、1 つのアクターに 1 度だけ（2 度目は Conflict）。
+    pub async fn put_link(&self, id: &str, new: &NewLink<'_>) -> Result<Put<Link>, WriteError> {
+        let sent_at = sent_text(new.sent_at)?;
+        let hash = body::hash(&json!({
+            "issuer": new.issuer,
+            "type": new.kind,
+            "from": new.from.to_string(),
+            "to": new.to.to_string(),
+            "sentAt": sent_at,
+        }));
+        let mut tx = self.write.begin().await?;
+        if let Some(stored) = stored_hash(&mut tx, LINK_HASH, id).await? {
+            return same_or_conflict(tx, stored, &hash, LINK, id, "線").await;
+        }
+        let from = must_resolve(&mut tx, new.issuer, new.from, "from").await?;
+        let to = must_resolve(&mut tx, new.issuer, new.to, "to").await?;
+        if from.id == to.id {
+            return Err(WriteError::Invalid(format!(
+                "from と to が同じアクター（{}）",
+                from.name
+            )));
+        }
+        let received = received_at(&mut tx).await?;
+        let inserted = sqlx::query(
+            "insert into links(id, type, from_actor, to_actor, sent_at, received_at, clock_skew, body_hash)
+             values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        )
+        .bind(id)
+        .bind(new.kind)
+        .bind(&from.id)
+        .bind(&to.id)
+        .bind(&sent_at)
+        .bind(&received)
+        .bind(skewed(new.sent_at, &received))
+        .bind(&hash)
+        .execute(&mut *tx)
+        .await;
+        match inserted {
+            // id は上で見たので、重なるのは「起こされるのは 1 度だけ」の索引（links_launched）。
+            Err(sqlx::Error::Database(e)) if e.is_unique_violation() => {
+                return Err(WriteError::Conflict(format!(
+                    "{} は、もう別の線で起こされている",
+                    to.name
+                )));
+            }
+            other => other?,
+        };
+        let link = sqlx::query_as(LINK).bind(id).fetch_one(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(Put::Created(link))
     }
 
-    /// model と effort を足す。同じ id で同じ本文か、そのアクターの最新と同じなら、足さずに Same。
+    /// model と effort を足す。同じ id の扱いは出来事と同じ。新しい id でも、そのアクターの最新（seq で。source は比べない）と
+    /// model と effort が同じなら、足さずに最新の行を Same で返す（その id は残らない）。知らない名は一覧に足す。
     pub async fn put_setting(
         &self,
-        _id: &str,
-        _new: &NewSetting<'_>,
+        id: &str,
+        new: &NewSetting<'_>,
     ) -> Result<Put<Setting>, WriteError> {
-        Err(WriteError::Db(sqlx::Error::Protocol(
-            "まだ書けない".to_owned(),
-        )))
+        let sent_at = sent_text(new.sent_at)?;
+        let hash = body::hash(&json!({
+            "issuer": new.issuer,
+            "by": new.by.to_string(),
+            "model": new.model,
+            "effort": new.effort,
+            "source": new.source,
+            "sentAt": sent_at,
+        }));
+        let mut tx = self.write.begin().await?;
+        if let Some(stored) = stored_hash(&mut tx, SETTING_HASH, id).await? {
+            return same_or_conflict(tx, stored, &hash, SETTING, id, "model と effort").await;
+        }
+        let actor = must_resolve(&mut tx, new.issuer, new.by, "by").await?;
+        let received = received_at(&mut tx).await?;
+        let model_id = master(&mut tx, Master::Models, new.model, &received).await?;
+        let effort_id = master(&mut tx, Master::Efforts, new.effort, &received).await?;
+        let latest: Option<(i64, i64)> = sqlx::query_as(LATEST_SETTING)
+            .bind(&actor.id)
+            .fetch_optional(&mut *tx)
+            .await?;
+        if latest == Some((model_id, effort_id)) {
+            let latest = sqlx::query_as(CURRENT_SETTINGS)
+                .bind(&actor.id)
+                .fetch_one(&mut *tx)
+                .await?;
+            tx.commit().await?;
+            return Ok(Put::Same(latest));
+        }
+        sqlx::query(
+            "insert into settings(id, actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew, body_hash)
+             values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        )
+        .bind(id)
+        .bind(&actor.id)
+        .bind(model_id)
+        .bind(effort_id)
+        .bind(new.source)
+        .bind(&sent_at)
+        .bind(&received)
+        .bind(skewed(new.sent_at, &received))
+        .bind(&hash)
+        .execute(&mut *tx)
+        .await?;
+        let setting = sqlx::query_as(SETTING).bind(id).fetch_one(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(Put::Created(setting))
     }
 }
 
