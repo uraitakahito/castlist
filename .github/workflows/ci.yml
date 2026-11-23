@@ -24,6 +24,8 @@ jobs:
       # 塞ぐ呼び出し（clippy.toml の disallowed-methods）と、鍵を握ったままの await も、ここで落ちる。
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
+      # 定義の例（@httpRequestTests・@httpResponseTests）から作った、生成した骨の中の試験（protocol の試験）。
+      - run: cargo test --locked -p castlist_sdk
       # 台帳は足すだけ: Rust の source に、行を書き替える・消す SQL が無いか。
       - run: ci/check-sql.sh
       # 見張りが、そういう SQL を本当に当てるか（当てなければ落とす）。
@@ -57,6 +59,8 @@ jobs:
         with:
           # 定義を release の tag と比べるため、tag も取る。
           fetch-depth: 0
+      # 生成器が作った crate に流す cargo fmt を、rust-toolchain.toml の版にする。
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
       # 定義（model/）から作った骨（crates/castlist-sdk/）が、入れてある物と同じか。
       # Smithy の CLI は版と digest を固めて取る（JRE を同梱しているので Java は要らない）。生成器は公開から 2 日たった物だけ。
       - run: ci/gen.sh --check

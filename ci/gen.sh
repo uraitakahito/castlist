@@ -2,21 +2,24 @@
 # 定義（model/）から、server の骨（crates/castlist-sdk/）を作り直す。生成した物は repo に入れ、手で直さない。
 #   ci/gen.sh           作り直して crates/castlist-sdk/ を置き換える
 #   ci/gen.sh --check   作り直した物と、入れてある物が同じかを見る（CI が流す）。違えば exit 1
-#   ci/gen.sh --diff    定義を、定義の入った最新の release の tag（v*）と比べ、壊す変わり（DANGER 以上）があれば exit 1（CI が流す）。
-#                       定義の入った tag がまだ無ければ、比べずに通す
-# 要る物: curl・unzip・shasum か sha256sum。Smithy の CLI は JRE を同梱しているので、Java は要らない。
-# 生成器の版は model/smithy-build.json に書く。公開から 2 日たっていない Maven の物は使わない（crate と pnpm と同じ決まり）。
+#   ci/gen.sh --diff    定義を、定義の入った最新の release の tag（v*。rc は除く）と比べ、壊す変わり（DANGER 以上）があれば exit 1（CI が流す）。
+#                       定義の入った tag がまだ無ければ、比べずに通す。rc の間は、まだ誰も使っていない形なので比べない
+# 要る物: curl・unzip・shasum か sha256sum・rustfmt（rustup。rust-toolchain.toml の版）。Smithy の CLI は JRE を同梱しているので、Java は要らない。
+# 生成器の版は model/smithy-build.json に書く。そこに名指した Maven の物は、公開から 2 日たっていなければ使わない
+# （crate と pnpm の待ちに合わせた物。名指した物だけを見て、それが引く物は見ない）。
+# 作るのは repo の中（model/build。git は無視）。字の並びは rust-toolchain.toml の版の rustfmt で整える（下の 4）。
 # macOS の bash（3.2）でも動く書き方にする。
 set -euo pipefail
 
-SMITHY_VERSION=1.75.0
-# release の digest（https://github.com/smithy-lang/smithy/releases/tag/1.75.0）。版を上げる時は一緒に替える。
+SMITHY_VERSION=1.74.1
+# release の digest（https://github.com/smithy-lang/smithy/releases/tag/1.74.1）。
+# 版は model/smithy-build.json の trait の package（smithy-aws-traits など）と同じにする。上げる時は 2 か所と digest を一緒に替える。
 sha_for() {
   case "$1" in
-    darwin-aarch64) echo c6d32931b8eaf5e93c159c870387b4e6d8c97363c8c6bb09061291c93cdc9181 ;;
-    darwin-x86_64) echo a89ca22c941f92476fef804ac54e4d3886204da1f0554a18abd8c66073b7519e ;;
-    linux-aarch64) echo 8561f72386464ac8cfb0ccd3e864a59199e134f26d8ebf6bd264eebe1aa58098 ;;
-    linux-x86_64) echo c8d448426061586a0afb93830151838cb92a73e45d9d3733c3367ca905eb32c1 ;;
+    darwin-aarch64) echo ebb5e931936aa503055b4620c4981319f2b060656482553ada0151235ff0f1ac ;;
+    darwin-x86_64) echo 06b5fa6660fd3ab0281511af1d04f3128e10fa6220c552bc2b94ff18d660886d ;;
+    linux-aarch64) echo c563b5387c66fe04b8c459178dfcc08316798bc107c03fd92474dd8a0c028850 ;;
+    linux-x86_64) echo 6b50c0b9f2443400bb7115b9badb54b3609816ec5fb4f625954eadd2f6b2f52a ;;
     *) return 1 ;;
   esac
 }
@@ -80,7 +83,7 @@ done
 # 3. 壊す変わりを見る（--diff）。
 if $diff_mode; then
   base=""
-  for tag in $(git -C "$root" tag --list 'v*' --sort=-version:refname); do
+  for tag in $(git -C "$root" tag --list 'v*' --sort=-version:refname | grep -v -- '-rc\.'); do
     if git -C "$root" cat-file -e "$tag:model/smithy-build.json" 2>/dev/null; then
       base=$tag
       break
@@ -95,17 +98,23 @@ if $diff_mode; then
   exit 0
 fi
 
-# 4. 作る。
-work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
-cp -R "$root/model/." "$work/"
-rm -rf "$work/build"
-(cd "$work" && "$smithy" build --quiet >"$work/build.log" 2>&1) || {
-  cat "$work/build.log" >&2
+# 4. 作る（repo の中の model/build で。git は無視する）。
+build="$root/model/build"
+rm -rf "$build"
+log="$build.log"
+(cd "$root/model" && "$smithy" build --quiet >"$log" 2>&1) || {
+  cat "$log" >&2
+  rm -f "$log"
   ng "smithy build が落ちた"
 }
-made="$work/build/smithy/source/rust-server-codegen"
+rm -f "$log"
+made="$build/smithy/source/rust-server-codegen"
 [ -f "$made/Cargo.toml" ] || ng "server の骨が作られていない"
+# 字の並びを整える。生成器も cargo fmt を流すが、作る folder が workspace の外の扱いになって落ちる（warning で続く）ので、
+# ここで rustfmt を直に流す。repo の中で打つので、rust-toolchain.toml の版の rustfmt が使われる。
+(cd "$root" && find "$made" -name '*.rs' -print0 | xargs -0 rustfmt --edition 2021) || ng "rustfmt が落ちた"
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
 
 if $check; then
   if ! diff -r "$made" "$out" >"$work/diff.txt"; then

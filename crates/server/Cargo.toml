@@ -15,7 +15,6 @@ aws-smithy-types = "1.9.4"
 bytes = "1"
 http-body = "1"
 http-body-util = "0.1"
-time = { version = "0.3", features = ["formatting"] }
 tower = { version = "0.5", features = ["util"] }
 
 [dev-dependencies]

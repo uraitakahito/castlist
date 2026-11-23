@@ -10,6 +10,7 @@ Rust は `rustup` で入れる（Homebrew の `rust` は `rust-toolchain.toml` �
 cargo fmt --all --check
 cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
+cargo test --locked -p castlist_sdk                                 # 定義の例から作った、生成した骨の中の試験（protocol の試験）
 ci/check-sql.sh                                                    # 行を書き替える・消す SQL が無いか
 ci/check-vendor.sh                                                 # 取り込んだ cytoscape が npm の物と同じか（static/vendor/SOURCES.md）
 ci/test-check-release-version.sh                                   # release の tag と版の突き合わせの試験
@@ -29,8 +30,9 @@ ci/gen.sh --diff                                                   # 定義が�
 API を Smithy の定義で書き直している間（AI-36）は、今の server（`src/`）の隣に、新しい server（`crates/server`）を並べて作る。切り替えまで image に入るのは今の server だけ。
 
 - 定義は `model/model/*.smithy`。`ai.common`（`common.smithy`）は pagetray と共に使う形（誤り・時刻・ページ送り）で、pagetray と roster は、この repo の release の tag で固めて取る。
-- 骨（`crates/castlist-sdk/`）は `ci/gen.sh` が作る。**手で直さない**。定義を替えたら `ci/gen.sh` を流し、作り直した物も同じ commit に入れる。fmt と clippy の外（`Cargo.toml` の `exclude`）。
-- 生成器の版は `model/smithy-build.json`（Maven の物）と `ci/gen.sh`（Smithy の CLI と digest）に書く。公開から 2 日たっていない Maven の物は `ci/gen.sh` が断る。
+- 骨（`crates/castlist-sdk/`）は `ci/gen.sh` が作る。**手で直さない**。定義を替えたら `ci/gen.sh` を流し、作り直した物も同じ commit に入れる。workspace の member だが、既定の命令（`default-members`）の外で clippy は掛けない。中の protocol の試験は `cargo test --locked -p castlist_sdk` で流す。fmt は生成器が `rust-toolchain.toml` の rustfmt で整えた物を、`cargo fmt --all --check` が見る。
+- 生成器の版は `model/smithy-build.json`（Maven の物）と `ci/gen.sh`（Smithy の CLI と digest）に書く。CLI と trait の package の版は揃える。`smithy-build.json` に名指した Maven の物は、公開から 2 日たっていなければ `ci/gen.sh` が断る（名指した物が引く物は見ない）。
+- `ci/gen.sh --diff` は、定義の入った最新の release（rc を除く）と比べる。rc の間は、まだ誰も使っていない形なので比べない。
 - 新しい server の試験は `crates/server/tests/`。定義に書く例（`@httpRequestTests`・`@httpResponseTests`）は wire の形を止める試験で、生成した骨の試験になる（試験用の handler を使うので、処理の正しさは見ない）。処理を引っ張る試験は、本物の handler を入れた Router に要求を通す振る舞いの試験で、処理より先に書く（下の節）。
 - 生成した service は `crates/server/src/generated.rs` の包みで axum の Router の fallback に入れ、守りの層をその前に掛ける。
 

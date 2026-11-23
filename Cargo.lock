@@ -516,7 +516,6 @@ dependencies = [
  "http-body",
  "http-body-util",
  "serde_json",
- "time",
  "tokio",
  "tower 0.5.3",
 ]

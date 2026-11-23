@@ -33,7 +33,8 @@ async fn get_health(_input: castlist_sdk::input::GetHealthInput) -> GetHealthOut
     }
 }
 
-/// host（castlist を動かす機械）の中からの要求だけを受ける（今の castlist と同じ守り）。
+/// host（castlist を動かす機械）の中からの要求だけを受ける（今の castlist の Host と Origin の守り）。
+/// 時間切れ・問い合わせの記録・断る時の誤りの形・HEAD の扱いは、守りの層の PR（AI-36 の段 2）で足す。
 /// - `Host` が 127.0.0.1・localhost でなければ断る。
 /// - `GET`・`HEAD` のほかの要求に `Origin` が付いていれば断る（browser の中のページからは書かせない）。
 async fn guard(request: Request, next: Next) -> Response {
