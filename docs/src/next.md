@@ -77,7 +77,7 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 | 2 | 問い合わせの記録 | 1 つにつき 1 行（method・uri・status・latency。tower-http の TraceLayer を今の server と同じ設定で）。記録の file にだけ書き、stdout には出さない。断った物も残る |
 | 3 | Host と Origin | `Host` が 127.0.0.1・localhost でなければ、`GET`・`HEAD` のほかの要求に `Origin` が付いていれば、403 `Forbidden`（今の server と同じ決まり） |
 | 3 | HEAD | `GET` にして通し、本文を捨てる（状態と header は `GET` と同じ）。今の server は axum の `get` の道が HEAD にも答えていた。生成した骨の道は GET だけなので、ここで揃える（`HEAD /healthz` は 200）。GET の無い道の HEAD は、GET と同じ答え（405 か 404） |
-| 4 | 時間切れ | 答えの頭まで 5 秒（`REQUEST_TIMEOUT`）を過ぎれば 503 `Unavailable`（待っている物は捨てる。今の server と同じ）。本文を送る間は数えないので、大きな backup の file を送る途中では切らない（今の server と同じ）。試験は `Config` で短くする |
+| 4 | 時間切れ | 答えの頭まで 5 秒（`REQUEST_TIMEOUT`）を過ぎれば 503 `Unavailable`（待っている物は捨てる。今の server と同じ）。本文を送る間は数えないので、大きな backup の file を送る途中では切らない（今の server と同じ）。試験は `Config` で短くする。接続を待つ長さ（書く `WRITE_WAIT` 2 秒・読む `READ_WAIT` 3 秒）は、この時間切れより短くする（混んでいる時に「混んでいる」の 503 が先に答え、送り手が時間切れと見分けられるように。試験で止めている） |
 | 5 | 本文の上限 | 2 MiB（`BODY_LIMIT`。axum の既定と同じ）。生成した骨は本文を自分で読むので axum の上限が掛からない。だから守りの層が上限まで先に読み切り、超えれば 413 `PayloadTooLarge`（`Content-Length` の有る無しを問わない。castlist の本文は小さな JSON）。途中で切れた本文は 400 `SerializationException`（生成した層が読めない本文に返すのと同じ型） |
 
 ## データ
