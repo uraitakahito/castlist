@@ -25,7 +25,8 @@ sha_for() {
 }
 MIN_AGE_SECONDS=$((2 * 24 * 60 * 60))
 # つなぎの一時の失敗（github.com や Maven Central への時間切れ）は、少し待って送り直す（AI-36 の台帳 #153）。
-CURL_RETRY="--retry 5 --retry-all-errors --retry-delay 5 --connect-timeout 20"
+# 送り直すのは時間切れ・5xx・つなぐ前の断り。404 などの書き違いは早く落とす（--retry-all-errors は使わない）。
+CURL_RETRY="--retry 5 --retry-connrefused --retry-delay 5 --connect-timeout 20"
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 out="$root/crates/castlist-sdk"
@@ -52,6 +53,8 @@ platform="$os-$arch"
 want=$(sha_for "$platform") || ng "Smithy の CLI の無い機械: $platform"
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/castlist-smithy/$SMITHY_VERSION-$platform"
 smithy="$cache/smithy-cli-$platform/bin/smithy"
+# digest は取りに行った時に見る。cache（CI の actions/cache。key は ci/gen.sh の写しなので、版と digest を替えれば取り直す）から
+# 戻した CLI は、そのまま使う。
 if [ ! -x "$smithy" ]; then
   mkdir -p "$cache"
   zip="$cache/cli.zip"

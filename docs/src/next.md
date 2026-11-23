@@ -45,7 +45,7 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 ## 探す操作の決まり
 
 - `ListActors`（`GET /api/actors`）: 条件はどれも AND で、今の server の SQL のまま。索引で引ける条件（`label`・`binding`・`activeFrom`・`activeTo`・`active=true`・`model`・`effort`・`launchedBy`・`skewed`）が 1 つも無ければ 400（`kind` と `active=false` は数えない）。`at` は `binding` と一緒にだけ付ける（無ければ 400）。`skewed` は true だけを受け、false は 400（「時刻ずれの無いアクター」と読まれないように。今の server と同じ）。
-- 頁の印（`nextToken`）は、検索の種類・`sort`・`order`・最後の行の並べる値と seq を 16 進にした字。崩れた物・ほかの検索の物・`sort` か `order` の違う物は 400。ほかの条件は結ばない（今の server と同じ）。
+- 頁の印（`nextToken`）は、検索の種類・`sort`・`order`・最後の行の並べる値と seq を 16 進にした字。崩れた物・ほかの検索の物・`sort` か `order` の違う物は 400。ほかの条件は結ばない（今の server と同じ）。辿る間に足されたアクターでは穴も重なりも出ないが、並べる値（初めの登場・最後の退場）は出来事で動くので、もう出したアクターが辿る間に退場すると出直すことがある（今の server と同じ。動かない値で分けるなら並べ方の意味が変わるので、別の課題）。
 - `launchedBy` と道のアクターの id は `ActorId` の形（UUID）だけを受ける。形の違う id は 400（今の server は、線の上下では 404、`launched_by` では空の答え）。
 - `GetLineage`（`GET /api/actors/{actorId}/lineage`）: 点を引く所も、線を辿る所と同じ 1 つの読む transaction で読む（今の server は 2 つに分けていた）。答えの欄は `asOf`・`actorId`・`nodes`（一覧の行 `ActorRow`）・`edges`（GetActor の線と同じ形）。
 - 一覧の行（`ActorRow`）は、今の server の一覧の欄を camelCase にした物（`firstEnteredAt`・`lastExitedAt`・`lastExitType`・`present`・`inferred`・`model`・`effort`・`url`）。無い値は欄ごと無い（今の server は null）。
