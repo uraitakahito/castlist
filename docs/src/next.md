@@ -56,6 +56,15 @@ AI-36 の作り直しで、castlist の API を Smithy の定義（`model/`）�
 - 探した行は、出来事と model と effort の欄（mixin の `EventFields`・`SettingFields`）に `actorName` を足した形（`EventRow`・`SettingRow`）。今の server の model と effort の行にあった `model_id`・`effort_id`（中の番号）は出さない。
 - 読む操作は、どれも 1 つの読む transaction の中で読む（今の server の `ListSettings`・`ListEvents` は transaction を張らずに 1 つの SQL で読んでいた）。`asOf` は読み始める前に取る。
 
+## 図と画面
+
+- `GetGraph`（`GET /api/graph?label=鍵:値&from=…&to=…`）: 今の server の `GET /v1/graph` の決まりのまま。ラベルと、登録を受けた時刻の窓（両端を含む）でアクターの組を絞り、組に触れる線の全部と、その線の向こうの端のアクター（一歩だけ）も入れる。点も線も受けた順（seq）。重い読みの接続（2 本）の 1 つの読む transaction の中で読み、軽い読みの接続は使わない。点（`GraphNode`）の `state` は GetActor の `state` と同じ形（今の server は、無ければ null の欄）、`currentSettings` は GetActor の物と同じ形（`id`・`clockSkew` も付く。今の server の物には無かった）。引数はどれも 1 つだけ（重ねれば初めの物を使う。今の server は 400）。
+- 画面（`/`・`/actors/{id}`・`/graph/timeline`・`/graph/network`・`/static/…`）は、同じ axum の Router に手の道として並べる（`crates/server/src/ui.rs`）。URL の引数（snake_case の `active_from` など）・画面の字・誤りの訳は今の server のまま（画面の引数は、生成した層でなく画面が自分で読む）。DB は新しい DB の所で読み、タイムラインも重い読みの接続だけを使う。
+- 違うのは、相関図の `data-src` が `GET /api/graph` を指し、期間を UTC・ミリ秒までの字にして渡すこと（新しい API は時差の付いた時刻を受けない）。`static/network.js` は、今の server の欄の名（`as_of`・`current_settings`）と新しい欄の名（`asOf`・`currentSettings`）のどちらも読む。
+- `templates/` と `static/` は今の server と共に使う（`crates/server/askama.toml` が `templates/` を指し、配る file は repo の `static/` を埋め込む）。段 9 で今の crate を消しても、動かさなくてよい。タイムラインの並べ方（`crates/server/src/timeline.rs`）は今の `src/timeline.rs` の写しで、段 9 まで 2 つを同じ中身に保つ。
+- どの答えにも `X-Content-Type-Options: nosniff` と `Referrer-Policy: no-referrer` を、HTML の答えには CSP（[画面](ui.md)）を付ける（今の server の stamp と同じ。守りの層の残りは後の PR）。
+- 試しに起こす binary は `castlist-next`（`CASTLIST_DB`・`CASTLIST_LISTEN`。記録・止め方・時間切れは守りの層の PR で足す）。画面の browser の試験（`e2e/`）は、`CASTLIST_E2E_SERVER=../target/debug/castlist-next` で新しい server にも向く（見本を置く道と欄の名は `e2e/tests/wire.ts` が合わせる）。
+
 ## データ
 
 - DB は SQLite のまま、表を新しい migrations（`crates/server/migrations/`）で作る。表の作りは今の物を土台にし、決まり（足すだけの trigger・seq・外のキー）を引き継ぐ。

@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use castlist_sdk::error::{GetActorError, NotFound};
 use castlist_sdk::input::GetActorInput;
-use castlist_sdk::model::{ActorBinding, ActorState, Event, Link, Setting};
+use castlist_sdk::model::{ActorBinding, Event, Link, Setting};
 use castlist_sdk::output::GetActorOutput;
 
 use crate::db::{self, Db};
@@ -54,23 +54,7 @@ pub async fn get_actor(db: Arc<Db>, input: GetActorInput) -> Result<GetActorOutp
         current_settings: detail.current_settings.map(setting).transpose()?,
         links_in: links(detail.links_in)?,
         links_out: links(detail.links_out)?,
-        state: ActorState {
-            presence: detail.state.presence,
-            present: detail.state.present,
-            inferred: detail.state.inferred,
-            entered_at: detail
-                .state
-                .entered_at
-                .as_deref()
-                .map(datetime)
-                .transpose()?,
-            exited_at: detail
-                .state
-                .exited_at
-                .as_deref()
-                .map(datetime)
-                .transpose()?,
-        },
+        state: rows::state(detail.state).map_err(|e| Failure::data(OPERATION, &e))?,
         as_of,
     })
 }

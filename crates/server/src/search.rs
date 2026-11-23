@@ -20,6 +20,7 @@ pub const MAX_DEPTH: u32 = 20;
 
 /// 一覧の 1 行（アクター）。初めの登場・最後の退場・稼働中か・最新の model と effort は、
 /// アクター 1 つごとの「order by seq limit 1」で引く（events(actor_id, type, seq)・settings(actor_id, seq)）。
+/// 稼働を替える出来事の最新（presence）と、時刻ずれの行を持つか（skewed）も、アクター 1 つごとに引く（画面の印。API の答えには出さない）。
 const ACTOR_ITEM: &str = concat!(
     "select a.seq, a.id, a.name, a.kind, a.issuer, a.sent_at, a.received_at, a.clock_skew,
        (select e.received_at from events e
@@ -35,9 +36,16 @@ const ACTOR_ITEM: &str = concat!(
                  where e.actor_id = a.id
                    and e.type in ('entered', 'reentered', 'forked', 'cleared', 'exited', 'closed')
                  order by e.seq desc limit 1), 0) as present,
+       (select e.type from events e
+        where e.actor_id = a.id
+          and e.type in ('entered', 'reentered', 'forked', 'cleared', 'exited', 'closed')
+        order by e.seq desc limit 1) as presence,
        ",
     inferred_sql!("a.id"),
     " as inferred,
+       (a.clock_skew
+        or exists(select 1 from events e where e.actor_id = a.id and e.clock_skew = 1)
+        or exists(select 1 from settings s where s.actor_id = a.id and s.clock_skew = 1)) as skewed,
        (select m.name from settings s join models m on m.id = s.model_id
         where s.actor_id = a.id order by s.seq desc limit 1) as model,
        (select f.name from settings s join efforts f on f.id = s.effort_id
@@ -151,6 +159,10 @@ pub struct ActorItem {
     pub present: bool,
     /// 今の停止が推しの幕引き（`closed` で `detail.inferred` が JSON の true）か。
     pub inferred: bool,
+    /// 稼働を替える出来事（6 種）の最新の種類（画面に出す。API の答えには出さない）。
+    pub presence: Option<String>,
+    /// アクター・出来事・model と effort のどれかに、時刻ずれの行がある（画面の印。API の答えには出さない）。
+    pub skewed: bool,
     pub model: Option<String>,
     pub effort: Option<String>,
     /// 並べる値（無ければ ''）。次の頁の印に入れる。

@@ -1,5 +1,6 @@
 // 相関図（/graph/network。図 C）を描く。castlist が /static/network.js で配る（CSP の script-src 'self'）。
-// - 点と線は、#network の data-src（同じ絞りの GET /v1/graph。connect-src 'self'）から引く。
+// - 点と線は、#network の data-src（同じ絞りの図の API。connect-src 'self'）から引く。今の server は GET /v1/graph（欄は snake_case）、
+//   作り直している新しい server（crates/server）は GET /api/graph（欄は camelCase）を置くので、どちらの欄の名も読む。
 // - 描くのは cytoscape（static/vendor/。canvas に描くので、inline の style は要らない）。
 // - 色は site.css の色（--m-opus など）を読む。明るい色と暗い色が替われば、描き直す。
 // - 字は DOM の textContent でだけ置く（innerHTML は使わない）。
@@ -94,7 +95,7 @@
     const n = graph.nodes.length;
     const radius = Math.max(80, n * 24);
     const nodes = graph.nodes.map((node, i) => {
-      const s = node.current_settings;
+      const s = node.currentSettings ?? node.current_settings;
       const angle = (2 * Math.PI * i) / Math.max(n, 1);
       return {
         group: 'nodes',
@@ -170,7 +171,7 @@
     // 試験と調べ物のため（browser の console から見られる）。
     window.castlistNetwork = cy;
 
-    const total = `${cy.nodes().length} のアクター・${cy.edges().length} の線（${local(graph.as_of)} の時点）`;
+    const total = `${cy.nodes().length} のアクター・${cy.edges().length} の線（${local(graph.asOf ?? graph.as_of)} の時点）`;
     // 見えている数は、絞りの class で数える（:visible は、次に描くまで前の様子を返す）。
     const update = () => {
       const shown = cy.nodes().not('.hidden');
@@ -244,7 +245,7 @@
   fetch(container.dataset.src, { headers: { accept: 'application/json' } })
     .then(async (response) => {
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(`${response.status} ${body.error ?? ''}`.trim());
+      if (!response.ok) throw new Error(`${response.status} ${body.message ?? body.error ?? ''}`.trim());
       return body;
     })
     .then(render)

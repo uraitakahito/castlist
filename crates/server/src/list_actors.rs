@@ -162,6 +162,8 @@ mod tests {
                 last_exit_type: None,
                 present: false,
                 inferred: false,
+                presence: None,
+                skewed: false,
                 model: None,
                 effort: None,
                 sort_key: "2026-11-22T00:00:00.000Z".into(),
