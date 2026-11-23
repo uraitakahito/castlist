@@ -129,13 +129,10 @@ fn next_token(query: &ActorQuery, page: &Page<ActorItem>) -> Option<String> {
 
 /// 頁の印を読む（前の頁の最後の並べる値と seq）。崩れた物・ほかの検索の物・sort か order の違う物は 400。
 fn after(token: &str, sort: Sort, desc: bool) -> Result<(String, i64), ListActorsError> {
-    let parts = token::decode(token).ok_or_else(|| invalid(token::BROKEN))?;
-    let [kind, token_sort, token_order, value, seq] = &parts[..] else {
-        return Err(invalid(token::other("アクターの検索")));
+    let parts = token::read(token, TOKEN_KIND, 5, "アクターの検索").map_err(invalid)?;
+    let [_, token_sort, token_order, value, seq] = &parts[..] else {
+        return Err(invalid(token::BROKEN));
     };
-    if kind != TOKEN_KIND {
-        return Err(invalid(token::other("アクターの検索")));
-    }
     if token_sort != sort_name(sort) || token_order != order_name(desc) {
         return Err(invalid("nextToken は、同じ sort と order の答えの物を渡す"));
     }
