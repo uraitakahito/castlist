@@ -513,6 +513,7 @@ dependencies = [
  "aws-smithy-types",
  "axum",
  "bytes",
+ "castlist",
  "castlist_sdk",
  "http-body",
  "http-body-util",
