@@ -194,6 +194,8 @@ jobs:
           # 弱点と、crate の license（MIT の castlist と一緒に配れる物か）。
           command: check advisories licenses
           # workspace の member をみな見る（付けないと、頭の crate（今の server）の依存しか見ない。新しい server は crates/server）。
+          # この action の既定は --all-features だが、arguments を書くと置き換わる。見るのは、image と CI で build する
+          # 既定の features の依存だけ、と決めた（build しない features の依存は見ない。pagetray の review-17）。
           arguments: --workspace
       # 画面の browser の試験（e2e/）の Node の依存の弱点。lock だけを見る（入れない）。
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1

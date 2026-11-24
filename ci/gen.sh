@@ -2,8 +2,8 @@
 # 定義（model/）から、server の骨（crates/castlist-sdk/）を作り直す。生成した物は repo に入れ、手で直さない。
 #   ci/gen.sh           作り直して crates/castlist-sdk/ を置き換える
 #   ci/gen.sh --check   作り直した物と、入れてある物が同じかを見る（CI が流す）。違えば exit 1
-#   ci/gen.sh --diff    定義を、定義の入った最新の release の tag（v*。rc は除く）と比べ、壊す変わり（DANGER 以上）があれば exit 1（CI が流す）。
-#                       定義の入った tag がまだ無ければ、比べずに通す。rc の間は、まだ誰も使っていない形なので比べない
+#   ci/gen.sh --diff    定義を、定義の入った最新の release の tag（v*。版の後ろに - の付く物（rc など）は除く）と比べ、壊す変わり（DANGER 以上）があれば exit 1（CI が流す）。
+#                       定義の入った tag がまだ無ければ、比べずに通す。pre-release の間は、まだ誰も使っていない形なので比べない
 # 要る物: curl・unzip・shasum か sha256sum・rustfmt（rustup。rust-toolchain.toml の版）。Smithy の CLI は JRE を同梱しているので、Java は要らない。
 # 生成器の版は model/smithy-build.json に書く。そこに名指した Maven の物は、公開から 2 日たっていなければ使わない
 # （crate と pnpm の待ちに合わせた物。名指した物だけを見て、それが引く物は見ない）。
@@ -60,7 +60,7 @@ if [ ! -x "$smithy" ]; then
   zip="$cache/cli.zip"
   curl -fsSL $CURL_RETRY -o "$zip" "https://github.com/smithy-lang/smithy/releases/download/$SMITHY_VERSION/smithy-cli-$platform.zip"
   got=$(sha256 "$zip")
-  [ "$got" = "$want" ] || ng "Smithy の CLI の digest が違う（$got。$want のはず）"
+  [ "$got" = "$want" ] || ng "Smithy の CLI の digest が違う（${got}。$want のはず）"
   unzip -q -o "$zip" -d "$cache"
   rm -f "$zip"
 fi
@@ -76,19 +76,19 @@ for dep in $deps; do
   version=${rest#*:}
   pom="https://repo1.maven.org/maven2/$(echo "$group" | tr . /)/$artifact/$version/$artifact-$version.pom"
   modified=$(curl -fsSI $CURL_RETRY "$pom" | tr -d '\r' | sed -n 's/^[Ll]ast-[Mm]odified: //p')
-  [ -n "$modified" ] || ng "$dep の公開の時刻を読めない（$pom）"
+  [ -n "$modified" ] || ng "$dep の公開の時刻を読めない（${pom}）"
   if date -u -d "$modified" +%s >/dev/null 2>&1; then
     published=$(date -u -d "$modified" +%s)
   else
     published=$(LC_ALL=C date -u -j -f '%a, %d %b %Y %H:%M:%S GMT' "$modified" +%s)
   fi
-  [ $((now - published)) -ge $MIN_AGE_SECONDS ] || ng "$dep は公開から 2 日たっていない（$modified）"
+  [ $((now - published)) -ge $MIN_AGE_SECONDS ] || ng "$dep は公開から 2 日たっていない（${modified}）"
 done
 
 # 3. 壊す変わりを見る（--diff）。
 if $diff_mode; then
   base=""
-  for tag in $(git -C "$root" tag --list 'v*' --sort=-version:refname | grep -v -- '-rc\.'); do
+  for tag in $(git -C "$root" tag --list 'v*' --sort=-version:refname | grep -v -- '-'); do
     if git -C "$root" cat-file -e "$tag:model/smithy-build.json" 2>/dev/null; then
       base=$tag
       break

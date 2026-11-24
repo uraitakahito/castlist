@@ -944,7 +944,7 @@ mod list_actors_test {
                 ::http_body_util::Empty::new(),
             ))
             .unwrap();
-        *http_request.uri_mut() = "/api/actors?label=project:castlist&label=tpm.role:auditor&binding=cmux.workspace.ref:workspace:3&at=2026-11-24T00:00:00Z&activeFrom=2026-11-24T00:00:00Z&activeTo=2026-11-25T00:00:00Z&kind=ai&model=claude-opus-5-5&effort=high&active=true&launchedBy=019abcde-0000-7000-8000-000000000002&skewed=true&sort=exited&order=desc&maxResults=10&nextToken=abc".parse().unwrap();
+        *http_request.uri_mut() = "/api/actors?label=project%3Acastlist&label=tpm.role%3Aauditor&binding=cmux.workspace.ref%3Aworkspace%3A3&at=2026-11-24T00%3A00%3A00Z&activeFrom=2026-11-24T00%3A00%3A00Z&activeTo=2026-11-25T00%3A00%3A00Z&kind=ai&model=claude-opus-5-5&effort=high&active=true&launchedBy=019abcde-0000-7000-8000-000000000002&skewed=true&sort=exited&order=desc&maxResults=10&nextToken=abc".parse().unwrap();
         #[allow(unused_mut)]
         let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
         let config = crate::service::CastlistConfig::builder().build();
@@ -1677,7 +1677,7 @@ mod get_actor_setting_at_test {
                 ::http_body_util::Empty::new(),
             ))
             .unwrap();
-        *http_request.uri_mut() = "/api/actors/019abcde-0000-7000-8000-000000000001/settings/at?time=2026-11-24T00:00:01Z".parse().unwrap();
+        *http_request.uri_mut() = "/api/actors/019abcde-0000-7000-8000-000000000001/settings/at?time=2026-11-24T00%3A00%3A01Z".parse().unwrap();
         #[allow(unused_mut)]
         let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
         let config = crate::service::CastlistConfig::builder().build();
@@ -2412,7 +2412,7 @@ mod list_events_test {
                 ::http_body_util::Empty::new(),
             ))
             .unwrap();
-        *http_request.uri_mut() = "/api/events?type=model_unreadable&type=closed&actor=019abcde-0000-7000-8000-000000000001&from=2026-11-24T00:00:00Z&to=2026-11-25T00:00:00Z&reason=timeout&source=clear&skewed=true&maxResults=10&nextToken=abc".parse().unwrap();
+        *http_request.uri_mut() = "/api/events?type=model_unreadable&type=closed&actor=019abcde-0000-7000-8000-000000000001&from=2026-11-24T00%3A00%3A00Z&to=2026-11-25T00%3A00%3A00Z&reason=timeout&source=clear&skewed=true&maxResults=10&nextToken=abc".parse().unwrap();
         #[allow(unused_mut)]
         let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
         let config = crate::service::CastlistConfig::builder().build();
@@ -3112,7 +3112,7 @@ mod list_settings_test {
                 ::http_body_util::Empty::new(),
             ))
             .unwrap();
-        *http_request.uri_mut() = "/api/settings?model=claude-opus-5-5&effort=high&source=observed&from=2026-11-24T00:00:00Z&to=2026-11-25T00:00:00Z&mismatch=true&skewed=true&maxResults=10&nextToken=abc".parse().unwrap();
+        *http_request.uri_mut() = "/api/settings?model=claude-opus-5-5&effort=high&source=observed&from=2026-11-24T00%3A00%3A00Z&to=2026-11-25T00%3A00%3A00Z&mismatch=true&skewed=true&maxResults=10&nextToken=abc".parse().unwrap();
         #[allow(unused_mut)]
         let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
         let config = crate::service::CastlistConfig::builder().build();
@@ -3330,10 +3330,7 @@ mod get_graph_test {
                 ::http_body_util::Empty::new(),
             ))
             .unwrap();
-        *http_request.uri_mut() =
-            "/api/graph?label=tpm.key:t-23zs&from=2026-11-24T00:00:00Z&to=2026-11-25T00:00:00Z"
-                .parse()
-                .unwrap();
+        *http_request.uri_mut() = "/api/graph?label=tpm.key%3At-23zs&from=2026-11-24T00%3A00%3A00Z&to=2026-11-25T00%3A00%3A00Z".parse().unwrap();
         #[allow(unused_mut)]
         let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
         let config = crate::service::CastlistConfig::builder().build();
