@@ -120,6 +120,13 @@ async fn head_is_answered_like_get_without_the_body() {
         let (status, headers, body) = app.send(with_host("HEAD", &path, "127.0.0.1:8802")).await;
         assert_eq!(status, StatusCode::OK, "{path}: {body}");
         assert!(body.is_empty(), "{path}: {body}");
+        // HEAD で大きさを見る client のため、Content-Length も GET と同じ（pagetray の review-17）。
+        let (_, get_headers, _) = app.send(with_host("GET", &path, "127.0.0.1:8802")).await;
+        assert_eq!(
+            headers.get(header::CONTENT_LENGTH),
+            get_headers.get(header::CONTENT_LENGTH),
+            "{path}"
+        );
         assert_eq!(
             headers.get(header::CONTENT_TYPE).unwrap(),
             content_type,
