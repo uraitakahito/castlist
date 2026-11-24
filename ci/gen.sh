@@ -60,7 +60,7 @@ if [ ! -x "$smithy" ]; then
   zip="$cache/cli.zip"
   curl -fsSL $CURL_RETRY -o "$zip" "https://github.com/smithy-lang/smithy/releases/download/$SMITHY_VERSION/smithy-cli-$platform.zip"
   got=$(sha256 "$zip")
-  [ "$got" = "$want" ] || ng "Smithy の CLI の digest が違う（$got。$want のはず）"
+  [ "$got" = "$want" ] || ng "Smithy の CLI の digest が違う（${got}。$want のはず）"
   unzip -q -o "$zip" -d "$cache"
   rm -f "$zip"
 fi
@@ -76,13 +76,13 @@ for dep in $deps; do
   version=${rest#*:}
   pom="https://repo1.maven.org/maven2/$(echo "$group" | tr . /)/$artifact/$version/$artifact-$version.pom"
   modified=$(curl -fsSI $CURL_RETRY "$pom" | tr -d '\r' | sed -n 's/^[Ll]ast-[Mm]odified: //p')
-  [ -n "$modified" ] || ng "$dep の公開の時刻を読めない（$pom）"
+  [ -n "$modified" ] || ng "$dep の公開の時刻を読めない（${pom}）"
   if date -u -d "$modified" +%s >/dev/null 2>&1; then
     published=$(date -u -d "$modified" +%s)
   else
     published=$(LC_ALL=C date -u -j -f '%a, %d %b %Y %H:%M:%S GMT' "$modified" +%s)
   fi
-  [ $((now - published)) -ge $MIN_AGE_SECONDS ] || ng "$dep は公開から 2 日たっていない（$modified）"
+  [ $((now - published)) -ge $MIN_AGE_SECONDS ] || ng "$dep は公開から 2 日たっていない（${modified}）"
 done
 
 # 3. 壊す変わりを見る（--diff）。
