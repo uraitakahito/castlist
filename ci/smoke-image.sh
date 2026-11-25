@@ -5,7 +5,9 @@
 # 使い方: ci/smoke-image.sh <image> [v1|api]（repo の checkout の中で打つ。配る cytoscape を static/vendor/ の物と突き合わせる）
 #   v1（既定）: 今の server の image（Containerfile）。API は /v1 の下
 #   api: 新しい server の image（Containerfile.next。rc の release）。API は /api の下で、断る答えは restJson1 の形
-#        （X-Amzn-Errortype）。登録して出来事を足し、読み返し、起こし直した後も同じ物が読めるかも見る
+#        （X-Amzn-Errortype）。登録して出来事を足し、読み返し、起こし直した後も同じ物が読めるかも見る。
+#        終わりに切り替えの予行もする: 今の版（v0.4.0。digest で固める）の写しを、この image の migrate で新しい volume に移し、
+#        新しい API で読む（docs/src/release.md の「rc を動かす時と切り替え」の 2 と 3）
 # container の名は smoke-castlist にする（castlist の設定の「PM だけ」の match（--name castlist など）に当てないため）。
 # 手元で流す時は、名と port を SMOKE_NAME・SMOKE_PORT で替えられる（既定は smoke-castlist と 18802）。
 set -euo pipefail
@@ -34,7 +36,16 @@ up() {
   done
   return 1
 }
-trap 'docker logs "$name" || true; docker rm -f "$name" >/dev/null 2>&1 || true; docker volume rm "$name-data" >/dev/null 2>&1 || true' EXIT
+# 後片付け: 切り替えの予行の container（今の版の $name-old・移した先の $name-v1）と volume と、写しの folder も消す。
+cleanup() {
+  for c in "$name" "$name-old" "$name-v1"; do
+    if docker inspect "$c" >/dev/null 2>&1; then docker logs "$c" || true; fi
+    docker rm -f "$c" >/dev/null 2>&1 || true
+    docker volume rm "$c-data" >/dev/null 2>&1 || true
+  done
+  if [ -n "${backup_dir:-}" ]; then rm -rf "$backup_dir"; fi
+}
+trap cleanup EXIT
 
 docker run -d --name "$name" -p "127.0.0.1:$port:8080" -v "$name-data:/data" "$image"
 up | tee "$tmp/healthz.json"
@@ -141,4 +152,51 @@ grep -q 'uri=/healthz' "$logs"
 rm -f "$logs"
 # 新しい server: 起こし直した後も、volume の DB に書いた物が読める。
 if [ "$mode" = api ]; then read_back; fi
+# 切り替えの予行（新しい server だけ）: 今の版の image に今の API で書き、`GET /v1/backup` の写しを取り、この image の
+# migrate で新しい volume に移し、その volume で起こして新しい API で読む。port は同じ物を使うので、先の container は消す。
+if [ "$mode" = api ]; then
+  docker rm -f "$name" >/dev/null
+  # 今の版は v0.4.0（release の本文の digest で固める。tag を後から替えられても同じ物を取る）。
+  old_image=ghcr.io/uraitakahito/castlist@sha256:9bc52784175e3ff5cb0ddfa2ff57363c256741d64e77b8a51da1f1b22d11efd3
+  docker run -d --name "$name-old" -p "127.0.0.1:$port:8080" -v "$name-old-data:/data" "$old_image"
+  up
+  # 今の API（/v1・snake_case）で、アクター 2 つ（AI と人）と出来事 3 つを置く。
+  sent=2026-01-01T00:00:00Z
+  for actor in \
+    "{\"issuer\":\"smoke\",\"kind\":\"ai\",\"name_prefix\":\"se\",\"bindings\":[{\"type\":\"claude.session\",\"value\":\"old-1\"}],\"sent_at\":\"$sent\"}" \
+    "{\"issuer\":\"smoke\",\"kind\":\"human\",\"name_prefix\":\"pm\",\"bindings\":[{\"type\":\"tpm.person\",\"value\":\"pm\"}],\"sent_at\":\"$sent\"}"; do
+    test "$(code -X POST -H "$json" --data "$actor" "$url/v1/actors")" = 201
+  done
+  for event in 'old-e-1 claude.session:old-1 entered' 'old-e-2 claude.session:old-1 exited' 'old-e-3 tpm.person:pm reported_in'; do
+    read -r id by kind <<<"$event"
+    body="{\"issuer\":\"smoke\",\"by\":\"$by\",\"type\":\"$kind\",\"detail\":{\"source\":\"smoke\"},\"sent_at\":\"$sent\"}"
+    test "$(code -X PUT -H "$json" --data "$body" "$url/v1/events/$id")" = 201
+  done
+  backup_dir=$(mktemp -d "$tmp/backup.XXXXXX")
+  curl -fsS -o "$backup_dir/castlist.db" "$url/v1/backup"
+  test -s "$backup_dir/castlist.db"
+  docker rm -f "$name-old" >/dev/null
+  # release.md の 2 の行と同じ形（新しい volume を /data・写しの folder を /in に読むだけで付ける）。0 で終わらなければ落ちる。
+  docker run --rm -v "$name-v1-data:/data" -v "$backup_dir:/in:ro" "$image" \
+    migrate --from /in/castlist.db --to /data/castlist.db | tee "$tmp/migrate.txt"
+  # 照らしの行はみな ok で、置いた数が移り、終わりの行は「移し終えた」。
+  if sed '$d' "$tmp/migrate.txt" | grep -v ' ok$'; then
+    echo "NG: migrate の照らしに ok でない行がある" >&2
+    exit 1
+  fi
+  grep -qx 'actors 2 → 2 digest .* ok' "$tmp/migrate.txt"
+  grep -qx 'events 3 → 3 digest .* ok' "$tmp/migrate.txt"
+  test "$(tail -n 1 "$tmp/migrate.txt")" = '移し終えた: /in/castlist.db → /data/castlist.db'
+  # 移した volume で起こし、新しい API で、置いた物が同じ数だけ読める。
+  docker run -d --name "$name-v1" -p "127.0.0.1:$port:8080" -v "$name-v1-data:/data" "$image"
+  up
+  # ListActors は索引で引ける条件が要る（無ければ 400）ので、置いた付随する id で 1 人ずつ引く。
+  curl -fsS -o "$tmp/migrated-se.json" "$url/api/actors?binding=claude.session:old-1"
+  jq -e '[.actors[].name] == ["se.1"]' "$tmp/migrated-se.json" >/dev/null
+  curl -fsS -o "$tmp/migrated-pm.json" "$url/api/actors?binding=tpm.person:pm"
+  jq -e '[.actors[].name] == ["pm.1"]' "$tmp/migrated-pm.json" >/dev/null
+  curl -fsS -o "$tmp/migrated-events.json" "$url/api/events"
+  jq -e '[.events[] | [.id, .type, .actorName]] == [["old-e-1", "entered", "se.1"], ["old-e-2", "exited", "se.1"], ["old-e-3", "reported_in", "pm.1"]]' \
+    "$tmp/migrated-events.json" >/dev/null
+fi
 echo "image は動く（${mode}）: ${image}"
