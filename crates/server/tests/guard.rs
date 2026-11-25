@@ -112,21 +112,28 @@ async fn head_is_answered_like_get_without_the_body() {
     let answer = app.register(&ai("se", "s-1")).await;
     let id = answer["actor"]["id"].as_str().unwrap().to_owned();
     // 生成した道（GET の操作）と画面の道のどちらも、GET と同じ状態と header で、本文なし。
-    for (path, content_type) in [
-        ("/healthz".to_owned(), "application/json"),
-        (format!("/api/actors/{id}"), "application/json"),
-        ("/".to_owned(), "text/html; charset=utf-8"),
+    // 3 つ目は、本文に今の時刻（/healthz の now・GetActor の asOf）が入るか。時刻の字は秒の下の終わりの 0 を落とすので、
+    // 問うたびに長さが替わりうる。その道では Content-Length が有ることだけを見て、同じ長さは時刻の無い道で見る。
+    for (path, content_type, timed) in [
+        ("/healthz".to_owned(), "application/json", true),
+        (format!("/api/actors/{id}"), "application/json", true),
+        ("/".to_owned(), "text/html; charset=utf-8", false),
     ] {
         let (status, headers, body) = app.send(with_host("HEAD", &path, "127.0.0.1:8802")).await;
         assert_eq!(status, StatusCode::OK, "{path}: {body}");
         assert!(body.is_empty(), "{path}: {body}");
         // HEAD で大きさを見る client のため、Content-Length も GET と同じ（pagetray の review-17）。
         let (_, get_headers, _) = app.send(with_host("GET", &path, "127.0.0.1:8802")).await;
-        assert_eq!(
-            headers.get(header::CONTENT_LENGTH),
-            get_headers.get(header::CONTENT_LENGTH),
-            "{path}"
-        );
+        if timed {
+            assert!(headers.get(header::CONTENT_LENGTH).is_some(), "{path}");
+            assert!(get_headers.get(header::CONTENT_LENGTH).is_some(), "{path}");
+        } else {
+            assert_eq!(
+                headers.get(header::CONTENT_LENGTH),
+                get_headers.get(header::CONTENT_LENGTH),
+                "{path}"
+            );
+        }
         assert_eq!(
             headers.get(header::CONTENT_TYPE).unwrap(),
             content_type,

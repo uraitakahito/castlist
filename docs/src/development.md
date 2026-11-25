@@ -29,7 +29,7 @@ ci/gen.sh --diff                                                   # 定義が�
 
 ## 定義と生成（作り直しの間）
 
-API を Smithy の定義で書き直している間（AI-36）は、今の server（`src/`）の隣に、新しい server（`crates/server`）を並べて作る。切り替えまで image に入るのは今の server だけ。
+API を Smithy の定義で書き直している間（AI-36）は、今の server（`src/`）の隣に、新しい server（`crates/server`）を並べて作る。1.0.0 から image（`Containerfile`）に入るのは新しい server だけで、今の server の code は段 9 で消す。
 
 - 定義は `model/model/*.smithy`。`ai.common`（`common.smithy`）は pagetray と共に使う形（誤り・時刻・ページ送り）で、pagetray と roster は、この repo の release の tag で固めて取る。
 - 骨（`crates/castlist-sdk/`）は `ci/gen.sh` が作る。**手で直さない**。定義を替えたら `ci/gen.sh` を流し、作り直した物も同じ commit に入れる。workspace の member だが、既定の命令（`default-members`）の外で clippy は掛けない（server の crate が引くので `cargo clippy` も骨を見るが、`ci/gen.sh` が骨の `lib.rs` の頭に `#![allow(clippy::all)]` を足す）。中の protocol の試験は `cargo test --locked -p castlist_sdk` で流す。fmt は生成器が `rust-toolchain.toml` の rustfmt で整えた物を、`cargo fmt --all --check` が見る。
@@ -56,7 +56,7 @@ API を Smithy の定義で書き直している間（AI-36）は、今の serve
 | 単体 | DB に触らない純な関数 | 各 file の `#[cfg(test)]` |
 | browser | 本物の castlist-server を空いた port と一時の DB で起こし、API で見本を置き、Chromium で相関図を開く。点と線の数・押した先・model と effort の絞り・色（明るい・暗い）・console の誤りと CSP の違反が 0・script を切った時の字を見る。一覧とタイムラインの期間の欄（日時の欄で入れた日本時間で絞る・送り直しても同じ値・期間をすぐ選ぶ link）も見る | `e2e/`（Playwright。CI の job `e2e`。Node の依存の弱点は job `advisories` の `pnpm audit`） |
 | 終わり方と記録 | 本物の binary を、試験ごとの空の folder の DB で起こす。止める合図・合図なしの切断・DB を開けない、の後に起こし直して、前回の終わり方の行を見る。問い合わせの行が記録の file にだけ残ること・多く問い合わせた後の `logs/` の大きさが上限の内であること・読む道 `GET /v1/logs` も見る | `tests/runlog.rs`（書き手と印の単体は `src/runlog.rs`）。新しい server は `crates/server/tests/runlog.rs`（読む道は `GET /api/logs`。書き手と印の単体は `crates/server/src/runlog.rs`） |
-| image | 空の image の中で起き、断るべき物を断り、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せて、前回の終わり方を次の起動で出す | `ci/smoke-image.sh`（CI の job `image` と release の `check`）。rc の image（`Containerfile.next`。新しい server）は `ci/smoke-image.sh <image> api` で、新しい API で書いて読み返し、起こし直した後も読めるかも見る（CI の job `image-next` と、rc の release の `check`）。終わりに切り替えの予行もする: 今の版（v0.4.0 を digest で固める）に今の API でアクターと出来事を置いて `GET /v1/backup` の写しを取り、rc の image の `migrate` で新しい volume に移し（[release を出す](release.md) の「rc を動かす時と切り替え」の 2 と同じ形）、照らしの行がみな ok で、その volume で起こした rc が置いた数だけ新しい API で読めるかを見る |
+| image | 空の image の中で起き、断るべき物を断り、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、止めて起こし直せて、前回の終わり方を次の起動で出す | `ci/smoke-image.sh <image> api`（CI の job `image` と release の `check`。job `image-next` も同じ物を `Containerfile.next` で）。新しい API で書いて読み返し、起こし直した後も読めるかも見る。終わりに切り替えの予行もする: 今の版（v0.4.0 を digest で固める）に今の API でアクター・ラベル・線・model と effort・出来事を置いて `GET /v1/backup` の写しを取り、image の `migrate` で新しい volume に移し（[release を出す](release.md) の「切り替え」の 2 と同じ形）、照らしの行がみな ok で、その volume で起こした image が置いた物を新しい API で読めるかを見る |
 | release の版 | tag と `Cargo.toml` の版・`CHANGELOG.md` の節の突き合わせを、通る形と落ちる形で打つ | `ci/test-check-release-version.sh`（CI の job `test`） |
 
 ## 待たせない書き方

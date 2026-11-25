@@ -1,4 +1,5 @@
-# 新しい castlist（AI-36 の作り直し。crates/server の castlist-next）の image。rc の release（tag に -rc. の付く物）だけが、これで作る。
+# 新しい castlist（AI-36 の作り直し。crates/server の castlist-next）の image。1.0.0 から Containerfile が同じ中身になったので、
+# release はもう使わない（CI の job image-next だけが使う）。段 9 で消す。
 # 形は Containerfile と同じ: build の段で静的な binary を作り、動かす段は空の image に binary 1 つだけを置く。
 # binary は image の中で /castlist-server の名にする（今の image と同じ path・同じ ENTRYPOINT なので、動かす命令は切り替えで替わらず、
 # ci/check-image.sh と ci/image-contents.txt もそのまま使える）。今の DB を移す時は、同じ binary に migrate の引数を付けて起こす

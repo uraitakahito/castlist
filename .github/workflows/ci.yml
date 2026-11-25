@@ -164,11 +164,12 @@ jobs:
           sudo tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C /usr/local/bin gitleaks
       - name: image に、入ってよい物だけが入っているか（中身の一覧・設定・秘密の走査）
         run: ci/check-image.sh castlist:ci
-      - name: 空の image の中で起き、答え、断るべき物を断り、止めて起こし直せるか
-        run: ci/smoke-image.sh castlist:ci
+      # 1.0.0 から、image は新しい server（Containerfile）。新しい API の形で書いて読み、今の版（v0.4.0）の写しを移す予行もする。
+      - name: 空の image の中で起き、新しい API で書いて読め、断るべき物を断り、止めて起こし直せ、今の版の写しを移せるか
+        run: ci/smoke-image.sh castlist:ci api
   image-next:
-    # rc の release の image（Containerfile.next。新しい server の castlist-next を /castlist-server の名で置く）を、
-    # job image と同じ決まり（中身の一覧・設定・秘密の走査）で見て、新しい API の形で動くかを見る。
+    # Containerfile.next（1.0.0 から Containerfile と同じ中身。新しい server の castlist-next を /castlist-server の名で置く）を、
+    # job image と同じ決まりで見る。job image と重なるだけで、段 9 で Containerfile.next と一緒に消す。
     if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04-arm
     steps:

@@ -486,7 +486,7 @@ dependencies = [
 
 [[package]]
 name = "castlist"
-version = "1.0.0-rc.1"
+version = "1.0.0"
 dependencies = [
  "askama",
  "axum",
@@ -507,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "castlist-next"
-version = "1.0.0-rc.1"
+version = "1.0.0"
 dependencies = [
  "askama",
  "aws-smithy-types",
