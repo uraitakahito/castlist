@@ -190,8 +190,11 @@ if [ "$mode" = api ]; then
   # 移した volume で起こし、新しい API で、置いた物が同じ数だけ読める。
   docker run -d --name "$name-v1" -p "127.0.0.1:$port:8080" -v "$name-v1-data:/data" "$image"
   up
-  curl -fsS -o "$tmp/migrated-actors.json" "$url/api/actors"
-  jq -e '[.actors[].name] | sort == ["pm.1", "se.1"]' "$tmp/migrated-actors.json" >/dev/null
+  # ListActors は索引で引ける条件が要る（無ければ 400）ので、置いた付随する id で 1 人ずつ引く。
+  curl -fsS -o "$tmp/migrated-se.json" "$url/api/actors?binding=claude.session:old-1"
+  jq -e '[.actors[].name] == ["se.1"]' "$tmp/migrated-se.json" >/dev/null
+  curl -fsS -o "$tmp/migrated-pm.json" "$url/api/actors?binding=tpm.person:pm"
+  jq -e '[.actors[].name] == ["pm.1"]' "$tmp/migrated-pm.json" >/dev/null
   curl -fsS -o "$tmp/migrated-events.json" "$url/api/events"
   jq -e '[.events[] | [.id, .type, .actorName]] == [["old-e-1", "entered", "se.1"], ["old-e-2", "exited", "se.1"], ["old-e-3", "reported_in", "pm.1"]]' \
     "$tmp/migrated-events.json" >/dev/null
