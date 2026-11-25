@@ -2,6 +2,16 @@
 
 版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/v1/`）と DB の移行（`migrations/`）が変わったかを書く。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
 
+## 1.0.0
+
+AI-36 の作り直しの新しい server（`crates/server`）を、ふつうの release にした版。この版から、image（`Containerfile`）に入るのは新しい server で、今の server（0.4.x）の image は出さない。API と DB の移行の SQL は 1.0.0-rc.1 と同じ（0.4.x からは、どちらも替わる。1.0.0-rc.1 の節）。
+
+- **切り替え（0.4.x から上げる時）: volume は新しい物（`castlist-data-v1`）にし、先に migrate で移す。** 今の volume（`castlist-data`）では起こさない（新しい server は今の server の DB を開かずに止める）。今の server の `GET /v1/backup` で写しを取り、この版の image に `migrate --from <写し> --to /data/castlist.db` を付けて新しい volume に移し、移し終えてから新しい volume で起こす。今の volume は、戻す時のために残す。手順は [release を出す](https://uraitakahito.github.io/castlist/release.html) の「切り替え」、起こす行は [動かす](https://uraitakahito.github.io/castlist/run.html)。
+- API: 1.0.0-rc.1 と同じ（`/api/…`。形は [新しい API の形](https://uraitakahito.github.io/castlist/next.html)）。定義（`model/`）は、例の引数の値の `:` を `%3A` で書くようにしただけで、wire の形は替わらない。`HEAD` の答えの `Content-Length` を、`GET` と同じにした。
+- image と release: `Containerfile` が新しい server を作る（binary は今と同じ `/castlist-server`。環境変数・port も同じ）。CI の job `image` と release の確かめは、新しい API の形の smoke（`ci/smoke-image.sh <image> api`）を流す。release の workflow の rc の分け（`-rc.` の tag だけ `Containerfile.next`）は無くした（`-rc.` の tag を pre-release にする所は残す）。`Containerfile.next` と今の server の code は段 9 で消す。
+- smoke の予行（1.0.0-rc.1 の後に足した）: image の smoke の終わりに、今の版（v0.4.0。digest で固める）に今の API でアクター・ラベル・線・model と effort（登録で頼んだ物と、見た物）・出来事を置いて写しを取り、この image の migrate で新しい volume に移し、照らしの行がみな ok で、新しい API で同じ物が読めるかを見る。予行の途中の container は消さずに止め、落ちた時に log を出す。
+- docs: [動かす](https://uraitakahito.github.io/castlist/run.html) の起こす行を、切り替えの後の形（`v1.0.0`・volume `castlist-data-v1`・`/api/backup`・`/api/logs`）にした。[release を出す](https://uraitakahito.github.io/castlist/release.html) の rc の節を切り替えの手順にし、今の server（0.4.x）を直して出す道を消した（1.0.0 の後は出さない。戻す時は v0.4.0 の image と今の volume で起こす）。
+
 ## 1.0.0-rc.1
 
 AI-36 の作り直しの初めの候補（pre-release）。この版の image は、新しい server（`crates/server`。Smithy の定義 `model/` から作った骨の上に処理を入れた物）を `Containerfile.next` で作った物で、今の server（0.4.0）とは別の物。動いている castlist（`castlist.box`）は替えない。切り替え（AI-36 の段 8）までは、試しと予行にだけ使う。

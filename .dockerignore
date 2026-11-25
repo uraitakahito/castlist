@@ -8,8 +8,7 @@
 !build.rs
 !.cargo
 !Cargo.toml
-# workspace の member（Containerfile の今の image には入らないが、Cargo.toml が名指すので build に要る。
-# rc の image（Containerfile.next）は、この中の新しい server を作る）。
+# workspace の member（1.0.0 から、Containerfile はこの中の新しい server を作る）。
 !crates
 !Cargo.lock
 !clippy.toml

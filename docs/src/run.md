@@ -11,8 +11,8 @@ Apple Container（`container` CLI）で、release の image を動かす。host�
 |---|---|
 | image | `ghcr.io/uraitakahito/castlist:v<version>`（[release](https://github.com/uraitakahito/castlist/releases) に digest がある。arm64） |
 | container | `castlist.box`（`127.0.0.1:8802` → 中の 8080。メモリは Apple Container の下限の 200 MiB、CPU は 1） |
-| URL | host の browser と roster からは `http://127.0.0.1:8802/`（[画面](ui.md)。[API](api.md) は `/v1/`）。同じ network の container（置き場の pagetray など）からは `http://castlist.box:8080/` |
-| DB | 名前つきの volume `castlist-data`（中の `/data/castlist.db`）。host の folder は mount しない |
+| URL | host の browser と roster からは `http://127.0.0.1:8802/`（[画面](ui.md)。API は `/api/`。形は [新しい API の形](next.md)）。同じ network の container（置き場の pagetray など）からは `http://castlist.box:8080/` |
+| DB | 名前つきの volume `castlist-data-v1`（中の `/data/castlist.db`。1.0.0 から。0.4.x までの volume `castlist-data` からは移す: [release を出す](release.md) の「切り替え」）。host の folder は mount しない |
 | 記録 | 同じ volume の `/data/logs/`（0.3.0 から。合わせて 4 MiB と 64 KiB まで）。下の「落ちた後に調べる」 |
 | 設定 | 環境変数 `CASTLIST_DB`（既定 `/data/castlist.db`）・`CASTLIST_LISTEN`（既定 `0.0.0.0:8080`）。image の既定のままでよい |
 
@@ -31,15 +31,16 @@ castlist が 403 で断るのは、`Host` が `127.0.0.1`・`localhost` でな�
 ## 初めて起こす
 
 ```sh
-container image pull ghcr.io/uraitakahito/castlist:v0.3.0
-container image inspect ghcr.io/uraitakahito/castlist:v0.3.0 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
-container volume create castlist-data
-container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v0.3.0
+container image pull ghcr.io/uraitakahito/castlist:v1.0.0
+container image inspect ghcr.io/uraitakahito/castlist:v1.0.0 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
+container volume create castlist-data-v1
+container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data-v1:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v1.0.0
 ```
 
 - digest の見方: `container image list` に出る digest は、Apple Container が付ける別の値。release の digest は、`container image inspect` の `variants` の中の `digest` に出る。
 - `container volume create` は初めての時だけ。2 度目からは、volume はもうある。
-- 起きる時に、まだ当てていない移行の SQL（`migrations/`）を DB に当てる。
+- 0.4.x（volume `castlist-data`）で動かしていた時は、この 4 行でなく [release を出す](release.md) の「切り替え」をする（新しい volume を作り、写しを migrate で移してから、上の `container run` の行で起こす）。
+- 起きる時に、まだ当てていない移行の SQL（`crates/server/migrations/`）を DB に当てる。
 
 > [!WARNING]
 > `-p` には必ず `127.0.0.1:` を書く。`-p 8802:8080` と書くと LAN に開く。
@@ -71,12 +72,12 @@ container start castlist.box
 | `runs.log` | 終わり方の印。起きた・止める合図を受けた・閉じ終えた・panic・誤りで終わった、を 1 行ずつ | 64 KiB。超える前に、古い半分を落とす |
 | `alive` | 生きている印の時刻。30 秒ごとに上書きする | 数十 byte |
 
-読むのは `curl -s http://127.0.0.1:8802/v1/logs`（止めなくてよい。印と記録を、古い順の字で返す。[API](api.md) の `GET /v1/logs`）。これは AI の担当も打てる。
+読むのは `curl -s http://127.0.0.1:8802/api/logs`（止めなくてよい。印と記録を、古い順の字で返す。[新しい API の形](next.md) の `GET /api/logs`）。これは AI の担当も打てる。
 
 castlist が起きない時は、止めたまま、volume を別の container に付けて読む（volume は、動いている container と同時には付けられない）:
 
 ```sh
-container run --rm -v castlist-data:/data docker.io/library/rust:1.100.0-alpine sh -c 'cat /data/logs/runs.log; tail -n 200 /data/logs/server.log'
+container run --rm -v castlist-data-v1:/data docker.io/library/rust:1.100.0-alpine sh -c 'cat /data/logs/runs.log; tail -n 200 /data/logs/server.log'
 ```
 
 起きるたびに、前回の終わり方を 1 行で出す（`container logs castlist.box` の頭と、`server.log`）。
@@ -96,11 +97,11 @@ container run --rm -v castlist-data:/data docker.io/library/rust:1.100.0-alpine 
 
 ## DB のバックアップを取る
 
-**版を上げる前と、volume に触る前**に取る。動かしたまま取れる（[API](api.md) の `GET /v1/backup`）。
+**版を上げる前と、volume に触る前**に取る。動かしたまま取れる（[新しい API の形](next.md) の `GET /api/backup`）。
 
 ```sh
 B=~/castlist-backup-$(date +%Y%m%d-%H%M).db
-curl -fsS -o "$B" http://127.0.0.1:8802/v1/backup
+curl -fsS -o "$B" http://127.0.0.1:8802/api/backup
 sqlite3 "$B" 'select count(*) from actors'    # 開けて、件数が合うか
 ```
 
@@ -109,7 +110,7 @@ sqlite3 "$B" 'select count(*) from actors'    # 開けて、件数が合うか
 
 ## 版を上げる
 
-1. [CHANGELOG.md](https://github.com/uraitakahito/castlist/blob/main/CHANGELOG.md) で、API と移行の SQL が変わるかを見る（移行が足された版は、当てた後に前の版へ戻せない。0.1.x から 0.2.0 へは、移行 `0003` が足される）。
+1. [CHANGELOG.md](https://github.com/uraitakahito/castlist/blob/main/CHANGELOG.md) で、API と移行の SQL が変わるかを見る（移行が足された版は、当てた後に前の版へ戻せない。0.1.x から 0.2.0 へは、移行 `0003` が足される）。0.4.x から 1.0.0 へは、API と移行がみな替わり volume も替わるので、この手順でなく [release を出す](release.md) の「切り替え」をする。
 2. 新しい版の image を pull し、digest を release の値と見比べる（「初めて起こす」の初めの 2 行の版を替えて打つ）。
 3. 「DB のバックアップを取る」をする。
 4. 止めて、container を消し、新しい版で起こす。volume はそのまま付くので、data は残る。
@@ -117,12 +118,12 @@ sqlite3 "$B" 'select count(*) from actors'    # 開けて、件数が合うか
    ```sh
    container stop castlist.box
    container rm castlist.box
-   container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v<新しい版>
+   container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data-v1:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v<新しい版>
    ```
 
    0.1.0 の docs の名（`castlist`）で動かしていた時は、初めの 2 行の名を `castlist.box` でなく前の名にして打つ（止めて消すのは前の名の container）。3 行目からは新しい名。
 
-5. 「確かめる」をする。駄目なら、`container stop castlist.box`・`container rm castlist.box` の後、前の版で `container run` を打つ（移行が足されていなければ、同じ volume で起きる。足されていたら、3 のバックアップからリストアする）。
+5. 「確かめる」をする。駄目なら、`container stop castlist.box`・`container rm castlist.box` の後、前の版で `container run` を打つ（移行が足されていなければ、同じ volume で起きる。足されていたら、3 のバックアップからリストアする）。1.0.0 から 0.4.x へ戻す時は、v0.4.0 の image と今の volume（`castlist-data`）で起こす（[release を出す](release.md) の「切り替え」）。
 6. 古い image は `container image delete` で消す。
 
 ## バックアップからリストアする
@@ -131,7 +132,7 @@ volume を失った・DB が壊れた時。リストアする間、castlist は�
 
 ```sh
 container stop castlist.box
-container run --rm -v castlist-data:/data -v "<バックアップの folder>:/in:ro" docker.io/library/rust:1.100.0-alpine sh -c 'rm -f /data/castlist.db-wal /data/castlist.db-shm && cp /in/castlist-backup-<日時>.db /data/castlist.db'
+container run --rm -v castlist-data-v1:/data -v "<バックアップの folder>:/in:ro" docker.io/library/rust:1.100.0-alpine sh -c 'rm -f /data/castlist.db-wal /data/castlist.db-shm && cp /in/castlist-backup-<日時>.db /data/castlist.db'
 container start castlist.box
 ```
 
@@ -141,6 +142,8 @@ container start castlist.box
 ## volume を消す
 
 > [!CAUTION]
-> `container volume delete castlist-data` は、**台帳（アクター・出来事・線・model と effort のすべて）を消す**。足すだけの記録なので、ほかに控えは無い。リストアできるのは、前に取ったバックアップからだけ。
+> `container volume delete castlist-data-v1` は、**台帳（アクター・出来事・線・model と effort のすべて）を消す**。足すだけの記録なので、ほかに控えは無い。リストアできるのは、前に取ったバックアップからだけ。
 >
 > volume を消すのは Product Manager だけで、消す前に「DB のバックアップを取る」をする。AI の担当は消さない（`pm-only` で断られる）。
+>
+> 0.4.x までの volume `castlist-data` は、戻す時のために、切り替えの後も残す。消す日は Product Manager が決める（AI-36 の段 9）。
