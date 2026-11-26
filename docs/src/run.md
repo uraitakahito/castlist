@@ -3,7 +3,7 @@
 Apple Container（`container` CLI）で、release の image を動かす。host（castlist を動かす機械）の `127.0.0.1` だけに出し、LAN にもインターネットにも開かない。
 
 > [!WARNING]
-> castlist の container を起こす・止める・消すのと、data の volume（`castlist-data-v1`。切り替えの前の `castlist-data` も）を消すのは、**Product Manager だけ**がする。この章の命令は、Product Manager が自分の terminal で直に打つ。
+> castlist の container を起こす・止める・消すのと、data の volume（`castlist-data-v1`）を消すのは、**Product Manager だけ**がする。この章の命令は、Product Manager が自分の terminal で直に打つ。
 >
 > AI の担当は、この章の命令を打てない（repo の `.claude/roles/config.jsonc` の `infra.castlist` は `pm-only` で、`--name castlist.box`・`container start castlist.box`・`container stop castlist.box` などに当たる命令は、どの担当にも断られる）。担当は、打ってほしい 1 行を確認のページに書いて、`roster ask pm` で Product Manager に送る。
 
@@ -12,7 +12,7 @@ Apple Container（`container` CLI）で、release の image を動かす。host�
 | image | `ghcr.io/uraitakahito/castlist:v<version>`（[release](https://github.com/uraitakahito/castlist/releases) に digest がある。arm64） |
 | container | `castlist.box`（`127.0.0.1:8802` → 中の 8080。メモリは Apple Container の下限の 200 MiB、CPU は 1） |
 | URL | host の browser と roster からは `http://127.0.0.1:8802/`（[画面](ui.md)。[API](api.md) は `/api/`）。同じ network の container（置き場の pagetray など）からは `http://castlist.box:8080/` |
-| DB | 名前つきの volume `castlist-data-v1`（中の `/data/castlist.db`。1.0.0 から）。host の folder は mount しない。0.4.x までの volume `castlist-data` は、戻す時のために、Product Manager が決める日まで残す（[release を出す](release.md) の「切り替え（済み）」） |
+| DB | 名前つきの volume `castlist-data-v1`（中の `/data/castlist.db`。1.0.0 から）。host の folder は mount しない |
 | 記録 | 同じ volume の `/data/logs/`（0.3.0 から。合わせて 4 MiB と 64 KiB まで）。下の「落ちた後に調べる」 |
 | 設定 | 環境変数 `CASTLIST_DB`（既定 `/data/castlist.db`）・`CASTLIST_LISTEN`（既定 `0.0.0.0:8080`）。image の既定のままでよい |
 
@@ -122,7 +122,7 @@ sqlite3 "$B" 'select count(*) from actors'    # 開けて、件数が合うか
 
    0.1.0 の docs の名（`castlist`）で動かしていた時は、初めの 2 行の名を `castlist.box` でなく前の名にして打つ（止めて消すのは前の名の container）。3 行目からは新しい名。
 
-5. 「確かめる」をする。駄目なら、`container stop castlist.box`・`container rm castlist.box` の後、前の版で `container run` を打つ（移行が足されていなければ、同じ volume で起きる。足されていたら、3 のバックアップからリストアする）。1.0.0 から 0.4.x へは、この手順では戻さない（v0.4.0 の image と volume `castlist-data` で起こし、roster も戻す: [release を出す](release.md) の「切り替え（済み）」）。
+5. 「確かめる」をする。駄目なら、`container stop castlist.box`・`container rm castlist.box` の後、前の版で `container run` を打つ（移行が足されていなければ、同じ volume で起きる。足されていたら、3 のバックアップからリストアする）。1.0.0 より前の版へは戻せない（[release を出す](release.md) の「切り替え（済み）」）。
 6. 古い image は `container image delete` で消す。
 
 ## バックアップからリストアする
@@ -144,5 +144,3 @@ container start castlist.box
 > `container volume delete castlist-data-v1` は、**台帳（アクター・出来事・線・model と effort のすべて）を消す**。足すだけの記録なので、ほかに控えは無い。リストアできるのは、前に取ったバックアップからだけ。
 >
 > volume を消すのは Product Manager だけで、消す前に「DB のバックアップを取る」をする。AI の担当は消さない（`pm-only` で断られる）。
->
-> 0.4.x までの volume `castlist-data` は、戻す時のために、切り替えの後も残す。Product Manager が決める日まで消さない。
