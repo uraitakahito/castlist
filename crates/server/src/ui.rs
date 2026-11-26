@@ -1256,7 +1256,7 @@ mod tests {
         GRAPH_PERIOD, LIST_PERIOD, encode, event_name, from_local, lost_reason, period,
         quick_links, quick_ranges, time, to_local,
     };
-    /// 出来事の種類（定義の EventType の 10 種。0.4.x の server の src/api.rs の EVENT_TYPES と同じ順）。
+    /// 出来事の種類（定義の EventType の 10 種。v0.4.0 の tag の src/api.rs の EVENT_TYPES と同じ順）。
     const EVENT_TYPES: [&str; 10] = [
         "entered",
         "reentered",

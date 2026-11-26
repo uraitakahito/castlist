@@ -33,7 +33,7 @@ image は public で、だれでも取って中を見られる。**出すのは 
 戻した後に、また切り替える時:
 
 1. 0.4.x の `GET /v1/backup` で写しを取り（止める直前に）、0.4.x を止めて消す。
-2. 空の新しい volume を作る。`castlist-data-v1` には 1.0.0 の書いた行があり、`migrate` は台帳の行のある先を断るので、そこへは移せない。名は `castlist-data-` で始める（Product Manager だけが触れる守りに当たる）。
+2. 空の新しい volume を作る。`castlist-data-v1` には 1.0.0 の書いた行があり、`migrate` は台帳の行のある先を断るので、そこへは移せない。名は `castlist-data-v1-2`（3 度目からは番号を上げる）にする。`castlist-data` で始まる名は、Product Manager だけが触れる守りに当たる。
 3. 移すのは **v1.0.0 の image の `migrate`** だけ（後の版には `migrate` が無い）。版の tag でなく digest で指す: `ghcr.io/uraitakahito/castlist@sha256:ae9ebbe8371f4f3abd5d4d8121c15aa43ce57d06e0466e61f9e8006c2a20b05d`。新しい volume を `/data` に、写しの folder を `/in:ro` に付けて、`migrate --from /in/<写しの file> --to /data/castlist.db` を付けて起こす。写しは `-wal`・`-shm` の無い 1 つの file で渡す。照らしが 1 つでも合わなければ、何も足さずに 1 で終わる。**1 で終わったら 4 に進まない。** 出た行（表ごとの `… ok` と、終わりの `移し終えた: …`）は残す。
 4. 移し終えてから、その volume で今の版を起こす（[動かす](run.md) の「初めて起こす」の `container run` の行の、volume の名を替えた物）。
 
