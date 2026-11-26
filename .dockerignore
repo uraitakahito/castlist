@@ -1,14 +1,11 @@
 # build の中に入れる物を、名指した物だけにする（まずみな外し、要る物だけ通す）。
 # 足す時は、ci/image-contents.txt（出す image に入ってよい物）も見直す。
 *
-!src
-!migrations
 !templates
 !static
-!build.rs
 !.cargo
 !Cargo.toml
-# workspace の member（1.0.0 から、Containerfile はこの中の新しい server を作る）。
+# workspace の member（crates/server と、生成した骨 crates/castlist-sdk）。
 !crates
 !Cargo.lock
 !clippy.toml

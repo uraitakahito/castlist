@@ -2,7 +2,7 @@
 //!
 //! 定義（model/）から作った骨（crates/castlist-sdk/）に処理（handler）を入れ、守りの層（[`guard`]）を前に掛ける。
 //! 手の道（Smithy の定義の外）の画面（[`ui`]）と backup・logs（[`hand`]）は、同じ Router に並べる。
-//! 起こす binary（src/main.rs）は、今の server と同じく記録の file（[`runlog`]）を DB の隣の `logs/` に残す。
+//! 起こす binary（src/main.rs）は、 0.4.x の server と同じく記録の file（[`runlog`]）を DB の隣の `logs/` に残す。
 mod actor;
 mod actor_settings;
 mod body;
@@ -19,7 +19,6 @@ mod link;
 mod list_actors;
 mod list_events;
 mod list_settings;
-pub mod migrate;
 mod register;
 mod resolve;
 mod rows;
@@ -45,10 +44,10 @@ use crate::db::Db;
 use crate::generated::Generated;
 
 /// 画面の応答に付ける Content-Security-Policy。script と style は、castlist 自身が配る file だけを許す。
-/// form は castlist 自身へだけ送れる（一覧の絞りの form は GET で `/` に送る）。今の server（src/lib.rs）と同じ。
+/// form は castlist 自身へだけ送れる（一覧の絞りの form は GET で `/` に送る）。 0.4.x の server（v0.4.0 の tag の src/lib.rs）と同じ。
 pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
-/// 1 つの問い合わせにかけてよい長さ。過ぎれば 503 `Unavailable` で返す（今の server と同じ）。
+/// 1 つの問い合わせにかけてよい長さ。過ぎれば 503 `Unavailable` で返す（0.4.x の server と同じ）。
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// 本文の上限（axum の既定と同じ 2 MiB）。超えれば 413 `PayloadTooLarge` で返す。
@@ -144,7 +143,7 @@ pub fn app_with(db: Arc<Db>, config: Config) -> Router {
             guard::timeout,
         ))
         .layer(middleware::from_fn(guard::guard))
-        // 問い合わせごとの 1 行（記録の file にだけ書く。src/runlog.rs の init）。guard が断った物も残る。今の server と同じ。
+        // 問い合わせごとの 1 行（記録の file にだけ書く。src/runlog.rs の init）。guard が断った物も残る。 0.4.x の server と同じ。
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().level(Level::INFO))

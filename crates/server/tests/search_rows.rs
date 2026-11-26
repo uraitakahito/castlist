@@ -1,12 +1,12 @@
 //! ListActorSettings・GetActorSettingAt・ListSettings・ListEvents（監査の検索の残り）の振る舞い（処理より先に書く）。
-//! 今の server の tests/search.rs の問いを、新しい道と欄の名で引く。見本は書く操作だけで作り（common::sample）、
+//! 0.4.x の server（v0.4.0 の tag）の tests/search.rs の問いを、新しい道と欄の名で引く。見本は書く操作だけで作り（common::sample）、
 //! 受けた時刻を決めたい所だけ DB に直に置く。
 mod common;
 
 use std::collections::BTreeSet;
 
 use axum::http::StatusCode;
-use castlist_next::search::plans;
+use castlist::search::plans;
 use common::sample::{OPUS, SONNET, ev, field, observed, ok, put, sample, seat, tick};
 use common::{App, ai, at, error_type};
 use serde_json::{Value, json};
@@ -626,7 +626,7 @@ async fn waiting_too_long_for_a_read_connection_is_503_unavailable() {
         "/api/events".to_owned(),
     ];
     let mut held = Vec::new();
-    for _ in 0..castlist_next::db::READS {
+    for _ in 0..castlist::db::READS {
         held.push(app.db.read().acquire().await.expect("読む接続"));
     }
     // 4 つを同時に送る（どれも接続を 5 秒待つので、順に送ると 20 秒かかる）。

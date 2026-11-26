@@ -467,7 +467,7 @@ async fn waiting_too_long_for_a_read_connection_is_503_unavailable() {
     let se1 = id(&app.register(&ai("se", "s-1")).await);
     // 軽い読みの接続（READS 本）を、みな握ったままにする。
     let mut held = Vec::new();
-    for _ in 0..castlist_next::db::READS {
+    for _ in 0..castlist::db::READS {
         held.push(app.db.read().acquire().await.expect("読む接続"));
     }
     let (status, headers, answer) = app.get(&format!("/api/actors/{se1}")).await;

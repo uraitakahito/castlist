@@ -1,4 +1,4 @@
-//! 受け入れの試験: 本物の binary（castlist-next）を空いた port で起こし、HTTP で叩く（今の server の tests/server.rs を移した物）。
+//! 受け入れの試験: 本物の binary（castlist-server）を空いた port で起こし、HTTP で叩く。
 //! 守りの層の誤りの形・HEAD・本文の上限・backup は、hyper を通した本物の答えでも見る。
 // 試験の道具は同期で書く（async の中ではないので、糸を塞いでも困らない）。
 #![allow(clippy::disallowed_methods)]
@@ -71,7 +71,7 @@ fn origin_の付いた書く要求を_forbidden_で断る() {
 #[test]
 fn 上限を_1_byte_超える本文は_payload_too_large_で断る() {
     let server = Server::start();
-    let body = vec![b' '; castlist_next::BODY_LIMIT + 1];
+    let body = vec![b' '; castlist::BODY_LIMIT + 1];
     let mut raw = format!(
         "POST /api/actors HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
         body.len()
@@ -101,7 +101,7 @@ fn 画面の応答に_csp_を付ける() {
     );
     assert_eq!(
         answer.header("content-security-policy").as_deref(),
-        Some(castlist_next::CSP),
+        Some(castlist::CSP),
         "{answer:?}"
     );
     assert_eq!(

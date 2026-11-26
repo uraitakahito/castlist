@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use axum::Router;
 use axum::body::Body;
 use axum::http::{HeaderMap, Request, StatusCode, header};
-use castlist_next::db::Db;
+use castlist::db::Db;
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
 use time::format_description::well_known::Rfc3339;
@@ -23,7 +23,7 @@ use tower::ServiceExt;
 pub fn temp_db(tag: &str) -> PathBuf {
     static SEQ: AtomicU32 = AtomicU32::new(0);
     let dir = std::env::temp_dir().join(format!(
-        "castlist-next-test-{tag}-{}-{}",
+        "castlist-test-{tag}-{}-{}",
         std::process::id(),
         SEQ.fetch_add(1, Ordering::Relaxed)
     ));
@@ -37,7 +37,7 @@ pub fn remove_db(path: &Path) {
     let Some(dir) = path.parent() else { return };
     let name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
     assert!(
-        name.starts_with("castlist-next-test-"),
+        name.starts_with("castlist-test-"),
         "temp_db の folder ではない: {}",
         dir.display()
     );
@@ -59,14 +59,14 @@ impl Drop for App {
 
 impl App {
     pub async fn start() -> Self {
-        Self::start_with(castlist_next::Config::default()).await
+        Self::start_with(castlist::Config::default()).await
     }
 
     /// 守りの層の設定（時間切れの長さ・記録の置き場）を決めて起こす。
-    pub async fn start_with(config: castlist_next::Config) -> Self {
+    pub async fn start_with(config: castlist::Config) -> Self {
         let path = temp_db("app");
         let db = Arc::new(Db::open(&path).await.expect("Db::open"));
-        let app = castlist_next::app_with(db.clone(), config);
+        let app = castlist::app_with(db.clone(), config);
         Self { app, db, path }
     }
 
@@ -149,7 +149,7 @@ impl App {
 
     /// 出来事を 1 つ、アクターの id で書く接続に直に置く（受けた時刻を決めて置く試験のため）。受けた時刻は castlist の今。
     pub async fn event(&self, id: &str, actor: &str, kind: &str, detail: &str) {
-        self.event_at(id, actor, kind, detail, &castlist_next::db::now())
+        self.event_at(id, actor, kind, detail, &castlist::db::now())
             .await;
     }
 
@@ -171,7 +171,7 @@ impl App {
 
     /// 線を 1 つ、アクターの id で書く接続に直に置く。
     pub async fn link(&self, id: &str, kind: &str, from: &str, to: &str) {
-        let now = castlist_next::db::now();
+        let now = castlist::db::now();
         sqlx::query(
             "insert into links(id, type, from_actor, to_actor, sent_at, received_at, clock_skew, body_hash)
              values(?1, ?2, ?3, ?4, ?5, ?5, 0, 'x')",
@@ -188,7 +188,7 @@ impl App {
 
     /// 見た model と effort を 1 つ、アクターの id で書く接続に直に置く。知らない名は一覧に足す。
     pub async fn observed(&self, id: &str, actor: &str, model: &str, effort: &str) {
-        let now = castlist_next::db::now();
+        let now = castlist::db::now();
         for (table, name) in [("models", model), ("efforts", effort)] {
             sqlx::query(sqlx::AssertSqlSafe(format!(
                 "insert into {table}(name, first_seen_at) values(?1, ?2) on conflict(name) do nothing"

@@ -99,8 +99,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
-      - name: 試験が起こすサーバーを作る（今の server と、作り直している新しい server）
-        run: cargo build --locked --bin castlist-server --bin castlist-next
+      - name: 試験が起こすサーバーを作る
+        run: cargo build --locked --bin castlist-server
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           package_json_file: e2e/package.json
@@ -126,14 +126,6 @@ jobs:
           # 上の段で作った物を起こす（作り直さない）。
           CASTLIST_E2E_SERVER: ../target/debug/castlist-server
         run: pnpm test
-      - name: 相関図の試験（新しい server。AI-36）
-        # 今の server の段が落ちても流す（作り直しの間は、両方の結果が要る）。
-        if: success() || failure()
-        working-directory: e2e
-        env:
-          CASTLIST_E2E_SERVER: ../target/debug/castlist-next
-          CASTLIST_E2E_OUT: -next
-        run: pnpm test
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -141,15 +133,6 @@ jobs:
           path: |
             e2e/playwright-report/
             e2e/test-results/
-          retention-days: 7
-          if-no-files-found: ignore
-      - if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: e2e-report-next
-          path: |
-            e2e/playwright-report-next/
-            e2e/test-results-next/
           retention-days: 7
           if-no-files-found: ignore
   image:
@@ -168,28 +151,8 @@ jobs:
           sudo tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C /usr/local/bin gitleaks
       - name: image に、入ってよい物だけが入っているか（中身の一覧・設定・秘密の走査）
         run: ci/check-image.sh castlist:ci
-      # 1.0.0 から、image は新しい server（Containerfile）。新しい API の形で書いて読み、今の版（v0.4.0）の写しを移す予行もする。
-      - name: 空の image の中で起き、新しい API で書いて読め、断るべき物を断り、止めて起こし直せ、今の版の写しを移せるか
-        run: ci/smoke-image.sh castlist:ci api
-  image-next:
-    # Containerfile.next（1.0.0 から Containerfile と同じ中身。新しい server の castlist-next を /castlist-server の名で置く）を、
-    # job image と同じ決まりで見る。job image と重なるだけで、段 9 で Containerfile.next と一緒に消す。
-    if: github.event_name != 'schedule'
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # 出どころの記録（provenance・SBOM）は付けない。付ける時は、中身を見てから。
-      - run: docker build --provenance=false --sbom=false -t castlist-next:ci -f Containerfile.next .
-      - name: gitleaks を入れる（版と checksum を固定）
-        run: |
-          curl -fsSL -o "$RUNNER_TEMP/gitleaks.tar.gz" \
-            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz"
-          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
-          sudo tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C /usr/local/bin gitleaks
-      - name: image に、入ってよい物だけが入っているか（中身の一覧・設定・秘密の走査）
-        run: ci/check-image.sh castlist-next:ci
-      - name: 空の image の中で起き、新しい API で書いて読め、断るべき物を断り、止めて起こし直せるか
-        run: ci/smoke-image.sh castlist-next:ci api
+      - name: 空の image の中で起き、書いて読め、断るべき物を断り、止めて起こし直せるか
+        run: ci/smoke-image.sh castlist:ci
   advisories:
     runs-on: ubuntu-latest
     steps:
@@ -198,7 +161,7 @@ jobs:
         with:
           # 弱点と、crate の license（MIT の castlist と一緒に配れる物か）。
           command: check advisories licenses
-          # workspace の member をみな見る（付けないと、頭の crate（今の server）の依存しか見ない。新しい server は crates/server）。
+          # workspace の member をみな見る（root は仮想の workspace なので、付けないと既定の member だけを見る）。
           # この action の既定は --all-features だが、arguments を書くと置き換わる。見るのは、image と CI で build する
           # 既定の features の依存だけ、と決めた（build しない features の依存は見ない。pagetray の review-17）。
           arguments: --workspace

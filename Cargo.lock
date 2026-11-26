@@ -360,7 +360,6 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "serde_core",
- "serde_json",
  "serde_path_to_error",
  "serde_urlencoded",
  "sync_wrapper",
@@ -489,31 +488,9 @@ name = "castlist"
 version = "1.0.0"
 dependencies = [
  "askama",
- "axum",
- "http-body-util",
- "serde",
- "serde_json",
- "sha2",
- "sqlx",
- "time",
- "tokio",
- "tokio-util",
- "tower 0.5.3",
- "tower-http 0.7.1",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
-name = "castlist-next"
-version = "1.0.0"
-dependencies = [
- "askama",
  "aws-smithy-types",
  "axum",
  "bytes",
- "castlist",
  "castlist_sdk",
  "http-body",
  "http-body-util",

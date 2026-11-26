@@ -1,11 +1,11 @@
-//! 負荷の試験（ふだんは流さない）: 本物の binary（castlist-next）を一時の DB で起こし、50 の客が 10 秒叩く。
-//! 今の server の tests/load.rs を移した物（同じ混ぜ方・同じ基準で、道と欄の名だけを新しい API に替えた）。
+//! 負荷の試験（ふだんは流さない）: 本物の binary（castlist-server）を一時の DB で起こし、50 の客が 10 秒叩く。
+//! 0.4.x の server（v0.4.0 の tag）の tests/load.rs を移した物（同じ混ぜ方・同じ基準で、道と欄の名だけを新しい API に替えた）。
 //! 7 割が読む物（resolve・graph・監査の検索を含む。検索は読む物の 2 割）、3 割が書く物。誤りと 5xx が 0 で、p99 が 1 秒未満であること。
 //! 基準は CI の機械の揺れに合わせた（同じ code で p99 が 67〜324 ms に揺れた。2026-11-22）。待たせないことそのものは
 //! tests/concurrency.rs（書く鍵を握った間も読む物が 100 ms の内に答える、など）が見る。ここは、詰まって誤りや
 //! 秒の単位の待ちが出ないかを見る。CI では一時の DB を memory の上（`TMPDIR=/dev/shm`）に置く。CI の機械の disk の
 //! 書き込みの詰まりで、書く接続の待ちが 2 秒を越えて落ちていたため（.github/workflows/ci.yml の job load）。
-//! `cargo test --locked --release -p castlist-next --test load -- --ignored --nocapture`（`-p` を外せば、今の server の物も流す。CI の job load）
+//! `cargo test --locked --release -p castlist --test load -- --ignored --nocapture`（CI の job load）
 // 起こす道具（tests/common）は同期で書く。
 #![allow(clippy::disallowed_methods)]
 

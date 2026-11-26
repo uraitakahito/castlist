@@ -1,7 +1,7 @@
 //! 画面の試験: 一覧（`/`）・プロフィール（`/actors/{id}`）・タイムライン（`/graph/timeline`）・相関図（`/graph/network`）と、
-//! それが読む CSS と script（`/static/…`）。今の server の tests/ui.rs を、新しい server の手の道で引く（処理より先に書く）。
+//! それが読む CSS と script（`/static/…`）。 0.4.x の server（v0.4.0 の tag）の tests/ui.rs を、新しい server の手の道で引く（処理より先に書く）。
 //! 見本の記録は、公の API（RegisterActor・PutEvent・PutLink・PutSetting）だけで作る。HTML は字で見る
-//! （決まった印: 行の link・`rel="next"`・`<section id>`）。画面の字と URL の引数は、今の server と同じ。
+//! （決まった印: 行の link・`rel="next"`・`<section id>`）。画面の字と URL の引数は、 0.4.x の server と同じ。
 //! 違うのは、相関図が点と線を引く API の道（`/api/graph`。時刻は UTC の字にして渡す）だけ。
 
 mod common;
@@ -224,7 +224,7 @@ async fn sample() -> Sample {
     )
     .await;
     tick().await;
-    let end = castlist_next::db::now();
+    let end = castlist::db::now();
     Sample {
         app,
         ids,
@@ -262,7 +262,7 @@ fn assert_html(uri: &str, headers: &HeaderMap, body: &str) {
     );
     assert_eq!(
         get(header::CONTENT_SECURITY_POLICY),
-        Some(castlist_next::CSP),
+        Some(castlist::CSP),
         "{uri}"
     );
     for bad in ["<script", "style=", "<style"] {

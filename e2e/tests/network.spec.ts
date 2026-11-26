@@ -1,7 +1,6 @@
 // 相関図（/graph/network。図 C）を、本物の browser で見る。見本の記録は seed.setup.ts が置く。
 // どの試験も、console の誤り・page の誤り・CSP の違反が 1 つも無いことを、終わりに見る。
 import { expect, test, type Page } from '@playwright/test';
-import { path } from './wire';
 
 type Node = { id: string; name: string; kind: string };
 type Edge = { id: string; type: string; from: string; to: string };
@@ -9,7 +8,7 @@ type Graph = { nodes: Node[]; edges: Edge[] };
 
 /** 図の API の答え（browser の外から引く）。 */
 async function graph(page: Page, query = ''): Promise<Graph> {
-  const response = await page.request.get(`${path('/v1/graph')}${query}`);
+  const response = await page.request.get(`/api/graph${query}`);
   expect(response.ok()).toBeTruthy();
   return response.json();
 }

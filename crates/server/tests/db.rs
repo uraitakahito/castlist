@@ -1,7 +1,7 @@
 //! DB の決まりの試験: 移行・足すだけ・外のキー・接続の設定。書く接続と読む接続を直に使う。
 mod common;
 
-use castlist_next::db::{Db, LOOKUPS};
+use castlist::db::{Db, LOOKUPS};
 use common::{App, ai, at, remove_db, temp_db};
 use serde_json::json;
 use sqlx::sqlite::SqliteConnectOptions;
@@ -68,7 +68,7 @@ async fn the_migration_makes_the_tables_and_views_of_the_ledger() {
             "view actor_state",
         ]
     );
-    // 送り手の時刻の列は sent_at（今の server の 0003 の後の形）。at の列はどこにも無い。
+    // 送り手の時刻の列は sent_at（0.4.x の server の 0003 の後の形）。at の列はどこにも無い。
     for table in ["actors", "bindings", "links", "events", "settings"] {
         let columns: Vec<String> = app
             .column(&format!("select name from pragma_table_info('{table}')"))
@@ -127,10 +127,10 @@ async fn every_table_refuses_update_and_delete() {
 async fn every_connection_has_foreign_keys_wal_busy_timeout_and_recursive_triggers() {
     let app = App::start().await;
     let mut held = Vec::new();
-    for _ in 0..castlist_next::db::READS {
+    for _ in 0..castlist::db::READS {
         held.push(app.db.read().acquire().await.expect("読む接続"));
     }
-    for _ in 0..castlist_next::db::HEAVY_READS {
+    for _ in 0..castlist::db::HEAVY_READS {
         held.push(app.db.heavy().acquire().await.expect("重い読みの接続"));
     }
     held.push(app.db.write().acquire().await.expect("書く接続"));
@@ -156,7 +156,7 @@ async fn every_connection_has_foreign_keys_wal_busy_timeout_and_recursive_trigge
         assert_eq!((got, journal.as_str()), (vec![1, 1, 5000, 2], "wal"));
     }
     // 読む接続（軽い・重い）は書けない。
-    for i in [0, castlist_next::db::READS as usize] {
+    for i in [0, castlist::db::READS as usize] {
         let refused = sqlx::query("insert into models(name, first_seen_at) values('x', 'y')")
             .execute(&mut *held[i])
             .await
@@ -251,7 +251,7 @@ async fn a_db_with_broken_foreign_keys_is_not_opened() {
 async fn opening_again_keeps_the_rows_and_does_not_migrate_twice() {
     let path = temp_db("reopen");
     let db = Db::open(&path).await.expect("Db::open");
-    let app = castlist_next::app(std::sync::Arc::new(db));
+    let app = castlist::app(std::sync::Arc::new(db));
     let request = common::post("/api/actors", &ai("se", "s-1"));
     let response = tower::ServiceExt::oneshot(app, request).await.unwrap();
     assert_eq!(response.status(), axum::http::StatusCode::CREATED);

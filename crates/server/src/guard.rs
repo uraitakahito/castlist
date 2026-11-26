@@ -3,7 +3,7 @@
 //! 1. [`stamp`]: どの答えにも型の推し量りを止める header などを付ける（断った答えにも付く）。
 //! 2. 問い合わせごとの記録の 1 行（tower-http の TraceLayer。断った物も残る）。
 //! 3. [`guard`]: `Host` と `Origin` で断る。`HEAD` は `GET` と同じに答え、本文を捨てる。
-//! 4. [`timeout`]: 答えの頭までに時間がかかりすぎれば 503。本文を送る間（backup の file）は数えない（今の server と同じ）。
+//! 4. [`timeout`]: 答えの頭までに時間がかかりすぎれば 503。本文を送る間（backup の file）は数えない（0.4.x の server と同じ）。
 //! 5. [`limit`]: 本文を上限まで読む。超えれば 413（生成した骨は本文を自分で読むので、axum の上限が掛からない）。
 //!
 //! 断る答えは、生成した層の誤りと同じ restJson1 の形（[`reply`]）。型は定義（ai.common）の `Forbidden`・`PayloadTooLarge`・
@@ -20,11 +20,11 @@ use http_body_util::{BodyExt, LengthLimitError, Limited};
 use crate::errors::reply;
 use crate::{BODY_LIMIT, CSP};
 
-/// host（castlist を動かす機械）の中からの要求だけを受ける（今の server の guard と同じ）。
+/// host（castlist を動かす機械）の中からの要求だけを受ける（0.4.x の server の guard と同じ）。
 /// - `Host` が 127.0.0.1・localhost でなければ断る（外の site が名前を付け替えて届ける要求を防ぐ）。
 /// - `GET`・`HEAD` のほかの要求に `Origin` が付いていれば断る（browser の中のページからは書かせない。roster と `curl` は付けない）。
 ///
-/// `HEAD` は `GET` にして通し、答えの本文を捨てる（状態と header は `GET` と同じ）。今の server は axum の `get` の道が
+/// `HEAD` は `GET` にして通し、答えの本文を捨てる（状態と header は `GET` と同じ）。 0.4.x の server は axum の `get` の道が
 /// `HEAD` にも答えていた。生成した骨の道は `GET` だけなので、ここで揃える。
 pub async fn guard(mut request: Request, next: Next) -> Response {
     let host = request
@@ -122,7 +122,7 @@ pub async fn limit(request: Request, next: Next) -> Response {
 }
 
 /// どの答えにも、型の推し量りを止める header と、referrer を送らせない header を付け、画面（HTML）の答えには CSP を付ける
-/// （今の server の src/lib.rs の stamp と同じ）。
+/// （0.4.x の server（v0.4.0 の tag）の src/lib.rs の stamp と同じ）。
 pub async fn stamp(request: Request, next: Next) -> Response {
     let mut response = next.run(request).await;
     let headers = response.headers_mut();

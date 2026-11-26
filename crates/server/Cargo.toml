@@ -1,7 +1,7 @@
-# 新しい castlist の server（AI-36）。定義（model/）から作った骨（crates/castlist-sdk/）に処理を入れ、
-# 手の道（画面・backup・logs）と 1 つの axum の Router に並べる。切り替え（AI-36 の段 8）まで image には入らない。
+# castlist の server。定義（model/）から作った骨（crates/castlist-sdk/）に処理を入れ、
+# 手の道（画面・backup・logs）と 1 つの axum の Router に並べる。
 [package]
-name = "castlist-next"
+name = "castlist"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,15 +9,15 @@ license.workspace = true
 publish = false
 
 [[bin]]
-# 新しい server を起こす binary（今の castlist-server と同じ環境変数・記録・止め方・時間切れ）。
-name = "castlist-next"
+# server を起こす binary（image の中の /castlist-server）。
+name = "castlist-server"
 path = "src/main.rs"
 
 [dependencies]
 castlist_sdk = { path = "../castlist-sdk" }
-# 画面の HTML（repo の templates/ を、今の server と共に使う。askama.toml）。root の crate と同じ版。
+# 画面の HTML（repo の templates/。askama.toml）。
 askama = "0.16.1"
-# query は、画面の URL の引数を名と値の並びで読むため（今の server と同じ）。
+# query は、画面の URL の引数を名と値の並びで読むため。
 axum = { version = "0.8.9", default-features = false, features = ["http1", "query", "tokio"] }
 aws-smithy-types = "1.9.4"
 bytes = "1"
@@ -25,29 +25,25 @@ http-body = "1"
 http-body-util = "0.1"
 # 出来事の detail（DB の JSON の字）を、答えの Document に直す。
 serde_json = "1"
-# 同じ id で同じ本文かを見る写し（body_hash。SHA-256。root の crate と同じ版）。
+# 同じ id で同じ本文かを見る写し（body_hash。SHA-256）。
 sha2 = { version = "0.11.1", default-features = false }
-# SQL は動く時に組む形（query・query_as）だけを使う。macros は、移行の SQL を埋め込む migrate!() のため（今の server と同じ）。
+# SQL は動く時に組む形（query・query_as）だけを使う。macros は、移行の SQL を埋め込む migrate!() のため。
 sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
 time = { version = "0.3", features = ["formatting", "parsing"] }
 # タイムラインを組む重い計算を、tokio の糸の外（spawn_blocking）で走らせる。binary の起動・待ち受け・止める合図・時間切れ・
-# backup の file にも使う（root の crate と同じ features）。
+# backup の file にも使う。
 tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "net", "signal", "fs", "time"] }
-# backup の file を、読みながら送る（root の crate と同じ版と features）。
+# backup の file を、読みながら送る。
 tokio-util = { version = "0.7", features = ["io"] }
 tower = { version = "0.5", features = ["util"] }
-# 問い合わせごとの記録（method・path・status・かかった時間。root の crate と同じ版と features）。
+# 問い合わせごとの記録（method・path・status・かかった時間）。
 tower-http = { version = "0.7", default-features = false, features = ["trace"] }
-# 記録（root の crate と同じ版と features）。
+# 記録。
 tracing = { version = "0.1", default-features = false, features = ["std"] }
-# 時刻つきの記録。書き先は stdout と、大きさで回す file（src/runlog.rs。root の crate と同じ版と features）。
+# 時刻つきの記録。書き先は stdout と、大きさで回す file（src/runlog.rs）。
 tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt", "registry"] }
 # アクターの id（UUID v7）。
 uuid = { version = "1", default-features = false, features = ["std", "v7"] }
-
-[dev-dependencies]
-# 移す試験（tests/migrate.rs）が、今の server（repo の頭の crate）の DB と /v1 の道で、移す元の DB を作る。
-castlist = { path = "../.." }
 
 [lints.clippy]
 await_holding_lock = "deny"

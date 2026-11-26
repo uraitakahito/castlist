@@ -1,4 +1,4 @@
-//! 画面の URL の引数を読む所。画面の引数と誤りの訳は今の server（src/search.rs・src/api.rs）のまま
+//! 画面の URL の引数を読む所。画面の引数と誤りの訳は 0.4.x の server（v0.4.0 の tag の src/search.rs・src/api.rs）のまま
 //! （名は snake_case。知らない名・1 つだけの名の重なり・読めない値は、引数の名を書いた 400 の画面）。
 //! 新しい API（生成した層が引数を読む）とは別に、画面だけがこれで読む。
 use axum::extract::Query;
@@ -208,7 +208,7 @@ fn broken_after() -> PageError {
 
 // --- 一覧 ---
 
-/// 一覧（`GET /`）の引数の名。今の server の `GET /v1/actors` と同じ。
+/// 一覧（`GET /`）の引数の名。 0.4.x の server の `GET /v1/actors` と同じ。
 pub const ACTOR_PARAMS: &[&str] = &[
     "label",
     "binding",

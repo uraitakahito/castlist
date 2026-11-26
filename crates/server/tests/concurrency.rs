@@ -168,7 +168,7 @@ async fn twenty_puts_of_the_same_event_at_once_add_one_row_and_answer_the_same()
     assert_foreign_keys(&app).await;
 }
 
-/// 今の server の tests/search.rs と同じ: 書く transaction を開いて書き、2 秒握っている間に、読む操作を 10 回ずつ並べて送る。
+/// 0.4.x の server（v0.4.0 の tag）の tests/search.rs と同じ: 書く transaction を開いて書き、2 秒握っている間に、読む操作を 10 回ずつ並べて送る。
 /// どれも 200 で、100 ms のうちに答える（WAL なので、読む接続は書く鍵を待たない）。
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn reads_answer_within_100_ms_while_the_write_lock_is_held_for_2_seconds() {
@@ -330,7 +330,7 @@ async fn resolving_answers_in_100_ms_while_timelines_of_500_actors_are_built() {
 }
 
 /// 重い読み（図の点と線・タイムライン）は、重い読みの接続（HEAVY_READS 本）だけを使い、軽い読みの接続（READS 本）には触れない。
-/// 軽い読みの接続は、いつも引き当てなどに空いている（今の server で、重い読みが読む接続を占めて引き当てが 100 ms を超えた。2026-11-23 の CI）。
+/// 軽い読みの接続は、いつも引き当てなどに空いている（0.4.x の server で、重い読みが読む接続を占めて引き当てが 100 ms を超えた。2026-11-23 の CI）。
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn heavy_reads_use_only_the_heavy_read_connections() {
     let app = App::start().await;
@@ -386,7 +386,7 @@ async fn heavy_reads_use_only_the_heavy_read_connections() {
     assert!(rendered > 0, "重い読みが 1 度も答えていない");
     assert_eq!(light, 0, "重い読みが軽い読みの接続を使った");
     assert!(
-        (1..=castlist_next::db::HEAVY_READS as usize).contains(&heavy),
+        (1..=castlist::db::HEAVY_READS as usize).contains(&heavy),
         "重い読みが同時に使った重い読みの接続: {heavy} 本"
     );
 }

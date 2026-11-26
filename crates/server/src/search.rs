@@ -5,7 +5,7 @@
 //!   「最新」は seq の大きい方。
 //! - 頁は keyset で分ける（並べる値と seq か、seq だけを後ろから続ける）。辿る間に足されたアクターでは、穴も重なりも出ない。
 //!   ただし並べる値（初めの登場・最後の退場）は出来事で動くので、もう出したアクターが辿る間に退場すると、次の頁で出直すことがある。
-//! - SQL は決まった欠片を繋ぎ、値は bind するだけ（[`plans`] の試験が、索引で引くことを見る）。今の server（src/search.rs）の SQL と同じ。
+//! - SQL は決まった欠片を繋ぎ、値は bind するだけ（[`plans`] の試験が、索引で引くことを見る）。 0.4.x の server（v0.4.0 の tag の src/search.rs）の SQL と同じ。
 use std::collections::{BTreeMap, HashSet};
 
 use serde_json::Value;
