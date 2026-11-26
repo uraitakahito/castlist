@@ -27,11 +27,13 @@ up() {
   done
   return 1
 }
-# 後片付け: container と volume を消す（落ちた時は、消す前に log を出す）。
+# 後片付け: container と volume を消す（落ちた時は、消す前に log を出す）。$name-prev は、出した版が書く段の物。
 cleanup() {
-  if docker inspect "$name" >/dev/null 2>&1; then docker logs "$name" || true; fi
-  docker rm -f "$name" >/dev/null 2>&1 || true
-  docker volume rm "$name-data" >/dev/null 2>&1 || true
+  for c in "$name" "$name-prev"; do
+    if docker inspect "$c" >/dev/null 2>&1; then docker logs "$c" || true; fi
+    docker rm -f "$c" >/dev/null 2>&1 || true
+    docker volume rm "$c-data" >/dev/null 2>&1 || true
+  done
 }
 trap cleanup EXIT
 
@@ -135,5 +137,19 @@ grep -q ' start version=' "$logs"
 grep -q 'uri=/healthz' "$logs"
 rm -f "$logs"
 # 起こし直した後も、volume の DB に書いた物が読める。
+read_back
+# 出した版（v1.0.0。release の本文の digest で固める）が書いた volume を、この image で開いて読めるか
+# （版を上げる時の形。移行の file を替えると、ここで断られる）。port は同じ物を使うので、先の container は止める。
+docker stop "$name" >/dev/null
+released=ghcr.io/uraitakahito/castlist@sha256:ae9ebbe8371f4f3abd5d4d8121c15aa43ce57d06e0466e61f9e8006c2a20b05d
+docker run -d --name "$name-prev" -p "127.0.0.1:$port:8080" -v "$name-prev-data:/data" "$released"
+up
+test "$(curl -s -o "$tmp/actor.json" -w '%{http_code}' -X POST -H "$json" --data "$register" "$url/api/actors")" = 201
+actor=$(jq -r '.actor.id' "$tmp/actor.json")
+test "$(code -X PUT -H "$json" --data "$event" "$url/api/events/smoke-e-1")" = 201
+docker stop "$name-prev" >/dev/null
+docker rm "$name-prev" >/dev/null
+docker run -d --name "$name-prev" -p "127.0.0.1:$port:8080" -v "$name-prev-data:/data" "$image"
+up
 read_back
 echo "image は動く: ${image}"

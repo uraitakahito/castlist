@@ -1,4 +1,4 @@
-//! 手の道 `GET /api/backup`（DB の揃ったバックアップ）と `GET /api/logs`（残した記録）。0.4.x の server の `GET /v1/backup`・`GET /v1/logs` と同じ。
+//! 手の道 `GET /api/backup`（DB の揃ったバックアップ）と `GET /api/logs`（残した記録）。 0.4.x の server の `GET /v1/backup`・`GET /v1/logs` と同じ。
 mod common;
 
 use std::path::Path;

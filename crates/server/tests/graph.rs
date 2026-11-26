@@ -1,4 +1,4 @@
-//! GetGraph（図の点と線）の振る舞い（処理より先に書く）。0.4.x の server の `GET /v1/graph` の問い（tests/api.rs の「図の点と線」）を、
+//! GetGraph（図の点と線）の振る舞い（処理より先に書く）。 0.4.x の server の `GET /v1/graph` の問い（tests/api.rs の「図の点と線」）を、
 //! 新しい道と欄の名で引く。見本は書く操作だけで作る（common::sample）。
 mod common;
 

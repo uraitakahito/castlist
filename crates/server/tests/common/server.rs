@@ -1,5 +1,5 @@
 //! 受け入れの試験の道具: 本物の binary（castlist-server）を空いた port で起こし、生の HTTP/1.1 で叩く。
-//! 0.4.x の server の tests/common/mod.rs の Server を移した物（起こす binary と、一時の DB の folder の名だけが違う）。
+//! 0.4.x の server（v0.4.0 の tag）の tests/common/mod.rs の Server を移した物（起こす binary と、一時の DB の folder の名だけが違う）。
 // 試験の道具は同期で書く（async の中ではないので、糸を塞いでも困らない）。
 #![allow(clippy::disallowed_methods)]
 

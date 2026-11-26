@@ -1,4 +1,4 @@
-//! GetLineage（起こした・継いだ線の上り下り）の振る舞い（処理より先に書く）。0.4.x の server の tests/search.rs の問いを、新しい道と欄の名で引く。
+//! GetLineage（起こした・継いだ線の上り下り）の振る舞い（処理より先に書く）。 0.4.x の server（v0.4.0 の tag）の tests/search.rs の問いを、新しい道と欄の名で引く。
 mod common;
 
 use axum::http::StatusCode;

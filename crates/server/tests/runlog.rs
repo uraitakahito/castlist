@@ -1,5 +1,5 @@
-//! binary（castlist-next）を起こして、終わり方の印と記録の file を見る（決まりは docs/src/run.md の「落ちた後に調べる」）。
-//! 0.4.x の server の tests/runlog.rs を移した物（読む道は `GET /api/logs`）。
+//! binary（castlist-server）を起こして、終わり方の印と記録の file を見る（決まりは docs/src/run.md の「落ちた後に調べる」）。
+//! 0.4.x の server（v0.4.0 の tag）の tests/runlog.rs を移した物（読む道は `GET /api/logs`）。
 //! 試験ごとに空の folder を作り、その中に DB を置く。記録は DB の隣の logs/ にできるので、試験どうしで混ざらない。
 #![allow(clippy::disallowed_methods)]
 

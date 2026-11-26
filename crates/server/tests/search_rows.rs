@@ -1,5 +1,5 @@
 //! ListActorSettings・GetActorSettingAt・ListSettings・ListEvents（監査の検索の残り）の振る舞い（処理より先に書く）。
-//! 0.4.x の server の tests/search.rs の問いを、新しい道と欄の名で引く。見本は書く操作だけで作り（common::sample）、
+//! 0.4.x の server（v0.4.0 の tag）の tests/search.rs の問いを、新しい道と欄の名で引く。見本は書く操作だけで作り（common::sample）、
 //! 受けた時刻を決めたい所だけ DB に直に置く。
 mod common;
 
