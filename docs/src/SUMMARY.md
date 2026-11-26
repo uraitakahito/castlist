@@ -13,4 +13,3 @@
 
 - [release を出す](release.md)
 - [開発](development.md)
-- [新しい API の形（作り直しの間）](next.md)

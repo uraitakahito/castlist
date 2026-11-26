@@ -1,13 +1,13 @@
 # DB
 
-SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表は `migrations/0001_init.sql` に、監査の検索の索引は `migrations/0002_search.sql` に、送り手の時刻の列の名の替え（`at` から `sent_at`。0.2.0）は `migrations/0003_sent_at.sql` にあり、移行の SQL は binary に埋め込む。移行は足すだけで、前の file は替えない。
+SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表・索引・view は `crates/server/migrations/0001_init.sql` にあり（1.0.0 から。0.4.x の 3 つの移行を当てた後の形を 1 つにまとめた物）、移行の SQL は binary に埋め込む。移行は足すだけで、出した file は替えない（替えていないことは `crates/server/tests/refuse_old.rs` が中身の写しで見る）。0.4.x までの server の移行を当てた DB は、開かずに断る（[API](api.md) の「データ」）。
 
 ## 接続
 
 - WAL。書く接続は 1 本だけ（番号を数える所と、同じ物かを見る所が 1 列に並ぶ）。読む接続は 4 本で、読むだけ。書いている間も、読む物は待たない。図の点と線とタイムラインの重い読みは、別の読むだけの接続 2 本だけを使い、軽い読み（引き当て・検索・画面）の 4 本を取らない（並べて描いても、引き当てが空きを待たない）。
 - どの接続にも `foreign_keys=ON`・`recursive_triggers=ON`（置き換えの insert が行を消す時も、消しを断る trigger が動く）・`busy_timeout` 5 秒・一時の物は memory。
-- 書く接続を 2 秒待っても空かなければ、API は 503「混んでいる」で返す。
-- 起きる時に、移行の後で `PRAGMA foreign_key_check` を流す。崩れた行が 1 つでもあれば、表と rowid を出して起きない。
+- 書く接続を 2 秒・読む接続を 3 秒待っても空かなければ、API は 503「混んでいる」（`Unavailable`）で返す。
+- 起きる時に、0.4.x までの server の DB でないかを読むだけで見てから（そうなら何も書かずに止まる）、移行を当て、その後で `PRAGMA foreign_key_check` を流す。崩れた行が 1 つでもあれば、表と rowid を出して起きない。
 
 ## 足すだけ
 
@@ -22,7 +22,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | 欄 | 中身 |
 |---|---|
 | `seq` | 受けた順の番号（`integer primary key autoincrement`）。master の表には無い |
-| `sent_at` | 送り手の時刻。送り手（今は roster）が送る時に付けた、送り手の時計の時刻。RFC 3339 の字のまま残し、castlist は直さない。送り手の時計がずれていれば、この値もずれる（0.1.x の名は `at`） |
+| `sent_at` | 送り手の時刻。送り手（今は roster）が送る時に付けた、送り手の時計の時刻。UTC の RFC 3339 に直して残す（秒の下は要る桁だけ）。0.4.x から移した行は、送られた字のまま（時差の付いた字もある。読む所が UTC に直す）。送り手の時計がずれていれば、この値もずれる |
 | `received_at` | castlist の時計（UTC・ミリ秒まで・24 字）。書く transaction の中で、今と、どの表の最新の `received_at` の遅い方にする。戻らない |
 | `clock_skew` | `sent_at` と `received_at` が 5 分より離れていれば 1。受けはする |
 
@@ -119,7 +119,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 <figcaption>表と外のキー（矢印の先が指される表）。どの表もアクター（<code>actors</code>）を指し、<code>settings</code> は <code>models</code> と <code>efforts</code> も指す。<code>links</code> は起こした側（<code>from_actor</code>）と起こされた側（<code>to_actor</code>）の 2 本。主な列だけを描き、列の全部は下の「列」の章。</figcaption>
 </figure>
 
-図の箱（`data-table`）と線（`data-fk`）が、移行した DB の表と外のキーと合うかは、試験（`tests/db.rs` の `docs_の_er_図の表と外のキーは_移行した_db_と合う`）が見る。表や外のキーを替える移行を足したら、図も直す。
+図の箱（`data-table`）と線（`data-fk`）は、`crates/server/migrations/0001_init.sql` の表と外のキーに合わせて描いてある（0.4.x の server にあった、図と移行した DB を突き合わせる試験は、まだ `crates/server/tests/` に無い）。表や外のキーを替える移行を足したら、図も直す。
 
 | 表 | 中身 | 外のキー・決まり |
 |---|---|---|
@@ -133,7 +133,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 
 ## 列
 
-表ごとの列（`pragma table_xinfo` の順）。型は SQLite の宣言の型で、どの表も `strict` なので、宣言と違う型の値は入らない（`INTEGER` は整数、`TEXT` は字。真偽は `INTEGER` の 0・1）。NULL の欄の「不可」は `not null` か主キー。中身の形のうち「API が見る」とある物は、DB の `CHECK` でなく API が受ける時に確かめる。この表が移行した DB の列（列・型・NULL・既定）と合うかは、試験（`tests/db.rs` の `docs_の列の表は_移行した_db_の列と合う`）が見る。
+表ごとの列（`pragma table_xinfo` の順）。型は SQLite の宣言の型で、どの表も `strict` なので、宣言と違う型の値は入らない（`INTEGER` は整数、`TEXT` は字。真偽は `INTEGER` の 0・1）。NULL の欄の「不可」は `not null` か主キー。中身の形のうち「API が見る」とある物は、DB の `CHECK` でなく API が受ける時に確かめる。この表は `0001_init.sql` の列（列・型・NULL・既定）に合わせて書いてある（突き合わせる試験は、図と同じく、まだ無い）。
 
 ### `actors`
 
@@ -146,7 +146,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `prefix` | `TEXT` | 不可 |  | 名の接頭辞。英小文字・数字・`-` で 32 字まで（API が見る） |
 | `n` | `INTEGER` | 不可 |  | `CHECK(n >= 1)`。同じ出し手と接頭辞のアクターの数 ＋ 1 |
 | `name` | `TEXT` | 不可 |  | `<prefix>.<n>`（例 `se.3`）。`unique(issuer, name)`・`unique(issuer, prefix, n)` |
-| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。送られた RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
+| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。UTC の RFC 3339（秒の下は要る桁だけ。例 `2026-11-22T04:00:00.123Z`）。0.4.x から移した行は送られた字のまま（例 `2026-11-22T13:00:00.123+09:00`） |
 | `received_at` | `TEXT` | 不可 |  | castlist が受けた時刻。UTC・ミリ秒まで・24 字（`2026-11-22T04:00:00.123Z`）。字の順が時刻の順 |
 | `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`sent_at` と `received_at` が 5 分より離れていれば 1 |
 
@@ -160,7 +160,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `type` | `TEXT` | 不可 |  | 付随する id の種類（例 `claude.session`）。英小文字・数字・`.`・`-` で 64 字まで（API が見る） |
 | `value` | `TEXT` | 不可 |  | 値。制御文字の無い 256 字まで（API が見る） |
 | `is_key` | `INTEGER` | 不可 |  | `CHECK(is_key in (0, 1))`。1 は鍵（登録の初めの物）で、`(issuer, type, value)` で 1 つだけ |
-| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。送られた RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
+| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。UTC の RFC 3339（秒の下は要る桁だけ。例 `2026-11-22T04:00:00.123Z`）。0.4.x から移した行は送られた字のまま（例 `2026-11-22T13:00:00.123+09:00`） |
 | `received_at` | `TEXT` | 不可 |  | castlist が受けた時刻。UTC・ミリ秒まで・24 字（`2026-11-22T04:00:00.123Z`）。字の順が時刻の順 |
 
 ### `efforts`
@@ -180,7 +180,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `actor_id` | `TEXT` | 不可 |  | `actors(id)` を指す外のキー |
 | `type` | `TEXT` | 不可 |  | `CHECK`: `entered`・`reentered`・`forked`・`compacted`・`cleared`・`exited`・`closed`・`reported_in`・`model_unreadable`・`retracted` のどれか |
 | `detail` | `TEXT` | 不可 | `'{}'` | `CHECK`: JSON の物（`json_valid` で、`json_type` が `object`） |
-| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。送られた RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
+| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。UTC の RFC 3339（秒の下は要る桁だけ。例 `2026-11-22T04:00:00.123Z`）。0.4.x から移した行は送られた字のまま（例 `2026-11-22T13:00:00.123+09:00`） |
 | `received_at` | `TEXT` | 不可 |  | castlist が受けた時刻。UTC・ミリ秒まで・24 字（`2026-11-22T04:00:00.123Z`）。字の順が時刻の順 |
 | `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`sent_at` と `received_at` が 5 分より離れていれば 1 |
 | `body_hash` | `TEXT` | 不可 |  | 本文の写し（SHA-256 の 16 進・64 字）。同じ `id` で違う本文なら 409 |
@@ -204,7 +204,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `type` | `TEXT` | 不可 |  | `CHECK(type in ('launched', 'continued'))` |
 | `from_actor` | `TEXT` | 不可 |  | `actors(id)` を指す外のキー（起こした・引き継がせたアクター） |
 | `to_actor` | `TEXT` | 不可 |  | `actors(id)` を指す外のキー（起こされた・引き継いだアクター） |
-| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。送られた RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
+| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。UTC の RFC 3339（秒の下は要る桁だけ。例 `2026-11-22T04:00:00.123Z`）。0.4.x から移した行は送られた字のまま（例 `2026-11-22T13:00:00.123+09:00`） |
 | `received_at` | `TEXT` | 不可 |  | castlist が受けた時刻。UTC・ミリ秒まで・24 字（`2026-11-22T04:00:00.123Z`）。字の順が時刻の順 |
 | `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`sent_at` と `received_at` が 5 分より離れていれば 1 |
 | `body_hash` | `TEXT` | 不可 |  | 本文の写し（SHA-256 の 16 進・64 字）。同じ `id` で違う本文なら 409 |
@@ -215,7 +215,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 |---|---|---|---|---|
 | `id` | `INTEGER` | 不可 |  | 主キー（`autoincrement`）。`settings.model_id` が指す |
 | `name` | `TEXT` | 不可 |  | `unique`。`CHECK`: 1〜64 字で、英小文字・数字・`.`・`-` だけ |
-| `first_seen_at` | `TEXT` | 不可 |  | 初めて来た時の `received_at`（UTC・ミリ秒まで・24 字）。移行が入れた effort は移行を当てた時刻 |
+| `first_seen_at` | `TEXT` | 不可 |  | 初めて来た時の `received_at`（UTC・ミリ秒まで・24 字） |
 
 ### `settings`
 
@@ -227,7 +227,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `model_id` | `INTEGER` | 不可 |  | `models(id)` を指す外のキー |
 | `effort_id` | `INTEGER` | 不可 |  | `efforts(id)` を指す外のキー |
 | `source` | `TEXT` | 不可 |  | `CHECK(source in ('requested', 'observed'))` |
-| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。送られた RFC 3339 の字のまま（例 `2026-11-22T13:00:00.123+09:00`）。castlist は直さない |
+| `sent_at` | `TEXT` | 不可 |  | 送り手の時刻（送り手が送る時に付けた、送り手の時計の時刻）。UTC の RFC 3339（秒の下は要る桁だけ。例 `2026-11-22T04:00:00.123Z`）。0.4.x から移した行は送られた字のまま（例 `2026-11-22T13:00:00.123+09:00`） |
 | `received_at` | `TEXT` | 不可 |  | castlist が受けた時刻。UTC・ミリ秒まで・24 字（`2026-11-22T04:00:00.123Z`）。字の順が時刻の順 |
 | `clock_skew` | `INTEGER` | 不可 |  | `CHECK(clock_skew in (0, 1))`。`sent_at` と `received_at` が 5 分より離れていれば 1 |
 | `body_hash` | `TEXT` | 可 |  | 本文の写し（SHA-256 の 16 進・64 字）。`id` のある物だけ |
@@ -246,17 +246,17 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 
 `events(actor_id, type, seq)`・`events(type, received_at)`・`settings(actor_id, seq)`・`settings(model_id, received_at)`・`settings(effort_id, received_at)`・`bindings(actor_id, type, seq)`・`bindings(type, value, received_at)`・`links(to_actor, type)`・`links(from_actor, type, seq)`・`labels(key, value, actor_id)`・`actors(received_at, id)`。
 
-`0002_search.sql`（監査の検索のため）:
+監査の検索のための索引（0.4.x の `0002_search.sql` の物。`0001_init.sql` の後ろの方）:
 
 | 索引 | 使う所 |
 |---|---|
 | `actors(clock_skew)`・`events(clock_skew)`・`settings(clock_skew)` | `skewed=true`（時刻ずれのある行を持つアクター・出来事・model と effort）。後ろに seq が付くので、受けた順にも引ける |
 | `events(received_at)`・`settings(received_at)` | `from`・`to` の窓だけで引く出来事と model と effort（「T から後に起きた物」） |
 
-ほかの検索の条件は、0001 の索引で引く: ラベル（`labels(key, value, actor_id)`）・時刻での付随する id（`bindings(type, value, received_at)`）・稼働した期間の窓（`events(type, received_at)`）・アクターごとの最初の登場と最後の退場（`events(actor_id, type, seq)`）・起動したアクターと線の上下（`links(from_actor, type, seq)`・`links(to_actor, type)`）・model と effort の名（`settings(model_id, received_at)`・`settings(effort_id, received_at)`）・その時の model と effort（`settings(actor_id, seq)`）。
+ほかの検索の条件は、上の索引で引く: ラベル（`labels(key, value, actor_id)`）・時刻での付随する id（`bindings(type, value, received_at)`）・稼働した期間の窓（`events(type, received_at)`）・アクターごとの最初の登場と最後の退場（`events(actor_id, type, seq)`）・起動したアクターと線の上下（`links(from_actor, type, seq)`・`links(to_actor, type)`）・model と effort の名（`settings(model_id, received_at)`・`settings(effort_id, received_at)`）・その時の model と effort（`settings(actor_id, seq)`）。
 
-引き当てと見る SQL（`src/db.rs` の `LOOKUPS`）と、検索の SQL（`src/search.rs` の `plans()`。条件ごとと、全部を重ねた物）は、試験が `EXPLAIN QUERY PLAN` で、大きな表を端から読まないことを見る（`tests/db.rs`・`tests/search.rs`）。
+引き当てと見る SQL（`crates/server/src/db.rs` の `LOOKUPS`）と、図の SQL（`crates/server/src/graph.rs` の `LOOKUPS`）と、検索の SQL（`crates/server/src/search.rs` の `plans()`。条件ごとと、全部を重ねた物）は、試験が `EXPLAIN QUERY PLAN` で、大きな表を端から読まないことを見る（`crates/server/tests/` の `db.rs`・`graph.rs`・`search_actors.rs`・`search_rows.rs`）。
 
 ## バックアップ
 
-`GET /v1/backup` は、読む接続で `VACUUM INTO` を流し、DB の隣の一時の file に揃ったバックアップを作って返す（書く接続を塞がない）。
+`GET /api/backup` は、重い読みの接続で `VACUUM INTO` を流し、DB の隣の一時の file に揃ったバックアップを作って返す（書く接続も、軽い読みの接続も塞がない）。

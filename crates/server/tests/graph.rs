@@ -246,7 +246,7 @@ async fn values_of_the_wrong_form_are_400() {
     }
 }
 
-/// restJson1 は知らない引数を読み飛ばし、1 つだけの引数を重ねれば初めの物を使う（0.4.x の server は 400。next.md）。
+/// restJson1 は知らない引数を読み飛ばし、1 つだけの引数を重ねれば初めの物を使う（0.4.x の server は 400。docs/src/api.md の「共通の決まり」）。
 #[tokio::test]
 async fn unknown_and_repeated_single_parameters_are_not_refused() {
     let s = sample().await;

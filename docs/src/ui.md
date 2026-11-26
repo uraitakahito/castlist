@@ -15,7 +15,7 @@ castlist が HTML を組んで返す画面（askama。`templates/`）。castlist
 - browser が送る `YYYY-MM-DDTHH:MM`（`:SS`・`:SS.sss` も）は日本時間（UTC+9）として、RFC 3339（`2026-11-22T11:00:00+09:00`）にしてから、今までと同じ検索をする。URL に RFC 3339 の値（`Z` や別のずれの付いた前の link）を書けば、そのまま効く。どちらでもない値は 400 の画面で、欄の見出しと直し方を書く（「「稼働した期間（から）」の日時を読めません。日時の欄で選ぶか、2026-11-22T13:00 の形で入れてください。」。API の訳「RFC 3339 の時刻」は画面に出さない）。
 - 期間を付けて開いた画面では、欄にその期間を日本時間の字（`2026-11-22T11:00`。秒やミリ秒があれば `:07`・`:07.120` まで）で出す。form を送り直しても同じ時刻。`step="any"` は、秒やミリ秒の付いた値でも browser が送るのを断らないため。
 - 欄の下に「期間（今の条件のまま、期間だけを替えます）」の link: 直近 1 時間・今日・昨日・直近 7 日。今の画面の URL のまま、期間の 2 つの引数だけを替える（ほかの条件は残し、次のページの `after` は落とす）。期間は castlist が今の時刻から決め、RFC 3339（`+09:00`。秒まで）で URL に置くので、開いた URL をそのまま証拠に貼れる。直近 1 時間・直近 7 日は今まで（今の秒を切り上げる）、今日・昨日は日本時間の 0 時から次の 0 時まで。
-- 日本時間の字にするのは画面だけ。API（`/v1/`）は RFC 3339 だけを受けるまま。
+- 日本時間の字にするのは画面だけ。API（`/api/`）は RFC 3339 の UTC（`Z`）だけを受ける。
 
 ## `GET /` 一覧
 
@@ -31,14 +31,14 @@ castlist が HTML を組んで返す画面（askama。`templates/`）。castlist
 | 最初の登場・最後の退場 | 受け取った時刻 |
 | 時刻ずれ | アクター・出来事・model と effort のどれかに、送り手の時計がずれた行がある |
 
-絞り込みは、監査の検索 `GET /v1/actors` と同じ引数を URL に置く（[API](api.md) の「アクターを探す」）。form には `label`（何度でも）・`active`（状態: すべて・稼働中・停止）・`kind`（種類: すべて・人。人を探す道として残す。AI だけに絞る選び肢は無いが、URL の `kind=ai` は今と同じく AI だけに絞る）・`model`・`effort`・`active_from`・`active_to`（稼働した期間（から）・（まで）。上の「期間の欄」）・`skewed`（時刻ずれあり）の欄がある。ほかの引数（`binding`・`at`・`launched_by`・`sort`・`order`・`limit`）も URL に書けば効き、form を送り直しても残る。
+絞り込みは、監査の検索 `ListActors`（`GET /api/actors`）と同じ条件を、画面の引数の名（snake_case。`activeFrom` は `active_from`、`launchedBy` は `launched_by`、`maxResults` は `limit`、`nextToken` は `after`）で URL に置く（[API](api.md) の「アクターを探す」。画面の引数は `crates/server/src/ui/params.rs` が読む）。form には `label`（何度でも）・`active`（状態: すべて・稼働中・停止）・`kind`（種類: すべて・人。人を探す道として残す。AI だけに絞る選び肢は無いが、URL の `kind=ai` は今と同じく AI だけに絞る）・`model`・`effort`・`active_from`・`active_to`（稼働した期間（から）・（まで）。上の「期間の欄」）・`skewed`（時刻ずれあり）の欄がある。ほかの引数（`binding`・`at`・`launched_by`・`sort`・`order`・`limit`）も URL に書けば効き、form を送り直しても残る。
 
 - 絞り込みは、すべての条件に合うアクターを表示する（AND）。枠の見出しは「絞り込み」だけで、この訳は画面に書かない。
 - form は空の欄も送るので、空の値は付けなかったのと同じにする。
 - `order` が無ければ `desc`（新しい順）、`limit` が無ければ 100。
 - 条件が無ければ、`active_from` を今から 7 日前にして表示し、そう書く（「この 7 日に稼働したアクター」。API は条件の無い検索を断るので。期間の条件は索引で引ける）。登場の記録の無いアクターは、この既定では表示されない。ラベルなどで絞り込むと表示される。
-- 次のページは「次のページ」の link（`rel="next"`）。条件はそのままで、API の `next` を `after` に付ける。
-- 引数の誤りは、API と同じ訳の 400 の画面（期間の欄の読めない値だけは、[期間の欄](#期間の欄)の字）。
+- 次のページは「次のページ」の link（`rel="next"`）。条件はそのままで、検索の次の頁の印を `after` に付ける。
+- 引数の誤り（知らない名・1 つだけの名の重なり・読めない値）は、引数の名を書いた 400 の画面（期間の欄の読めない値だけは、[期間の欄](#期間の欄)の字）。
 
 ## `GET /actors/{id}` プロフィール
 
@@ -60,8 +60,8 @@ castlist が HTML を組んで返す画面（askama。`templates/`）。castlist
 
 アクターが稼働していた期間を、横を時刻にした帯で表示する。サーバーが SVG を組んでページに埋め込む（script は使わない）。一覧の頭の「タイムライン」と、相関図の頭から行ける（タイムラインの頭からは、一覧と相関図へ行ける）。
 
-- 絞りは `GET /v1/graph` と同じ引数（`label`・`from`・`to`。どれも 1 つだけ。[API](api.md) の「図の点と線」。`from`・`to` は上の「期間の欄」）。絞った組に触れる線と、その線の向こうの端のアクター（一歩だけ）も出す（人の根が切れないように）。form は空の欄も送るので、空の値は付けなかったのと同じにする。条件が無ければ、全部のアクターを出す。
-- 引数の誤りは、API と同じ訳の 400 の画面（期間の欄の読めない値だけは、[期間の欄](#期間の欄)の字）。条件に合うアクターがいなければ、SVG を出さずにそう書く（「条件に合うアクターはいません。」）。
+- 絞りは `GetGraph`（`GET /api/graph`）と同じ引数（`label`・`from`・`to`。どれも 1 つだけ。[API](api.md) の「図と画面」。`from`・`to` は上の「期間の欄」）。絞った組に触れる線と、その線の向こうの端のアクター（一歩だけ）も出す（人の根が切れないように）。form は空の欄も送るので、空の値は付けなかったのと同じにする。条件が無ければ、全部のアクターを出す。
+- 引数の誤りは、引数の名を書いた 400 の画面（期間の欄の読めない値だけは、[期間の欄](#期間の欄)の字）。条件に合うアクターがいなければ、SVG を出さずにそう書く（「条件に合うアクターはいません。」）。
 - 横は castlist が受け取った時刻（`received_at`）を日本時間で。`from`・`to`（登録した期間）を付ければ、横もその期間にする（期間の外は切る）。無ければ、稼働した期間・印・線の時刻の初めから終わりまで（稼働中のアクターがいれば今まで。1 分より短ければ 1 分に延ばす）。
 
 | 物 | 描き方 |
@@ -77,13 +77,13 @@ castlist が HTML を組んで返す画面（askama。`templates/`）。castlist
 | 目盛り | 表示する期間の長さで、10 秒〜1 年の切りのよい間（日本時間で揃える）を選ぶ。目盛りの間は 100 px より狭くしない。字は `時:分`（秒の間なら `時:分:秒`）で、初めと日が替わった目盛りに `月-日` を前に付ける。1 日より長い間は `月-日` |
 | 今 | 表示する期間の中なら、今（表示した時刻）に点線の縦の線 |
 
-並べ方（`src/timeline.rs`。DB に触らない純な計算で、単体の試験を持つ）は、行ごとの稼働・停止の出来事と替わり目と印の時刻（ミリ秒）、線、期間を受けて、帯の切れ・矢印・印・目盛りの置き場を返す。同じ入力からは、いつも同じ図。並べる計算と HTML を組むのは `tokio::task::spawn_blocking` の糸で行う。色は `site.css` の class で決める（明るい色と暗い色）。矢印は帯の下に、帯の字は印の上に（縁取りを付けて）描く。
+並べ方（`crates/server/src/timeline.rs`。DB に触らない純な計算で、単体の試験を持つ）は、行ごとの稼働・停止の出来事と替わり目と印の時刻（ミリ秒）、線、期間を受けて、帯の切れ・矢印・印・目盛りの置き場を返す。同じ入力からは、いつも同じ図。並べる計算と HTML を組むのは `tokio::task::spawn_blocking` の糸で行う。色は `site.css` の class で決める（明るい色と暗い色）。矢印は帯の下に、帯の字は印の上に（縁取りを付けて）描く。
 
 ## `GET /graph/network` 相関図
 
 誰が誰を起動し、誰が誰から引き継いだかを、点と線の相関図で表示する。script を使う唯一の画面。一覧の頭の「相関図」と、タイムラインの頭から行ける（相関図の頭からは、一覧とタイムラインへ行ける）。
 
-- 絞りはタイムラインと同じ（`label`・`from`・`to`）。castlist は引数を確かめるだけで（誤りは 400 の画面）、点と線は描かない。同じ引数を付けた `GET /v1/graph` の URL を、絵の場所の `data-src` に置く。
+- 絞りはタイムラインと同じ（`label`・`from`・`to`）。castlist は引数を確かめるだけで（誤りは 400 の画面）、点と線は描かない。同じ絞りの `GET /api/graph` の URL を、絵の場所の `data-src` に置く（期間は UTC・ミリ秒までの字に直す。API は時差の付いた時刻を受けないため）。
 - `static/network.js` が、その URL から点と線を引き（同じ origin。CSP の `connect-src 'self'`）、cytoscape で canvas に描く。字は DOM の `textContent` でだけ置く。
 - JavaScript を切った browser には、同じ条件のタイムラインを勧める字を表示する（`<noscript>`。script は要らない）。下の「表示する点を選ぶ」欄は出さない。
 
@@ -111,19 +111,19 @@ CSP を緩めずに cytoscape を使うための、2 つの決まり（`static/n
 - [cytoscape](https://js.cytoscape.org/) 3.35.0（MIT。The Cytoscape Consortium）。npm の tarball の `package/dist/cytoscape.min.js` を、そのまま `static/vendor/cytoscape-3.35.0.min.js` に置き、castlist が binary に埋め込んで `GET /static/vendor/cytoscape-3.35.0.min.js` で配る（CDN からは読まない）。license の写しは `static/vendor/cytoscape-LICENSE`。
 - 出どころの記録は `static/vendor/SOURCES.md`（package・version・tarball の URL・registry の `integrity`・tarball の中の path・置いた file の sha256・license）。
 - `ci/check-vendor.sh`（CI の job `test`）が、registry の記録の tarball と `integrity` が SOURCES.md と同じか、落とした tarball の sha512 が `integrity` と同じか、tarball の中の file と commit した file の sha256 が SOURCES.md と同じか、license の file が tarball の物と同じかを見る。1 つでも違えば落ちる（書き替えた写しを当てることも CI で見る）。
-- 試験の `tests/ui.rs` も、castlist が配る物の sha256 が SOURCES.md と同じかを見る。
+- 試験の `crates/server/tests/ui.rs` も、castlist が配る物の sha256 が SOURCES.md と同じかを見る。
 
 版の上げ方:
 
 1. 新しい版が npm の `latest` で、公開から 2 日たっていることを見る（`curl -s https://registry.npmjs.org/cytoscape | jq '."dist-tags", .time["<版>"]'`）。
 2. 空の folder で tarball を落とし、`package/dist/cytoscape.min.js` を `static/vendor/cytoscape-<版>.min.js` に、`package/LICENSE` を `static/vendor/cytoscape-LICENSE` に写す。古い版の file は消す。
 3. `static/vendor/SOURCES.md` の version・tarball・integrity（`https://registry.npmjs.org/cytoscape/<版>` の `dist.integrity`）・file・sha256 を書き替える。
-4. 版の入った path を替える: `src/ui.rs` の `CYTOSCAPE_JS`・`CYTOSCAPE_PATH`、`tests/ui.rs` の `CYTOSCAPE`、CI の「見張りが、書き替えた写しを当てるか」の file の名。
+4. 版の入った path を替える: `crates/server/src/ui.rs` の `CYTOSCAPE_JS`・`CYTOSCAPE_PATH`、`crates/server/tests/ui.rs` の `CYTOSCAPE`、CI の「見張りが、書き替えた写しを当てるか」の file の名。
 5. `ci/check-vendor.sh`・`cargo test --locked`・`cd e2e && pnpm test`（console の誤りと CSP の違反が 0 か）を流す。cytoscape の変わり目（release の知らせ）で、`<style>` の差し込みと位置の覚え方が替わっていないかも見る。
 
 ## 出来事の名
 
-id は英語のまま（API と DB）。日本語の名は画面だけで、`src/ui.rs` の `EVENT_NAMES` の 1 か所に置く。
+id は英語のまま（API と DB）。日本語の名は画面だけで、`crates/server/src/ui.rs` の `EVENT_NAMES` の 1 か所に置く。
 
 | id | 名 |
 |---|---|

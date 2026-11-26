@@ -1,6 +1,6 @@
 # 変えたこと
 
-版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/v1/`）と DB の移行（`migrations/`）が変わったかを書く。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
+版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/api/`。定義は `model/`）と DB の移行（`crates/server/migrations/`）が変わったかを書く。0.4.x までの節の API は `/v1/`、移行は repo の頭の `migrations/` の物（もう無い）。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
 
 ## 1.0.0
 

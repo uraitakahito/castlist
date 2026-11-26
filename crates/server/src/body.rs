@@ -1,6 +1,6 @@
 //! 要求の本文の JSON（出来事の detail）と、同じ id で同じ本文かを見る写し（body_hash）。
 //!
-//! 写しの形（docs/src/next.md の「データ」にも書く。替えれば、前に受けた物の送り直しが 409 になる）:
+//! 写しの形（docs/src/api.md の「データ」にも書く。替えれば、前に受けた物の送り直しが 409 になる）:
 //! 1. 本文の欄を、定義の名（camelCase）の JSON の物にする。道の id は入れない（同じ id どうしでしか比べない）。
 //!    - 出来事: `issuer`・`by`・`type`・`detail`・`sentAt`
 //!    - 線: `issuer`・`type`・`from`・`to`・`sentAt`

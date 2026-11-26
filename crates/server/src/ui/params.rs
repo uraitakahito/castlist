@@ -208,7 +208,7 @@ fn broken_after() -> PageError {
 
 // --- 一覧 ---
 
-/// 一覧（`GET /`）の引数の名。 0.4.x の server の `GET /v1/actors` と同じ。
+/// 一覧（`GET /`）の引数の名（ListActors と同じ条件の、画面の名。snake_case）。
 pub const ACTOR_PARAMS: &[&str] = &[
     "label",
     "binding",
