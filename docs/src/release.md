@@ -28,14 +28,16 @@ image は public で、だれでも取って中を見られる。**出すのは 
 戻す時（要る時だけ）:
 
 1. 1.0.0 を止めて消し、v0.4.0 の image と `castlist-data` で起こす（[動かす](run.md) の起こす行の、image を `ghcr.io/uraitakahito/castlist:v0.4.0` に、`-v` を `castlist-data:/data` に替えた物）。切り替えから戻すまでに 1.0.0 に書いた物は、`castlist-data` に入らない。
-2. 送り手も戻す: roster の castlist の client（`/api` の道）と、`CASTLIST_VERSION` を 0.4.x の物に戻さないと、roster は 0.4.x に書けない。
+2. 送り手も戻す: roster の castlist の client（`/api` の道）と、`CASTLIST_VERSION` を 0.4.x の物に戻さないと、roster は 0.4.x に書けない（1.0.0 の roster は、0.x の castlist を版で見て止まる）。
+3. pagetray も組で戻す（v0.8.0 と `pagetray-data`。手順は pagetray の docs の「[release を出す](https://uraitakahito.github.io/pagetray/release.html)」の「切り替え」）。1.0.0 の pagetray は送り手を castlist の `POST /api/resolve` で聞くので、0.4.x の castlist（`/v1/resolve` だけ）には聞けず、送り手を付けた置く要求がみな断られる。逆に、0.8.x の pagetray は 1.0.0 の castlist に聞けない。
 
-戻した後に、また切り替える時:
+戻した後に、また切り替える時（castlist を先に 1.0.0 にしてから pagetray。切り替えの時と同じ順）:
 
 1. 0.4.x の `GET /v1/backup` で写しを取り（止める直前に）、0.4.x を止めて消す。
 2. 空の新しい volume を作る。`castlist-data-v1` には 1.0.0 の書いた行があり、`migrate` は台帳の行のある先を断るので、そこへは移せない。名は `castlist-data-v1-2`（3 度目からは番号を上げる）にする。`castlist-data` で始まる名は、Product Manager だけが触れる守りに当たる。
 3. 移すのは **v1.0.0 の image の `migrate`** だけ（後の版には `migrate` が無い）。版の tag でなく digest で指す: `ghcr.io/uraitakahito/castlist@sha256:ae9ebbe8371f4f3abd5d4d8121c15aa43ce57d06e0466e61f9e8006c2a20b05d`。新しい volume を `/data` に、写しの folder を `/in:ro` に付けて、`migrate --from /in/<写しの file> --to /data/castlist.db` を付けて起こす。写しは `-wal`・`-shm` の無い 1 つの file で渡す。照らしが 1 つでも合わなければ、何も足さずに 1 で終わる。**1 で終わったら 4 に進まない。** 出た行（表ごとの `… ok` と、終わりの `移し終えた: …`）は残す。
 4. 移し終えてから、その volume で今の版を起こす（[動かす](run.md) の「初めて起こす」の `container run` の行の、volume の名を替えた物）。
+5. 動く volume の名が替わったので、[動かす](run.md) の起こす・リストア・記録を読む行と、roster が Product Manager に出す起こす 1 行（roster の `cli/src/castlist.ts` の `CASTLIST_VOLUME`）を新しい名に替える（roster にも PR を出す）。替えないと、その行のとおりに打った時に、古い `castlist-data-v1` で起こす。
 
 ## image に入る物
 
