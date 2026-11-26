@@ -1,33 +1,27 @@
-//! 新しい castlist の server を起こす binary（今の server の src/main.rs と同じ振る舞い）。切り替えまで image には入らない。
+//! castlist の server を起こす binary（image の中の /castlist-server）。
 //! - DB の path は `CASTLIST_DB`（既定 `/data/castlist.db`）、待ち受ける所は `CASTLIST_LISTEN`（既定 `0.0.0.0:8080`）。
-//! - 記録の置き場は DB の隣の `logs/`（[`castlist_next::runlog`]）。起きたら初めに、前の回の終わり方の行（`previous: …`）を出す。
+//! - 記録の置き場は DB の隣の `logs/`（[`castlist::runlog`]）。起きたら初めに、前の回の終わり方の行（`previous: …`）を出す。
 //! - 止める合図（SIGTERM・SIGINT）で新しい問い合わせを断り、走っている物を終えてから閉じる。
-//!
-//! `castlist-next migrate --from <今の DB の写し> --to <新しい DB>` は、起きずに、今の server の DB を新しい DB へ移す
-//! （[`castlist_next::migrate`]。記録の置き場は作らない）。
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::ExitCode;
 use std::sync::Arc;
 
-use castlist_next::db::{Db, OpenError};
-use castlist_next::runlog::{self, RunLog};
-use castlist_next::{Config, REQUEST_TIMEOUT, app_with};
+use castlist::db::{Db, OpenError};
+use castlist::runlog::{self, RunLog};
+use castlist::{Config, REQUEST_TIMEOUT, app_with};
 use tokio::signal::unix::{SignalKind, signal};
 
 #[tokio::main]
 async fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    if args.first().map(String::as_str) == Some("migrate") {
-        return migrate(&args[1..]).await;
-    }
     if !args.is_empty() {
         eprintln!("{USAGE}");
         return ExitCode::from(2);
     }
     let path = std::env::var("CASTLIST_DB").unwrap_or_else(|_| "/data/castlist.db".to_owned());
     let path = Path::new(&path);
-    // 今の server の DB（今の volume）なら、記録の置き場も作らずに止める（その volume に何も書かない）。
-    if let Err(e @ OpenError::Current(_)) = castlist_next::db::refuse_current(path).await {
+    // 0.4.x までの server の DB（切り替えの前の volume）なら、記録の置き場も作らずに止める（その volume に何も書かない）。
+    if let Err(e @ OpenError::Current(_)) = castlist::db::refuse_current(path).await {
         eprintln!("castlist: {e}");
         return ExitCode::FAILURE;
     }
@@ -54,45 +48,7 @@ async fn main() -> ExitCode {
     }
 }
 
-const USAGE: &str = "使い方: castlist-next（環境変数 CASTLIST_DB・CASTLIST_LISTEN で起きる）\n       castlist-next migrate --from <今の DB の写し> --to <新しい DB>";
-
-/// `migrate --from <file> --to <file>`: 移して、突き合わせを出す。合わない・移せない時は 1、引数の誤りは 2 で終わる。
-async fn migrate(args: &[String]) -> ExitCode {
-    let (mut from, mut to) = (None, None);
-    let mut rest = args.iter();
-    while let Some(flag) = rest.next() {
-        let slot = match flag.as_str() {
-            "--from" => &mut from,
-            "--to" => &mut to,
-            _ => {
-                eprintln!("知らない引数: {flag}\n{USAGE}");
-                return ExitCode::from(2);
-            }
-        };
-        match rest.next() {
-            Some(value) if slot.is_none() => *slot = Some(PathBuf::from(value)),
-            _ => {
-                eprintln!("{flag} は値を 1 つだけ\n{USAGE}");
-                return ExitCode::from(2);
-            }
-        }
-    }
-    let (Some(from), Some(to)) = (from, to) else {
-        eprintln!("--from と --to が要る\n{USAGE}");
-        return ExitCode::from(2);
-    };
-    match castlist_next::migrate::migrate(&from, &to).await {
-        Ok(summary) => {
-            print!("{summary}");
-            println!("移し終えた: {} → {}", from.display(), to.display());
-            ExitCode::SUCCESS
-        }
-        Err(e) => {
-            eprintln!("castlist-next migrate: {e}");
-            ExitCode::FAILURE
-        }
-    }
-}
+const USAGE: &str = "使い方: castlist-server（環境変数 CASTLIST_DB・CASTLIST_LISTEN で起きる）";
 
 /// 起きて、止める合図まで受け続ける。
 async fn serve(path: &Path, log: &RunLog) -> Result<(), Box<dyn std::error::Error>> {

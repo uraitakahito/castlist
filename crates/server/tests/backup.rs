@@ -1,10 +1,10 @@
-//! 手の道 `GET /api/backup`（DB の揃ったバックアップ）と `GET /api/logs`（残した記録）。今の server の `GET /v1/backup`・`GET /v1/logs` と同じ。
+//! 手の道 `GET /api/backup`（DB の揃ったバックアップ）と `GET /api/logs`（残した記録）。0.4.x の server の `GET /v1/backup`・`GET /v1/logs` と同じ。
 mod common;
 
 use std::path::Path;
 
 use axum::http::{StatusCode, header};
-use castlist_next::runlog::RunLog;
+use castlist::runlog::RunLog;
 use common::{App, ai, get, human, temp_db};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
@@ -89,9 +89,9 @@ async fn logs_are_the_marks_and_the_lines_as_text() {
     let dir = temp_db("logs").with_file_name("logs");
     let log = RunLog::at(dir.clone());
     log.start("9.9.9");
-    let app = App::start_with(castlist_next::Config {
+    let app = App::start_with(castlist::Config {
         runlog: Some(log),
-        ..castlist_next::Config::default()
+        ..castlist::Config::default()
     })
     .await;
     let (status, headers, body) = app.send(get("/api/logs")).await;

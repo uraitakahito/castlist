@@ -1,5 +1,5 @@
 //! 監査の検索の見本（探す操作の試験で共に使う）。Auditor が台帳の件から持てる物（project・Key・役・workspace・時刻）で
-//! 引けるよう、今の server の tests/search.rs と同じ記録を、書く操作（RegisterActor・PutEvent・PutLink・PutSetting）だけで作る。
+//! 引けるよう、0.4.x の server の tests/search.rs と同じ記録を、書く操作（RegisterActor・PutEvent・PutLink・PutSetting）だけで作る。
 use std::collections::BTreeMap;
 use std::time::Duration;
 

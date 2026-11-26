@@ -1,5 +1,5 @@
 //! binary（castlist-next）を起こして、終わり方の印と記録の file を見る（決まりは docs/src/run.md の「落ちた後に調べる」）。
-//! 今の server の tests/runlog.rs を移した物（読む道は `GET /api/logs`）。
+//! 0.4.x の server の tests/runlog.rs を移した物（読む道は `GET /api/logs`）。
 //! 試験ごとに空の folder を作り、その中に DB を置く。記録は DB の隣の logs/ にできるので、試験どうしで混ざらない。
 #![allow(clippy::disallowed_methods)]
 
@@ -7,7 +7,7 @@ mod common;
 
 use std::path::{Path, PathBuf};
 
-use castlist_next::runlog::{LOG_FILE_MAX, LOG_FILES, RUNS_MAX};
+use castlist::runlog::{LOG_FILE_MAX, LOG_FILES, RUNS_MAX};
 use common::server::{Server, binary};
 use common::{remove_db, temp_db};
 

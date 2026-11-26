@@ -1,9 +1,9 @@
-//! GetGraph（図の点と線）の振る舞い（処理より先に書く）。今の server の `GET /v1/graph` の問い（tests/api.rs の「図の点と線」）を、
+//! GetGraph（図の点と線）の振る舞い（処理より先に書く）。0.4.x の server の `GET /v1/graph` の問い（tests/api.rs の「図の点と線」）を、
 //! 新しい道と欄の名で引く。見本は書く操作だけで作る（common::sample）。
 mod common;
 
 use axum::http::StatusCode;
-use castlist_next::graph::LOOKUPS;
+use castlist::graph::LOOKUPS;
 use common::sample::{OPUS, SONNET, field, names, ok, sample};
 use common::{App, ai, error_type};
 use serde_json::{Value, json};
@@ -246,7 +246,7 @@ async fn values_of_the_wrong_form_are_400() {
     }
 }
 
-/// restJson1 は知らない引数を読み飛ばし、1 つだけの引数を重ねれば初めの物を使う（今の server は 400。next.md）。
+/// restJson1 は知らない引数を読み飛ばし、1 つだけの引数を重ねれば初めの物を使う（0.4.x の server は 400。next.md）。
 #[tokio::test]
 async fn unknown_and_repeated_single_parameters_are_not_refused() {
     let s = sample().await;
@@ -300,7 +300,7 @@ async fn the_graph_reads_only_through_the_heavy_read_connections() {
         .unwrap()
         .to_owned();
     let mut light = Vec::new();
-    for _ in 0..castlist_next::db::READS {
+    for _ in 0..castlist::db::READS {
         light.push(app.db.read().acquire().await.expect("軽い読みの接続"));
     }
     let graph = ok(&app, "/api/graph").await;
@@ -308,7 +308,7 @@ async fn the_graph_reads_only_through_the_heavy_read_connections() {
     drop(light);
 
     let mut heavy = Vec::new();
-    for _ in 0..castlist_next::db::HEAVY_READS {
+    for _ in 0..castlist::db::HEAVY_READS {
         heavy.push(app.db.heavy().acquire().await.expect("重い読みの接続"));
     }
     let started = std::time::Instant::now();

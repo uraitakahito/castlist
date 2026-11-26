@@ -1,12 +1,11 @@
-# アクターの台帳のサーバー（castlist-server）。
-# AI-36 の作り直しの間は、新しい server（crates/server。Smithy の定義 model/ から作った骨 crates/castlist-sdk/ を使う）を並べて作る。
-# 切り替えまで、image に入るのは今の server（この crate）だけ。
+# アクターの台帳のサーバー（castlist-server）。server は crates/server、Smithy の定義 model/ から作った骨は crates/castlist-sdk/。
 [workspace]
-members = [".", "crates/server", "crates/castlist-sdk"]
+members = ["crates/server", "crates/castlist-sdk"]
+resolver = "3"
 # 生成した骨（crates/castlist-sdk/）は手で直さないので、既定の cargo の命令（clippy・test）からは外す。
 # 骨の中の、定義の例から作った試験（protocol の試験）は、CI が `cargo test --locked -p castlist_sdk` で流す。
 # fmt は生成器が整えた物を、CI の `cargo fmt --all --check` が見る（ci/gen.sh は rust-toolchain.toml の rustfmt で整える）。
-default-members = [".", "crates/server"]
+default-members = ["crates/server"]
 
 [workspace.package]
 # 版はここだけに書く（release の workflow が、この file の初めの `version = "…"` の行を tag と突き合わせる）。
@@ -14,49 +13,6 @@ version = "1.0.0"
 edition = "2024"
 rust-version = "1.100"
 license = "MIT"
-
-[package]
-name = "castlist"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
-publish = false
-
-[[bin]]
-name = "castlist-server"
-path = "src/main.rs"
-
-[dependencies]
-# 画面の HTML（templates/）。字は既定で HTML として逃がす。
-askama = "0.16.1"
-axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "query", "tokio"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-# 本文の写し（同じ id で同じ本文か）を比べる SHA-256。sqlx が使う版と同じ物。
-sha2 = { version = "0.11.1", default-features = false }
-# SQL は動く時に組む形（query・query_as）だけを使う。macros は、移行の SQL を binary に埋め込む migrate!() のため。
-sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
-time = { version = "0.3", features = ["formatting", "parsing"] }
-tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "net", "signal", "fs", "time"] }
-tokio-util = { version = "0.7", features = ["io"] }
-# 問い合わせごとの記録（method・path・status・かかった時間）。
-tower-http = { version = "0.7", default-features = false, features = ["trace"] }
-# 時刻つきの記録。書き先は stdout と、大きさで回す file（src/runlog.rs）。
-tracing = { version = "0.1", default-features = false, features = ["std"] }
-tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt", "registry"] }
-# アクターの id（UUID v7）。
-uuid = { version = "1", default-features = false, features = ["std", "v7"] }
-
-[dev-dependencies]
-http-body-util = "0.1"
-tower = { version = "0.5", features = ["util"] }
-
-# 並列の問い合わせを待たせないための決まり（docs/src/development.md の「待たせない書き方」）。
-# 塞ぐ呼び出しは clippy.toml の disallowed-methods で断り、鍵を握ったままの await も断る。
-[lints.clippy]
-await_holding_lock = "deny"
-disallowed_methods = "deny"
 
 [profile.release]
 opt-level = "s"

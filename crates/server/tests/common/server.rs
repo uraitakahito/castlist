@@ -1,5 +1,5 @@
-//! 受け入れの試験の道具: 本物の binary（castlist-next）を空いた port で起こし、生の HTTP/1.1 で叩く。
-//! 今の server の tests/common/mod.rs の Server を移した物（起こす binary と、一時の DB の folder の名だけが違う）。
+//! 受け入れの試験の道具: 本物の binary（castlist-server）を空いた port で起こし、生の HTTP/1.1 で叩く。
+//! 0.4.x の server の tests/common/mod.rs の Server を移した物（起こす binary と、一時の DB の folder の名だけが違う）。
 // 試験の道具は同期で書く（async の中ではないので、糸を塞いでも困らない）。
 #![allow(clippy::disallowed_methods)]
 
@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use super::{remove_db, temp_db};
 
-/// 起こした castlist-next。落とす時に止める。
+/// 起こした castlist-server。落とす時に止める。
 pub struct Server {
     child: Child,
     pub port: u16,
@@ -51,7 +51,7 @@ impl Answer {
 
 /// 起こす binary。
 pub fn binary() -> &'static str {
-    env!("CARGO_BIN_EXE_castlist-next")
+    env!("CARGO_BIN_EXE_castlist-server")
 }
 
 impl Server {
@@ -82,7 +82,7 @@ impl Server {
                 .env("CASTLIST_DB", &db)
                 .stdout(Stdio::from(stdout))
                 .spawn()
-                .expect("castlist-next を起こす");
+                .expect("castlist-server を起こす");
             let started = Instant::now();
             let listening = loop {
                 let text = std::fs::read_to_string(&out).unwrap_or_default();

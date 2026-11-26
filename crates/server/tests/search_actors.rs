@@ -1,11 +1,11 @@
-//! ListActors（監査の検索）の振る舞い（処理より先に書く）。今の server の tests/search.rs の問いを、新しい道と欄の名で引く。
+//! ListActors（監査の検索）の振る舞い（処理より先に書く）。0.4.x の server の tests/search.rs の問いを、新しい道と欄の名で引く。
 //! 見本は書く操作だけで作り（common::sample）、受けた時刻を決めたい所だけ DB に直に置く。
 mod common;
 
 use std::collections::BTreeSet;
 
 use axum::http::StatusCode;
-use castlist_next::search::plans;
+use castlist::search::plans;
 use common::sample::{KEY, OPUS, SONNET, Sample, ev, field, names, ok, put, sample, seat, tick};
 use common::{App, ai, at, error_type};
 use serde_json::{Value, json};
@@ -582,7 +582,7 @@ async fn values_of_the_wrong_form_are_400() {
     }
 }
 
-/// restJson1 は知らない引数を読み飛ばし、1 つだけの引数を重ねれば初めの物を使う（今の server は 400。next.md）。
+/// restJson1 は知らない引数を読み飛ばし、1 つだけの引数を重ねれば初めの物を使う（0.4.x の server は 400。next.md）。
 #[tokio::test]
 async fn unknown_and_repeated_single_parameters_are_not_refused() {
     let s = sample().await;
@@ -632,7 +632,7 @@ async fn waiting_too_long_for_a_read_connection_is_503_unavailable() {
     let app = App::start().await;
     app.register(&ai("se", "s-1")).await;
     let mut held = Vec::new();
-    for _ in 0..castlist_next::db::READS {
+    for _ in 0..castlist::db::READS {
         held.push(app.db.read().acquire().await.expect("読む接続"));
     }
     let (status, headers, answer) = app.get("/api/actors?label=project:castlist").await;

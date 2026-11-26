@@ -1,10 +1,5 @@
 // 画面の browser の試験の設定。同じ commit の castlist-server を作り、空いている port と一時の DB で起こして向ける。
-//   CASTLIST_E2E_SERVER   起こす binary（既定は ../target/debug/castlist-server を cargo build してから）。
-//                         作り直している新しい server（AI-36）なら ../target/debug/castlist-next（cargo build --locked --bin castlist-next）
-//   CASTLIST_E2E_API      試験が API を叩く形（tests/wire.ts）。v1（今の server）か api（新しい server）。既定は、起こす binary の名が
-//                         castlist-next なら api、ほかは v1。名を替えた binary や包みの script を向ける時は、これを付ける
-//                         （付けないと v1 になり、見本を置く段が /v1/… に送って 404 で落ちる）
-//   CASTLIST_E2E_OUT      落ちた時の写しと report を置く folder の名の後ろに付ける字（2 つの server を続けて流す CI で分けるため）
+//   CASTLIST_E2E_SERVER   起こす binary（既定は ../target/debug/castlist-server を cargo build してから）
 //   CASTLIST_E2E_PORT     待ち受ける port（既定は、空いている port を 1 つ選ぶ）
 //   CASTLIST_E2E_CHANNEL  この機械に入っている browser を使う時の名（chrome など）。無ければ Playwright の Chromium
 // 見本の記録は、tests/seed.setup.ts が API で置く（ほかの試験より先に 1 度だけ）。
@@ -12,7 +7,7 @@ import { defineConfig } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 
 // 設定は、試験を流す worker の中でも読み直される。port と DB は初めの 1 度だけ決め、環境変数で worker に渡す。
 process.env.CASTLIST_E2E_PORT ??= execFileSync(process.execPath, [
@@ -25,7 +20,6 @@ process.env.CASTLIST_E2E_DB ??= join(mkdtempSync(join(tmpdir(), 'castlist-e2e-')
 const port = Number(process.env.CASTLIST_E2E_PORT);
 const db = process.env.CASTLIST_E2E_DB;
 const server = process.env.CASTLIST_E2E_SERVER;
-process.env.CASTLIST_E2E_API ??= server && basename(server) === 'castlist-next' ? 'api' : 'v1';
 const build = server ? `exec "${server}"` : 'cargo build --locked --bin castlist-server && exec ../target/debug/castlist-server';
 
 export default defineConfig({
@@ -36,8 +30,8 @@ export default defineConfig({
   // やり直さない（時々落ちる試験を隠さない）。
   retries: 0,
   forbidOnly: !!process.env.CI,
-  outputDir: `test-results${process.env.CASTLIST_E2E_OUT ?? ''}`,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never', outputFolder: `playwright-report${process.env.CASTLIST_E2E_OUT ?? ''}` }]] : 'list',
+  outputDir: 'test-results',
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]] : 'list',
   use: {
     baseURL: `http://127.0.0.1:${port}`,
     channel: process.env.CASTLIST_E2E_CHANNEL,

@@ -114,7 +114,7 @@ fn order_name(desc: bool) -> &'static str {
     if desc { "desc" } else { "asc" }
 }
 
-/// 次の頁の印（終わりなら無い）: 種類・sort・order・最後の行の並べる値と seq。ほかの条件は結ばない（今の server と同じ）。
+/// 次の頁の印（終わりなら無い）: 種類・sort・order・最後の行の並べる値と seq。ほかの条件は結ばない（0.4.x の server と同じ）。
 fn next_token(query: &ActorQuery, page: &Page<ActorItem>) -> Option<String> {
     page.more.then(|| page.rows.last()).flatten().map(|last| {
         token::encode(&[

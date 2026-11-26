@@ -1,7 +1,7 @@
 //! 守りの層の振る舞い。生成した道の前でも、手の道（画面・backup・logs）の前でも効く。
 //! - 断る答えは、生成した層の誤りと同じ restJson1 の形（header `X-Amzn-Errortype` と、本文の JSON の `message`）。
 //!   種類は定義（ai.common）の `Forbidden`（403）・`PayloadTooLarge`（413）・`Unavailable`（503）。
-//! - Host と Origin（今の server と同じ）・HEAD（GET と同じに答え、本文を捨てる）・本文の上限・時間切れ。
+//! - Host と Origin（0.4.x の server と同じ）・HEAD（GET と同じに答え、本文を捨てる）・本文の上限・時間切れ。
 mod common;
 
 use std::collections::VecDeque;
@@ -153,11 +153,11 @@ async fn head_is_answered_like_get_without_the_body() {
 
 #[test]
 fn the_limits_are_five_seconds_and_two_mebibytes() {
-    assert_eq!(castlist_next::REQUEST_TIMEOUT, Duration::from_secs(5));
-    assert_eq!(castlist_next::BODY_LIMIT, 2 * 1024 * 1024);
+    assert_eq!(castlist::REQUEST_TIMEOUT, Duration::from_secs(5));
+    assert_eq!(castlist::BODY_LIMIT, 2 * 1024 * 1024);
     assert_eq!(
-        castlist_next::Config::default().timeout,
-        castlist_next::REQUEST_TIMEOUT
+        castlist::Config::default().timeout,
+        castlist::REQUEST_TIMEOUT
     );
 }
 
@@ -180,7 +180,7 @@ fn post_bytes(path: &str, body: Body) -> Request<Body> {
 #[tokio::test]
 async fn a_body_up_to_the_limit_is_read() {
     let app = App::start().await;
-    let body = padded(castlist_next::BODY_LIMIT);
+    let body = padded(castlist::BODY_LIMIT);
     let (status, _, answer) = app.send(post_bytes("/api/actors", Body::from(body))).await;
     assert_eq!(status, StatusCode::CREATED, "{answer}");
 }
@@ -188,7 +188,7 @@ async fn a_body_up_to_the_limit_is_read() {
 #[tokio::test]
 async fn a_body_over_the_limit_is_refused_with_payload_too_large() {
     let app = App::start().await;
-    let body = padded(castlist_next::BODY_LIMIT + 1);
+    let body = padded(castlist::BODY_LIMIT + 1);
     let (status, headers, answer) = app.send(post_bytes("/api/actors", Body::from(body))).await;
     assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE, "{answer}");
     let message = refused(&headers, &answer, "PayloadTooLarge");
@@ -214,7 +214,7 @@ impl http_body::Body for Chunks {
 #[tokio::test]
 async fn a_body_of_unknown_length_over_the_limit_is_refused_too() {
     let app = App::start().await;
-    let body = Bytes::from(padded(castlist_next::BODY_LIMIT + 1));
+    let body = Bytes::from(padded(castlist::BODY_LIMIT + 1));
     let chunks = Chunks(
         (0..body.len())
             .step_by(64 * 1024)
@@ -230,9 +230,9 @@ async fn a_body_of_unknown_length_over_the_limit_is_refused_too() {
 #[tokio::test]
 async fn a_request_over_the_time_limit_is_answered_with_unavailable() {
     // 試験では時間切れを短くし、1 本だけの書く接続を握って書く操作を待たせる（書く接続を待つのは 2 秒。その前に時間切れになる）。
-    let app = App::start_with(castlist_next::Config {
+    let app = App::start_with(castlist::Config {
         timeout: Duration::from_millis(200),
-        ..castlist_next::Config::default()
+        ..castlist::Config::default()
     })
     .await;
     let held = app.db.write().acquire().await.unwrap();
@@ -261,6 +261,6 @@ async fn a_request_over_the_time_limit_is_answered_with_unavailable() {
 /// 送り手が「混んでいる」と「時間がかかりすぎた」を見分けられない（AI-36 の review-13）。
 #[test]
 fn waiting_for_a_connection_is_shorter_than_the_request_timeout() {
-    assert!(castlist_next::db::WRITE_WAIT < castlist_next::REQUEST_TIMEOUT);
-    assert!(castlist_next::db::READ_WAIT < castlist_next::REQUEST_TIMEOUT);
+    assert!(castlist::db::WRITE_WAIT < castlist::REQUEST_TIMEOUT);
+    assert!(castlist::db::READ_WAIT < castlist::REQUEST_TIMEOUT);
 }

@@ -340,7 +340,7 @@ pub enum OpenError {
     Migrate(sqlx::migrate::MigrateError),
     /// 外のキーの崩れた行がある（表と rowid と、指す先の表）。
     ForeignKey(Vec<String>),
-    /// 今の server（か別の版）の移行を当てた DB（新しい migrations に無い・中身の違う移行の版）。何も書かずに断る。
+    /// 0.4.x までの server（か別の版）の移行を当てた DB（この server の migrations に無い・中身の違う移行の版）。何も書かずに断る。
     Current(Vec<i64>),
 }
 
@@ -356,8 +356,8 @@ impl fmt::Display for OpenError {
             ),
             OpenError::Current(versions) => write!(
                 f,
-                "今の server の DB（新しい server の migrations に無い・中身の違う移行 {} を当ててある）。開かずに止める。\
-                 castlist-next migrate で新しい volume へ移す",
+                "0.4.x までの server の DB（この server の migrations に無い・中身の違う移行 {} を当ててある）。開かずに止める。\
+                 移すには v1.0.0 の image の migrate で新しい volume へ（docs の release.md の「切り替え」）",
                 versions
                     .iter()
                     .map(i64::to_string)
@@ -416,13 +416,13 @@ fn sent_text(t: OffsetDateTime) -> Result<String, WriteError> {
 
 // --- 開く ---
 
-/// 新しい server の移行（crates/server/migrations/）。
+/// この server の移行（crates/server/migrations/）。
 static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
 
-/// `path` が、今の server（か別の版）の移行を当てた DB なら [`OpenError::Current`] で断る。読むだけの接続
+/// `path` が、0.4.x までの server（か別の版）の移行を当てた DB なら [`OpenError::Current`] で断る。読むだけの接続
 /// （`read_only`）で開き、DB の中身は書き替えない（WAL の DB は -wal も読む）。file が無い・移行の表が無い時は通す（開く時に作る）。
-/// 移行の表の版のうち、新しい migrations に無い物か、中身の写し（checksum）が違う物があれば断る
-/// （今の server の DB は 0002・0003 が無く、0001 も中身が違う。sqlx の移行に任せると、断る前に DB を WAL にする）。
+/// 移行の表の版のうち、この server の migrations に無い物か、中身の写し（checksum）が違う物があれば断る
+/// （0.4.x の DB は 0002・0003 が無く、0001 も中身が違う。sqlx の移行に任せると、断る前に DB を WAL にする）。
 pub async fn refuse_current(path: &Path) -> Result<(), OpenError> {
     if !tokio::fs::try_exists(path).await.unwrap_or(false) {
         return Ok(());
@@ -470,7 +470,7 @@ pub async fn refuse_current(path: &Path) -> Result<(), OpenError> {
 
 impl Db {
     /// 開き、移行し、外のキーの崩れが無いかを見る。崩れがあれば開かない。
-    /// 今の server の DB は、何も書かずに断る（[`refuse_current`]）。
+    /// 0.4.x までの server の DB は、何も書かずに断る（[`refuse_current`]）。
     pub async fn open(path: &Path) -> Result<Self, OpenError> {
         refuse_current(path).await?;
         // どの接続にも: 外のキーを効かせ、置き換え（REPLACE）が行を消す時も trigger を動かす。
@@ -548,8 +548,8 @@ impl Db {
         self.write.close().await;
     }
 
-    /// 揃ったバックアップを、DB の隣の一時の file（`<DB>.backup-<pid>-<番号>`）に `VACUUM INTO` で作り、その path を返す
-    /// （今の server と同じ）。DB 全体を読むので、重い読みの接続で作る（軽い読みの接続を取らない）。消すのは呼んだ側。
+    /// 揃ったバックアップを、DB の隣の一時の file（`<DB>.backup-<pid>-<番号>`）に `VACUUM INTO` で作り、その path を返す。
+    /// DB 全体を読むので、重い読みの接続で作る（軽い読みの接続を取らない）。消すのは呼んだ側。
     pub async fn backup(&self) -> Result<PathBuf, sqlx::Error> {
         static SEQ: AtomicU64 = AtomicU64::new(0);
         let mut name = self.path.clone().into_os_string();

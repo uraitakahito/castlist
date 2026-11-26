@@ -4,8 +4,8 @@
 //! - サーバーが HTML を組んで返す（askama。`templates/`）。字はみな HTML として逃がす。
 //!   script を使うのは相関図だけで、castlist が配る file だけを読む（inline の script は無い）。
 //! - CSP（[`crate::CSP`]）が inline の script と style を断るので、style は castlist が配る CSS の file だけ。
-//! - 一覧の絞りは、今の server の監査の検索の API（`GET /v1/actors`）と同じ引数（snake_case）を URL に置く（[`params::actor_query`] で読む）。
-//!   画面の URL と字は今の server のまま（AI-36 の作り直しでも替えない）。違うのは、相関図が点と線を引く API の道（`GET /api/graph`）だけ。
+//! - 一覧の絞りは、0.4.x の server の監査の検索の API（`GET /v1/actors`）と同じ引数（snake_case）を URL に置く（[`params::actor_query`] で読む）。
+//!   画面の URL と字は0.4.x の server のまま（AI-36 の作り直しでも替えない）。違うのは、相関図が点と線を引く API の道（`GET /api/graph`）だけ。
 //! - DB は新しい DB の所（[`crate::db`]・[`crate::search`]・[`crate::graph`]）で読む。図（タイムライン）は重い読みの接続だけを使う。
 //! - 時刻は、castlist が受けた時刻（UTC）を日本の時刻（[`OFFSET`]）で出し、ISO の字を `<time datetime>` と `title` に置く。
 //! - 期間の欄は browser の日時の欄（`datetime-local`）。送られた字は日本時間として RFC 3339 にしてから、API と同じ引数で読む
@@ -70,7 +70,7 @@ fn event_name(kind: &str) -> &str {
 
 // --- CSS と script ---
 
-// 配る file は repo の static/ の物（今の server と同じ file）を、binary に埋め込む。
+// 配る file は repo の static/ の物（0.4.x の server と同じ file）を、binary に埋め込む。
 const SITE_CSS: &str = include_str!("../../../static/site.css");
 
 /// 相関図（`/graph/network`）が使う cytoscape（npm の物をそのまま取り込んだ。static/vendor/SOURCES.md）。
@@ -473,7 +473,7 @@ fn render(status: StatusCode, page: &impl Template) -> Response {
     }
 }
 
-/// 誤りの画面（今の server の API の誤りと同じ状態と訳）。
+/// 誤りの画面（0.4.x の server の API の誤りと同じ状態と訳）。
 fn error_page(e: PageError) -> Response {
     let PageError(status, message) = e;
     render(
@@ -501,7 +501,7 @@ pub fn routes(db: Arc<Db>) -> Router {
         .with_state(db)
 }
 
-/// `GET /`: アクターの一覧。引数は今の server の `GET /v1/actors` と同じ。空の値は付けなかったのと同じ（form は空の欄も送る）。
+/// `GET /`: アクターの一覧。引数は0.4.x の server の `GET /v1/actors` と同じ。空の値は付けなかったのと同じ（form は空の欄も送る）。
 /// 既定は新しい順（`order=desc`）。絞る条件が無ければ、この 7 日に居た者を出す。
 async fn list(State(db): State<Arc<Db>>, q: Result<Query<Pairs>, QueryRejection>) -> Response {
     match list_page(db, q).await {
@@ -795,7 +795,7 @@ struct NetworkPage {
     timeline: String,
 }
 
-/// `GET /graph/timeline?label=…&from=…&to=…`: タイムライン。引数は今の server の `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
+/// `GET /graph/timeline?label=…&from=…&to=…`: タイムライン。引数は0.4.x の server の `GET /v1/graph` と同じ（空の値は付けなかったのと同じ）。
 /// `from`・`to` を付ければ、横の時刻もその窓にする（無ければ記録の初めから終わりまで）。
 /// 並べる計算と HTML を組むのは、spawn_blocking の糸で行う。
 async fn timeline(State(db): State<Arc<Db>>, q: Result<Query<Pairs>, QueryRejection>) -> Response {
@@ -1256,7 +1256,7 @@ mod tests {
         GRAPH_PERIOD, LIST_PERIOD, encode, event_name, from_local, lost_reason, period,
         quick_links, quick_ranges, time, to_local,
     };
-    /// 出来事の種類（定義の EventType の 10 種。今の server の src/api.rs の EVENT_TYPES と同じ順）。
+    /// 出来事の種類（定義の EventType の 10 種。0.4.x の server の src/api.rs の EVENT_TYPES と同じ順）。
     const EVENT_TYPES: [&str; 10] = [
         "entered",
         "reentered",
