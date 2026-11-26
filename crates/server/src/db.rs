@@ -11,10 +11,8 @@ use std::time::Duration;
 
 use serde_json::json;
 use sqlx::migrate::Migrator;
-use sqlx::sqlite::{
-    SqliteConnectOptions, SqliteConnection, SqliteJournalMode, SqlitePoolOptions, SqliteRow,
-};
-use sqlx::{Connection, FromRow, Sqlite, SqlitePool, Transaction};
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteRow};
+use sqlx::{FromRow, Sqlite, SqlitePool, Transaction};
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
@@ -340,13 +338,20 @@ pub enum OpenError {
     Migrate(sqlx::migrate::MigrateError),
     /// 外のキーの崩れた行がある（表と rowid と、指す先の表）。
     ForeignKey(Vec<String>),
-    /// 0.4.x までの server（か別の版）の移行を当てた DB（この server の migrations に無い・中身の違う移行の版）。何も書かずに断る。
-    Current(Vec<i64>),
 }
 
 impl fmt::Display for OpenError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            // この server の最も新しい版より後の移行を当ててある DB は、後の版（移行を足した版）が書いた DB（後の版から戻した時など）。
+            // sqlx は、当てる前に当ててある移行を見て断るので、移行は 1 つも当てていない。
+            OpenError::Migrate(sqlx::migrate::MigrateError::VersionMissing(v)) if *v > newest() => {
+                write!(
+                    f,
+                    "この server より新しい版の DB（この server の migrations に無い移行 {v} を当ててある）。\
+                     開かずに止める。書いた版の image で起こす"
+                )
+            }
             OpenError::Db(e) => write!(f, "DB を開けない: {e}"),
             OpenError::Migrate(e) => write!(f, "DB の移行に落ちた: {e}"),
             OpenError::ForeignKey(rows) => write!(
@@ -354,29 +359,6 @@ impl fmt::Display for OpenError {
                 "外のキーの崩れた行があるので開かない: {}",
                 rows.join("・")
             ),
-            OpenError::Current(versions) => {
-                let list = versions
-                    .iter()
-                    .map(i64::to_string)
-                    .collect::<Vec<_>>()
-                    .join("・");
-                let newest = MIGRATOR.iter().map(|m| m.version).max().unwrap_or(0);
-                // 合わない版がみなこの server の最も新しい版より後なら、後の版（移行を足した版）が書いた DB（後の版から戻した時など）。
-                // 0.4.x の DB は、中身の違う版 1 を持つので、こちらに入らない。
-                if versions.iter().all(|v| *v > newest) {
-                    write!(
-                        f,
-                        "この server より新しい版の DB（この server の migrations に無い移行 {list} を当ててある）。\
-                         開かずに止める。書いた版の image で起こす"
-                    )
-                } else {
-                    write!(
-                        f,
-                        "0.4.x までの server の DB（この server の migrations に無い・中身の違う移行 {list} を当ててある）。\
-                         開かずに止める。移すには v1.0.0 の image の migrate で新しい volume へ（docs の release.md の「切り替え」）"
-                    )
-                }
-            }
         }
     }
 }
@@ -432,75 +414,15 @@ fn sent_text(t: OffsetDateTime) -> Result<String, WriteError> {
 /// この server の移行（crates/server/migrations/）。
 static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
 
-/// `path` が、0.4.x までの server（か別の版）の移行を当てた DB なら [`OpenError::Current`] で断る。読むだけの接続
-/// （`read_only`）で開き、DB の中身は書き替えない（WAL の DB は -wal も読む）。file が無い・移行の表が無い時は通す（開く時に作る）。
-/// 移行の表の版のうち、この server の migrations に無い物か、中身の写し（checksum）が違う物があれば断る
-/// （0.4.x の DB は 0002・0003 が無く、0001 も中身が違う。sqlx の移行に任せると、断る前に DB を WAL にする）。
-pub async fn refuse_current(path: &Path) -> Result<(), OpenError> {
-    if !tokio::fs::try_exists(path).await.unwrap_or(false) {
-        return Ok(());
-    }
-    // 隣に -wal と -shm の両方が在る時（動いている・落ちた後の DB）だけ、読むだけの接続で WAL も読む（checkpoint の前の物は
-    // 本体の file だけでは読めず、immutable では CI で「database disk image is malformed」になった。どちらも既に在るので、
-    // 新しく作る物は無い）。ほか（止めた DB・写し・-wal だけを手で写した物）は immutable で本体の file だけを読み、隣に何も作らない
-    // （WAL の形の DB を読むだけの接続で開くと、無い -wal と -shm を作る。0.4.x の server の DB は WAL の形）。
-    // -wal だけの時に WAL の分は読めないが、断る訳に要る移行の表は、本体の file にある（pagetray と同じ形）。
-    let sibling = |suffix: &str| {
-        let mut p = path.as_os_str().to_owned();
-        p.push(suffix);
-        p
-    };
-    let live = tokio::fs::try_exists(sibling("-wal"))
-        .await
-        .unwrap_or(false)
-        && tokio::fs::try_exists(sibling("-shm"))
-            .await
-            .unwrap_or(false);
-    let mut conn = SqliteConnection::connect_with(
-        &SqliteConnectOptions::new()
-            .filename(path)
-            .read_only(true)
-            .immutable(!live),
-    )
-    .await
-    .map_err(OpenError::Db)?;
-    let applied: Result<Vec<(i64, Vec<u8>)>, sqlx::Error> = async {
-        let has: i64 = sqlx::query_scalar(
-            "select count(*) from sqlite_master where type = 'table' and name = '_sqlx_migrations'",
-        )
-        .fetch_one(&mut conn)
-        .await?;
-        if has == 0 {
-            return Ok(Vec::new());
-        }
-        sqlx::query_as("select version, checksum from _sqlx_migrations order by version")
-            .fetch_all(&mut conn)
-            .await
-    }
-    .await;
-    let _ = conn.close().await;
-    let foreign: Vec<i64> = applied
-        .map_err(OpenError::Db)?
-        .into_iter()
-        .filter(|(version, checksum)| {
-            !MIGRATOR
-                .iter()
-                .any(|m| m.version == *version && m.checksum.as_ref() == checksum.as_slice())
-        })
-        .map(|(version, _)| version)
-        .collect();
-    if foreign.is_empty() {
-        Ok(())
-    } else {
-        Err(OpenError::Current(foreign))
-    }
+/// この server の移行の、最も新しい版。
+fn newest() -> i64 {
+    MIGRATOR.iter().map(|m| m.version).max().unwrap_or(0)
 }
 
 impl Db {
     /// 開き、移行し、外のキーの崩れが無いかを見る。崩れがあれば開かない。
-    /// 0.4.x までの server の DB は、何も書かずに断る（[`refuse_current`]）。
+    /// 後の版が書いた DB（この server に無い移行を当ててある）は、移行を当てずに断る。
     pub async fn open(path: &Path) -> Result<Self, OpenError> {
-        refuse_current(path).await?;
         // どの接続にも: 外のキーを効かせ、置き換え（REPLACE）が行を消す時も trigger を動かす。
         // 一時の物は memory に置く（動かす image には /tmp が無い）。
         let options = SqliteConnectOptions::new()

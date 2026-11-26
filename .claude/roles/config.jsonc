@@ -8,8 +8,8 @@
     // container の名は castlist.box（0.1.1 から。同じ network の container が DNS の domain box で名で引く）。
     // 前の名 castlist の match も残す（0.1.0 の docs の名で動かしている間と、前の名で起こし直す試みを止めるため）。
     // guard は命令の字に match の字が含まれるかで見るので、前の名の字は新しい名の命令にも当たる。新しい名は、何に当たるかを読めるように書く。
-    // volume: 消す命令の castlist-data は、1.0.0 からの castlist-data-v1 と、戻す時のために残す切り替えの前の castlist-data の両方に当たる。
-    // -v castlist-data は、どちらかの volume を付けて起こす命令（リストア・移し・起きない時に記録を読む物）に当たり、volume に書く道も止める。
+    // volume: 消す命令の castlist-data は、1.0.0 からの castlist-data-v1 に当たる（guard は字が含まれるかで見る）。
+    // -v castlist-data は、castlist-data-v1 を付けて起こす命令（リストア・起きない時に記録を読む物）に当たり、volume に書く道も止める。
     // 字の castlist-data だけは match にしない（volume の名を grep するだけの読む命令まで断るため）。
     "castlist": {
       "guard": "pm-only",

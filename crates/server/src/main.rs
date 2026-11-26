@@ -6,7 +6,7 @@ use std::path::Path;
 use std::process::ExitCode;
 use std::sync::Arc;
 
-use castlist::db::{Db, OpenError};
+use castlist::db::Db;
 use castlist::runlog::{self, RunLog};
 use castlist::{Config, REQUEST_TIMEOUT, app_with};
 use tokio::signal::unix::{SignalKind, signal};
@@ -16,21 +16,10 @@ async fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if !args.is_empty() {
         eprintln!("{USAGE}");
-        if args[0] == "migrate" {
-            // 0.4.x の DB を移す命令は、1.0.0 の image にだけある。
-            eprintln!(
-                "migrate は v1.0.0 の image（ghcr.io/uraitakahito/castlist:v1.0.0）にある（docs の release.md の「切り替え」）"
-            );
-        }
         return ExitCode::from(2);
     }
     let path = std::env::var("CASTLIST_DB").unwrap_or_else(|_| "/data/castlist.db".to_owned());
     let path = Path::new(&path);
-    // 0.4.x までの server の DB（切り替えの前の volume）なら、記録の置き場も作らずに止める（その volume に何も書かない）。
-    if let Err(e @ OpenError::Current(_)) = castlist::db::refuse_current(path).await {
-        eprintln!("castlist: {e}");
-        return ExitCode::FAILURE;
-    }
     // 記録の置き場は DB の隣の logs/。DB を開く前に用意する（開けなかった訳も残すため）。
     let log = RunLog::beside(path);
     runlog::init(&log);

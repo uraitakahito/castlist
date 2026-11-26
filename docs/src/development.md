@@ -50,7 +50,7 @@ server は `crates/server`（package `castlist`・binary `castlist-server`）の
 | 層 | 中身 | 在り処 |
 |---|---|---|
 | 受け入れ | 本物の binary を空いた port で起こし、HTTP で叩く | `crates/server/tests/server.rs`（守りの層の誤りの形・HEAD・本文の上限・backup も。道具は `crates/server/tests/common/server.rs`） |
-| 道筋と DB | 試験ごとに一時の DB を作り、Router を直に呼ぶ。書く接続・読む接続を直に使って、DB の決まり（足すだけ・外のキー・索引）も見る | `crates/server/tests/` の `health.rs`・`register.rs`・`actor.rs`・`resolve.rs`・`events.rs`・`links.rs`・`settings.rs`・`lineage.rs`・`search_actors.rs`・`search_rows.rs`（監査の検索）・`graph.rs`・`db.rs`・`concurrency.rs`・`ui.rs`（画面）・`guard.rs`（守りの層）・`backup.rs`（backup と logs の道）・`refuse_old.rs`（0.4.x の DB を何も書かずに断る・出した移行の file が替わっていない）（道具は `crates/server/tests/common/mod.rs`・`common/sample.rs`） |
+| 道筋と DB | 試験ごとに一時の DB を作り、Router を直に呼ぶ。書く接続・読む接続を直に使って、DB の決まり（足すだけ・外のキー・索引）も見る | `crates/server/tests/` の `health.rs`・`register.rs`・`actor.rs`・`resolve.rs`・`events.rs`・`links.rs`・`settings.rs`・`lineage.rs`・`search_actors.rs`・`search_rows.rs`（監査の検索）・`graph.rs`・`db.rs`・`concurrency.rs`・`ui.rs`（画面）・`guard.rs`（守りの層）・`backup.rs`（backup と logs の道）・`migrations.rs`（出した移行の file が替わっていない・後の版が書いた DB を移行を当てずに断る）（道具は `crates/server/tests/common/mod.rs`・`common/sample.rs`） |
 | 負荷 | 本物の binary を一時の DB で起こし、50 の客が 10 秒叩く（読む物の 2 割は監査の検索。ふだんは流さない）。CI では一時の DB を memory の上（`TMPDIR=/dev/shm`）に置く（CI の機械の disk の書き込みの詰まりを測らないため） | `crates/server/tests/load.rs`（CI の job `load`） |
 | 単体 | DB に触らない純な関数 | 各 file の `#[cfg(test)]` |
 | browser | 本物の castlist-server を空いた port と一時の DB で起こし、API で見本を置き、Chromium で相関図を開く。点と線の数・押した先・model と effort の絞り・色（明るい・暗い）・console の誤りと CSP の違反が 0・script を切った時の字を見る。一覧とタイムラインの期間の欄（日時の欄で入れた日本時間で絞る・送り直しても同じ値・期間をすぐ選ぶ link）も見る | `e2e/`（Playwright。CI の job `e2e`。Node の依存の弱点は job `advisories` の `pnpm audit`） |

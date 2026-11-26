@@ -1,13 +1,13 @@
 # DB
 
-SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表・索引・view は `crates/server/migrations/0001_init.sql` にあり（1.0.0 から。0.4.x の 3 つの移行を当てた後の形を 1 つにまとめた物）、移行の SQL は binary に埋め込む。移行は足すだけで、出した file は替えない（替えていないことは `crates/server/tests/refuse_old.rs` が中身の写しで見る）。0.4.x までの server の移行を当てた DB は、開かずに断る（[API](api.md) の「データ」）。
+SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表・索引・view は `crates/server/migrations/0001_init.sql` にあり（1.0.0 から。0.4.x の 3 つの移行を当てた後の形を 1 つにまとめた物）、移行の SQL は binary に埋め込む。移行は足すだけで、出した file は替えない（替えていないことは `crates/server/tests/migrations.rs` が中身の写しで見る）。後の版が書いた DB は、開かずに断る（[API](api.md) の「データ」）。
 
 ## 接続
 
 - WAL。書く接続は 1 本だけ（番号を数える所と、同じ物かを見る所が 1 列に並ぶ）。読む接続は 4 本で、読むだけ。書いている間も、読む物は待たない。図の点と線とタイムラインの重い読みは、別の読むだけの接続 2 本だけを使い、軽い読み（引き当て・検索・画面）の 4 本を取らない（並べて描いても、引き当てが空きを待たない）。
 - どの接続にも `foreign_keys=ON`・`recursive_triggers=ON`（置き換えの insert が行を消す時も、消しを断る trigger が動く）・`busy_timeout` 5 秒・一時の物は memory。
 - 書く接続を 2 秒・読む接続を 3 秒待っても空かなければ、API は 503「混んでいる」（`Unavailable`）で返す。
-- 起きる時に、0.4.x までの server の DB でないかを読むだけで見てから（そうなら何も書かずに止まる）、移行を当て、その後で `PRAGMA foreign_key_check` を流す。崩れた行が 1 つでもあれば、表と rowid を出して起きない。
+- 起きる時に、移行を当て（後の版が書いた DB なら、当てずに止まる）、その後で `PRAGMA foreign_key_check` を流す。崩れた行が 1 つでもあれば、表と rowid を出して起きない。
 
 ## 足すだけ
 

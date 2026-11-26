@@ -365,7 +365,7 @@ Auditor の使い方（時刻は UTC。日本時間の 11:00〜12:00 は `02:00:
 - id の値（アクターの UUID v7・出来事・線・設定の送り手の id）は変えない（pagetray の送り手と roster が、同じ id を送り続けるため）。
 - 「最新」は seq で決める。`receivedAt` は戻らない（書く transaction の中で、今と、どの表の最新の `receivedAt` の遅い方にする）。
 - 0.4.x の DB は、v1.0.0 の image の `migrate` で新しい volume へ移した（AI-36 の切り替え。手順と照らしは [release を出す](release.md) の「切り替え（済み）」）。0.4.x から移した行の送り手の時刻は送られた字のまま残り（時差の付いた字もある）、読む所が UTC に直して返す。
-- server（`Db::open` と binary）は、0.4.x までの server の移行を当てた DB（`_sqlx_migrations` に、`crates/server/migrations/` に無い版か、中身の写しの違う版がある物）を、読むだけで見て、何も書かずに断る（訳は「0.4.x までの server の DB。…v1.0.0 の image の migrate で新しい volume へ」。隣に `-wal` と `-shm` の両方が無ければ本体の file だけを読み、隣に何も作らない）。合わない版がみなこの server の最も新しい版より後なら、後の版（移行を足した版）が書いた DB として、別の訳（「この server より新しい版の DB。…書いた版の image で起こす」）で断る。binary は記録の置き場も作らずに 1 で終わる。試験は `crates/server/tests/refuse_old.rs`（出した migrations の中身が 1 byte も替わっていないことも見る）。
+- server（`Db::open` と binary）は、後の版（移行を足した版）が書いた DB（`_sqlx_migrations` に、この server の最も新しい版より後の版がある物）を、移行を当てずに断る（訳は「この server より新しい版の DB。…書いた版の image で起こす」）。記録の置き場（`logs/`）と WAL の file（`-wal`・`-shm`）は書く。ほかの合わない移行（中身の写しの違う版など）も、移行を当てずに「DB の移行に落ちた」で断る。binary は 1 で終わる。試験は `crates/server/tests/migrations.rs`（出した migrations の中身が 1 byte も替わっていないことも見る）。
 - 同じ id で同じ本文かを見る写し（`body_hash`）は、下の形で取る。0.4.x から移した行の写しは 0.4.x の本文の形の物なので、その行と同じ id を送り直すと 409 になる。特別な決まり（移した印で 200 にする）は置かない: 送り手の roster は 409 を「もう在るので済んだ」とみなす。
 - 写しの形（`crates/server/src/body.rs`。替えれば、前に受けた物の送り直しが 409 になる）:
   1. 本文の欄を、定義の名の JSON の物にする。道の id は入れない。出来事は `issuer`・`by`・`type`・`detail`・`sentAt`、線は `issuer`・`type`・`from`・`to`・`sentAt`、model と effort は `issuer`・`by`・`model`・`effort`・`source`・`sentAt`。
