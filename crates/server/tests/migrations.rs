@@ -2,6 +2,8 @@
 mod common;
 
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
 
 use castlist::db::Db;
 use common::temp_db;
@@ -60,6 +62,35 @@ async fn ledger_db(tag: &str, rows: &[(i64, &str, String)]) -> PathBuf {
     }
     pool.close().await;
     path
+}
+
+/// 後の版が書いた DB の本当の形: この server で開いて移行を当て、閉じてから、移行の表に最も新しい版の次の版の行を足す。
+/// 足した後の移行の表の版を返す。
+async fn later_db(tag: &str) -> (PathBuf, Vec<i64>) {
+    let path = temp_db(tag);
+    Db::open(&path)
+        .await
+        .expect("新しい DB を開く")
+        .close()
+        .await;
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(SqliteConnectOptions::new().filename(&path))
+        .await
+        .expect("DB を開く");
+    sqlx::query(
+        "insert into _sqlx_migrations (version, description, success, checksum, execution_time) \
+         select max(version) + 1, 'later', true, zeroblob(48), 1 from _sqlx_migrations",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    let versions = sqlx::query_scalar("select version from _sqlx_migrations order by version")
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+    pool.close().await;
+    (path, versions)
 }
 
 /// DB の表の名と、移行の表の版（断った後に、何も当てていないかを見る）。
@@ -121,6 +152,68 @@ async fn a_database_from_a_later_version_is_refused_without_migrating() {
         tables_and_versions(&path).await,
         (vec!["_sqlx_migrations".to_owned()], vec![2])
     );
+    common::remove_db(&path);
+}
+
+/// 本当の形（この server の移行をみな当てた上に、後の版の移行が 1 つある）でも、後の版の訳で断る。sqlx が、版ごとの
+/// 中身の写しを見る前に、無い版を見ることも見る（逆になれば「DB の移行に落ちた」になる）。移行の表は替わらない。
+#[tokio::test]
+async fn a_migrated_database_with_one_later_migration_is_refused_as_later() {
+    let (path, versions) = later_db("later-real").await;
+    let later = *versions.last().unwrap();
+    let e = match Db::open(&path).await {
+        Ok(_) => panic!("後の版の DB を開いた"),
+        Err(e) => e,
+    };
+    assert_eq!(
+        e.to_string(),
+        format!(
+            "この server より新しい版の DB（この server の migrations に無い移行 {later} を当ててある）。\
+             開かずに止める。書いた版の image で起こす"
+        )
+    );
+    assert_eq!(tables_and_versions(&path).await.1, versions);
+    common::remove_db(&path);
+}
+
+/// binary も、後の版の DB では訳を出して 1 で終わる。訳は stdout と、DB の隣の記録（logs/ の server.log と runs.log）に出る。
+#[tokio::test]
+async fn the_binary_refuses_a_database_from_a_later_version() {
+    let (path, versions) = later_db("later-binary").await;
+    let mut child = Command::new(common::server::binary())
+        .env("CASTLIST_DB", &path)
+        .env("CASTLIST_LISTEN", "127.0.0.1:0")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("binary を起こす");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let status = loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            break status;
+        }
+        if Instant::now() > deadline {
+            child.kill().unwrap();
+            panic!("後の版の DB で起きたまま");
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    };
+    let out = child.wait_with_output().unwrap();
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert_eq!(status.code(), Some(1), "{stdout}{stderr}");
+    let reason = "この server より新しい版の DB";
+    assert!(stdout.contains(reason), "{stdout}{stderr}");
+    let logs = path.with_file_name("logs");
+    let server = tokio::fs::read_to_string(logs.join("server.log"))
+        .await
+        .unwrap();
+    assert!(server.contains(reason), "{server}");
+    let runs = tokio::fs::read_to_string(logs.join("runs.log"))
+        .await
+        .unwrap();
+    assert!(runs.contains(&format!("failed {reason}")), "{runs}");
+    assert_eq!(tables_and_versions(&path).await.1, versions);
     common::remove_db(&path);
 }
 
