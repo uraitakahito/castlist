@@ -1,6 +1,6 @@
 // 相関図（/graph/network。図 C）を描く。castlist が /static/network.js で配る（CSP の script-src 'self'）。
-// - 点と線は、#network の data-src（同じ絞りの図の API。connect-src 'self'）から引く。今の server は GET /v1/graph（欄は snake_case）、
-//   作り直している新しい server（crates/server）は GET /api/graph（欄は camelCase）を置くので、どちらの欄の名も読む。
+// - 点と線は、#network の data-src（同じ絞りの図の API の GET /api/graph。欄は camelCase。connect-src 'self'）から引く。
+//   読む所は、0.4.x の server の欄の名（snake_case）も読む形のまま残している。
 // - 描くのは cytoscape（static/vendor/。canvas に描くので、inline の style は要らない）。
 // - 色は site.css の色（--m-opus など）を読む。明るい色と暗い色が替われば、描き直す。
 // - 字は DOM の textContent でだけ置く（innerHTML は使わない）。

@@ -272,7 +272,7 @@ async fn received_at_never_goes_backwards() {
     );
 }
 
-/// 本文の写し（body_hash）は、docs/src/next.md の「データ」に書いた形の SHA-256。
+/// 本文の写し（body_hash）は、docs/src/api.md の「データ」に書いた形の SHA-256。
 /// detail は鍵を並べた形で残す。
 #[tokio::test]
 async fn the_body_hash_is_sha256_of_the_canonical_body() {

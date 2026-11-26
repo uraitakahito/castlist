@@ -483,7 +483,7 @@ async fn waiting_too_long_for_a_read_connection_is_503_unavailable() {
     app.actor(&se1).await;
 }
 
-/// 今の DB から移した行には、時差の付いた送り手の時刻（`+09:00`）が残る。読む所は UTC に直して返す（next.md の「データ」）。
+/// 0.4.x の DB から移した行には、時差の付いた送り手の時刻（`+09:00`）が残る。読む所は UTC に直して返す（docs/src/api.md の「データ」）。
 /// 読めずに 500 になると、そのアクターの GetActor が全部読めなくなるので、ここで止める。
 #[tokio::test]
 async fn a_stored_time_with_an_offset_is_read_as_utc() {

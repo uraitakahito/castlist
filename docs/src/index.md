@@ -7,7 +7,7 @@ AI と人の「アクター」の台帳のサーバー。
 - 登場・退場と、誰が誰を起動したかを、足すだけの記録（書き替えも消しもしない）で残す。
 - 図（タイムライン・相関図）と、監査のための検索を持つ。
 
-v1.0.0 を出した（image は `ghcr.io/uraitakahito/castlist:v1.0.0`。0.4.x から上げる時は、volume を新しくして移す: [release を出す](release.md) の「切り替え」）。
+v1.0.0 を出した（image は `ghcr.io/uraitakahito/castlist:v1.0.0`。API は Smithy の定義から作る `/api/` の下の物: [API](api.md)。0.4.x からの切り替えは済んだ: [release を出す](release.md) の「切り替え（済み）」）。
 
 ## 守り
 

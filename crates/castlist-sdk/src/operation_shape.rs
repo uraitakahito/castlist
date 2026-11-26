@@ -306,7 +306,7 @@ impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for Res
     }
 }
 
-/// 出来事を足す。id は送り手が決める。同じ id で同じ本文（写しは docs/src/next.md の「データ」）なら、足さずに前の行を 200 で返し、 本文が違えば 409（前の行はそのまま）。同じ id かは `by` を引くより先に見る。新しく足せば 201。 `by` は出し手の中の鍵の付随する id で引き、引けなければ 400。`detail` は JSON の物（無ければ `{}`）で、ほかの形は 400。
+/// 出来事を足す。id は送り手が決める。同じ id で同じ本文（写しは docs/src/api.md の「データ」）なら、足さずに前の行を 200 で返し、 本文が違えば 409（前の行はそのまま）。同じ id かは `by` を引くより先に見る。新しく足せば 201。 `by` は出し手の中の鍵の付随する id で引き、引けなければ 400。`detail` は JSON の物（無ければ `{}`）で、ほかの形は 400。
 pub struct PutEvent;
 
 impl ::aws_smithy_http_server::operation::OperationShape for PutEvent {
