@@ -168,7 +168,7 @@ async fn twenty_puts_of_the_same_event_at_once_add_one_row_and_answer_the_same()
     assert_foreign_keys(&app).await;
 }
 
-/// 0.4.x の server の tests/search.rs と同じ: 書く transaction を開いて書き、2 秒握っている間に、読む操作を 10 回ずつ並べて送る。
+/// 0.4.x の server（v0.4.0 の tag）の tests/search.rs と同じ: 書く transaction を開いて書き、2 秒握っている間に、読む操作を 10 回ずつ並べて送る。
 /// どれも 200 で、100 ms のうちに答える（WAL なので、読む接続は書く鍵を待たない）。
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn reads_answer_within_100_ms_while_the_write_lock_is_held_for_2_seconds() {

@@ -16,6 +16,12 @@ async fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if !args.is_empty() {
         eprintln!("{USAGE}");
+        if args[0] == "migrate" {
+            // 0.4.x の DB を移す命令は、1.0.0 の image にだけある。
+            eprintln!(
+                "migrate は v1.0.0 の image（ghcr.io/uraitakahito/castlist:v1.0.0）にある（docs の release.md の「切り替え」）"
+            );
+        }
         return ExitCode::from(2);
     }
     let path = std::env::var("CASTLIST_DB").unwrap_or_else(|_| "/data/castlist.db".to_owned());

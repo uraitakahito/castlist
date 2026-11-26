@@ -24,7 +24,7 @@ use crate::{BODY_LIMIT, CSP};
 /// - `Host` が 127.0.0.1・localhost でなければ断る（外の site が名前を付け替えて届ける要求を防ぐ）。
 /// - `GET`・`HEAD` のほかの要求に `Origin` が付いていれば断る（browser の中のページからは書かせない。roster と `curl` は付けない）。
 ///
-/// `HEAD` は `GET` にして通し、答えの本文を捨てる（状態と header は `GET` と同じ）。0.4.x の server は axum の `get` の道が
+/// `HEAD` は `GET` にして通し、答えの本文を捨てる（状態と header は `GET` と同じ）。 0.4.x の server は axum の `get` の道が
 /// `HEAD` にも答えていた。生成した骨の道は `GET` だけなので、ここで揃える。
 pub async fn guard(mut request: Request, next: Next) -> Response {
     let host = request
@@ -122,7 +122,7 @@ pub async fn limit(request: Request, next: Next) -> Response {
 }
 
 /// どの答えにも、型の推し量りを止める header と、referrer を送らせない header を付け、画面（HTML）の答えには CSP を付ける
-/// （0.4.x の server の src/lib.rs の stamp と同じ）。
+/// （0.4.x の server（v0.4.0 の tag）の src/lib.rs の stamp と同じ）。
 pub async fn stamp(request: Request, next: Next) -> Response {
     let mut response = next.run(request).await;
     let headers = response.headers_mut();

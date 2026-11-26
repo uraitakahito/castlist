@@ -354,16 +354,29 @@ impl fmt::Display for OpenError {
                 "外のキーの崩れた行があるので開かない: {}",
                 rows.join("・")
             ),
-            OpenError::Current(versions) => write!(
-                f,
-                "0.4.x までの server の DB（この server の migrations に無い・中身の違う移行 {} を当ててある）。開かずに止める。\
-                 移すには v1.0.0 の image の migrate で新しい volume へ（docs の release.md の「切り替え」）",
-                versions
+            OpenError::Current(versions) => {
+                let list = versions
                     .iter()
                     .map(i64::to_string)
                     .collect::<Vec<_>>()
-                    .join("・")
-            ),
+                    .join("・");
+                let newest = MIGRATOR.iter().map(|m| m.version).max().unwrap_or(0);
+                // 合わない版がみなこの server の最も新しい版より後なら、後の版（移行を足した版）が書いた DB（後の版から戻した時など）。
+                // 0.4.x の DB は、中身の違う版 1 を持つので、こちらに入らない。
+                if versions.iter().all(|v| *v > newest) {
+                    write!(
+                        f,
+                        "この server より新しい版の DB（この server の migrations に無い移行 {list} を当ててある）。\
+                         開かずに止める。書いた版の image で起こす"
+                    )
+                } else {
+                    write!(
+                        f,
+                        "0.4.x までの server の DB（この server の migrations に無い・中身の違う移行 {list} を当ててある）。\
+                         開かずに止める。移すには v1.0.0 の image の migrate で新しい volume へ（docs の release.md の「切り替え」）"
+                    )
+                }
+            }
         }
     }
 }
@@ -427,12 +440,18 @@ pub async fn refuse_current(path: &Path) -> Result<(), OpenError> {
     if !tokio::fs::try_exists(path).await.unwrap_or(false) {
         return Ok(());
     }
+    // 隣に -wal が無ければ（止めた DB・写し）、本体の file だけに全てがあるので immutable で読み、隣に何も作らない
+    // （WAL の形の DB を読むだけの接続で開くと、-wal と -shm を作る。0.4.x の server の DB は WAL の形）。
+    // -wal があれば、checkpoint の前の物は本体の file だけでは読めない（immutable では CI で「database disk image is
+    // malformed」になった）ので、読むだけの接続で WAL も読む（-wal と -shm は既に在るので、新しく作る物は無い）。
+    let mut wal = path.as_os_str().to_owned();
+    wal.push("-wal");
+    let wal_present = tokio::fs::try_exists(&wal).await.unwrap_or(false);
     let mut conn = SqliteConnection::connect_with(
         &SqliteConnectOptions::new()
             .filename(path)
-            // immutable にしない: 新しい server の DB は WAL なので、checkpoint の前は本体の file だけでは読めない
-            // （CI で「database disk image is malformed」になった）。読むだけの接続は WAL も読み、file を書き替えない。
-            .read_only(true),
+            .read_only(true)
+            .immutable(!wal_present),
     )
     .await
     .map_err(OpenError::Db)?;
