@@ -2,9 +2,10 @@
 use axum::http::{HeaderName, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use castlist_sdk::error::{
-    Conflict, GetActorError, GetActorSettingAtError, GetGraphError, GetLineageError, InternalError,
-    ListActorSettingsError, ListActorsError, ListEventsError, ListSettingsError, PutEventError,
-    PutLinkError, PutSettingError, ResolveActorsError, Unavailable, ValidationException,
+    Conflict, GetActorError, GetActorSettingAtError, GetGraphError, GetLineageError,
+    GetTimelineError, InternalError, ListActorSettingsError, ListActorsError, ListEventsError,
+    ListSettingsError, PutEventError, PutLinkError, PutSettingError, ResolveActorsError,
+    Unavailable, ValidationException,
 };
 
 use crate::db::WriteError;
@@ -97,7 +98,8 @@ from_failure!(
     GetActorSettingAtError,
     ListSettingsError,
     ListEventsError,
-    GetGraphError
+    GetGraphError,
+    GetTimelineError
 );
 
 /// 送り手の id で足す操作（Put…）の失敗: 中身の誤り（400）・同じ id で違う中身など（409）・混んでいる（503）・中の失敗（500）。

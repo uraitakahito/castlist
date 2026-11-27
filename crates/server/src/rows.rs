@@ -2,7 +2,7 @@
 //! 探した出来事と model と effort の行は、その形にアクターの名を足した物）。直せなければ、その訳の字を返す（呼ぶ側が中の失敗にする）。
 use aws_smithy_types::{Document, Number};
 use castlist_sdk::model::{
-    ActorRow, ActorState, Event, EventRow, GraphNode, Link, Setting, SettingRow,
+    ActorRow, ActorState, Event, EventRow, GraphNode, Link, Setting, SettingRow, TimelineEvent,
 };
 
 use crate::datetime;
@@ -73,6 +73,17 @@ pub fn graph_node(n: graph::Node) -> Result<GraphNode, String> {
     })
 }
 
+/// タイムラインの出来事を、答えの形にする。
+pub fn timeline_event(m: graph::Moment) -> Result<TimelineEvent, String> {
+    Ok(TimelineEvent {
+        received_at: datetime(&m.received_at)?,
+        actor_id: m.actor_id,
+        r#type: m.kind,
+        inferred: m.inferred,
+        reason: m.reason,
+    })
+}
+
 /// JSON の値を、答えの Document にする（数は、符号の無い整数・負の整数・小数のどれかに）。
 fn document(value: serde_json::Value) -> Document {
     use serde_json::Value;
@@ -109,6 +120,8 @@ pub fn actor_row(a: search::ActorItem) -> Result<ActorRow, String> {
         last_exit_type: a.last_exit_type,
         present: a.present,
         inferred: a.inferred,
+        presence: a.presence,
+        skewed: Some(a.skewed),
         model: a.model,
         effort: a.effort,
     })

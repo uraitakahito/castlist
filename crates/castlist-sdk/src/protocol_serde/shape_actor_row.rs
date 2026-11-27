@@ -59,11 +59,17 @@ pub fn ser_actor_row(
     {
         object.key("inferred").boolean(input.inferred);
     }
-    if let Some(var_7) = &input.model {
-        object.key("model").string(var_7.as_str());
+    if let Some(var_7) = &input.presence {
+        object.key("presence").string(var_7.as_str());
     }
-    if let Some(var_8) = &input.effort {
-        object.key("effort").string(var_8.as_str());
+    if let Some(var_8) = &input.skewed {
+        object.key("skewed").boolean(*var_8);
+    }
+    if let Some(var_9) = &input.model {
+        object.key("model").string(var_9.as_str());
+    }
+    if let Some(var_10) = &input.effort {
+        object.key("effort").string(var_10.as_str());
     }
     {
         object.key("url").string(input.url.as_str());

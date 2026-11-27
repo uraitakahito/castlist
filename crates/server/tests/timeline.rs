@@ -40,11 +40,14 @@ async fn the_events_of_the_nodes_come_in_the_order_received_with_only_the_fields
     let timeline = ok(&s.app, "/api/timeline").await;
     let events = timeline["events"].as_array().unwrap();
     assert!(!events.is_empty(), "{timeline}");
-    // 受けた順（時刻は UTC の字なので、字の順で比べられる）。
-    let received = field(&timeline["events"], "receivedAt");
-    let mut sorted = received.clone();
-    sorted.sort_unstable();
-    assert_eq!(received, sorted);
+    // 受けた順（答えの時刻の字は、秒の下の終わりの 0 を落とすので、時刻に直して比べる）。
+    let received: Vec<time::OffsetDateTime> = field(&timeline["events"], "receivedAt")
+        .into_iter()
+        .map(|t| {
+            time::OffsetDateTime::parse(t, &time::format_description::well_known::Rfc3339).unwrap()
+        })
+        .collect();
+    assert!(received.is_sorted(), "{received:?}");
     // 欄は、帯と印に要る物だけ（detail の全部は出さない）。
     for event in events {
         let mut keys: Vec<&str> = event
@@ -62,11 +65,7 @@ async fn the_events_of_the_nodes_come_in_the_order_received_with_only_the_fields
         );
     }
     // 出来事の数は、点のアクターの出来事の全部（ListEvents で数える）。
-    let all = ok(
-        &s.app,
-        &format!("/api/events?label=project:castlist&maxResults=1000"),
-    )
-    .await;
+    let all = ok(&s.app, "/api/events?label=project:castlist&maxResults=1000").await;
     assert_eq!(
         events.len(),
         all["events"].as_array().unwrap().len(),
@@ -99,19 +98,38 @@ async fn a_label_narrows_the_events_and_settings_to_the_nodes() {
 async fn the_settings_are_every_row_in_the_order_received_in_the_shape_of_get_actor() {
     let s = sample().await;
     let timeline = ok(&s.app, &format!("/api/timeline?label=tpm.key:{KEY}")).await;
-    let se1 = s.id("se.1");
-    let rows: Vec<&Value> = timeline["settings"]
+    // どの点のアクターも、GetActor の settings と同じ行（同じ欄・同じ順）。
+    let mut seen = 0;
+    for node in timeline["nodes"].as_array().unwrap() {
+        let id = node["id"].as_str().unwrap();
+        let rows: Vec<&Value> = timeline["settings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|r| r["actorId"] == id)
+            .collect();
+        let actor = ok(&s.app, &format!("/api/actors/{id}")).await;
+        let want: Vec<&Value> = actor["settings"].as_array().unwrap().iter().collect();
+        assert_eq!(rows, want, "{}", node["name"]);
+        seen += rows.len();
+    }
+    assert_eq!(seen, timeline["settings"].as_array().unwrap().len());
+    // 最新だけでなく、替わる前の行も入る（見本には、opus から sonnet に替わった者がいる）。
+    let models = field(&timeline["settings"], "model");
+    assert!(
+        models.contains(&OPUS) && models.contains(&SONNET),
+        "{models:?}"
+    );
+    let latest = timeline["nodes"]
         .as_array()
         .unwrap()
         .iter()
-        .filter(|r| r["actorId"] == se1)
-        .collect();
-    let actor = ok(&s.app, &format!("/api/actors/{se1}")).await;
-    let want: Vec<&Value> = actor["settings"].as_array().unwrap().iter().collect();
-    assert!(want.len() >= 2, "{actor}");
-    assert_eq!(rows, want, "{timeline}");
-    assert_eq!(rows[0]["model"], OPUS);
-    assert!(rows.iter().any(|r| r["model"] == SONNET), "{rows:?}");
+        .filter(|n| n.get("currentSettings").is_some())
+        .count();
+    assert!(
+        seen > latest,
+        "替わる前の行も入る: {seen} 行・最新は {latest} 行"
+    );
 }
 
 #[tokio::test]

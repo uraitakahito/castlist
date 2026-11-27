@@ -11,6 +11,7 @@ mod errors;
 mod event;
 mod generated;
 mod get_graph;
+mod get_timeline;
 pub mod graph;
 mod guard;
 mod hand;
@@ -127,6 +128,10 @@ pub fn app_with(db: Arc<Db>, config: Config) -> Router {
         .get_graph({
             let db = db.clone();
             move |input| get_graph::get_graph(db.clone(), input)
+        })
+        .get_timeline({
+            let db = db.clone();
+            move |input| get_timeline::get_timeline(db.clone(), input)
         })
         .put_setting({
             let db = db.clone();

@@ -181,6 +181,7 @@
 //!        .get_graph(get_graph)
 //!        .get_health(get_health)
 //!        .get_lineage(get_lineage)
+//!        .get_timeline(get_timeline)
 //!        .list_actors(list_actors)
 //!        .list_actor_settings(list_actor_settings)
 //!        .list_events(list_events)
@@ -224,6 +225,10 @@
 //! }
 //!
 //! async fn get_lineage(input: input::GetLineageInput) -> Result<output::GetLineageOutput, error::GetLineageError> {
+//!     todo!()
+//! }
+//!
+//! async fn get_timeline(input: input::GetTimelineInput) -> Result<output::GetTimelineOutput, error::GetTimelineError> {
 //!     todo!()
 //! }
 //!

@@ -1403,6 +1403,101 @@ impl ::std::convert::From<crate::error::PayloadTooLarge> for crate::error::GetGr
     }
 }
 
+/// Error type for the `GetTimeline` operation.
+/// Each variant represents an error that can occur for the `GetTimeline` operation.
+#[derive(::std::fmt::Debug)]
+pub enum GetTimelineError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。 時間切れは、どの操作の前でも効く（server の守りの層）。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+    /// 受けない要求。castlist を動かす機械の外からの名（`Host`）と、browser の中のページからの書く要求（`Origin` の付いた `GET`・`HEAD` のほか）を断る。どの操作の前でも効く（server の守りの層）。
+    Forbidden(crate::error::Forbidden),
+    /// 本文が上限より大きい。どの操作の前でも効く（server の守りの層。上限は server が決める）。
+    PayloadTooLarge(crate::error::PayloadTooLarge),
+}
+impl ::std::fmt::Display for GetTimelineError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            GetTimelineError::ValidationException(_inner) => _inner.fmt(f),
+            GetTimelineError::Unavailable(_inner) => _inner.fmt(f),
+            GetTimelineError::InternalError(_inner) => _inner.fmt(f),
+            GetTimelineError::Forbidden(_inner) => _inner.fmt(f),
+            GetTimelineError::PayloadTooLarge(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl GetTimelineError {
+    /// Returns `true` if the error kind is `GetTimelineError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, GetTimelineError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `GetTimelineError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, GetTimelineError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `GetTimelineError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, GetTimelineError::InternalError(_))
+    }
+    /// Returns `true` if the error kind is `GetTimelineError::Forbidden`.
+    pub fn is_forbidden(&self) -> bool {
+        matches!(&self, GetTimelineError::Forbidden(_))
+    }
+    /// Returns `true` if the error kind is `GetTimelineError::PayloadTooLarge`.
+    pub fn is_payload_too_large(&self) -> bool {
+        matches!(&self, GetTimelineError::PayloadTooLarge(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            GetTimelineError::ValidationException(_inner) => _inner.name(),
+            GetTimelineError::Unavailable(_inner) => _inner.name(),
+            GetTimelineError::InternalError(_inner) => _inner.name(),
+            GetTimelineError::Forbidden(_inner) => _inner.name(),
+            GetTimelineError::PayloadTooLarge(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for GetTimelineError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            GetTimelineError::ValidationException(_inner) => Some(_inner),
+            GetTimelineError::Unavailable(_inner) => Some(_inner),
+            GetTimelineError::InternalError(_inner) => Some(_inner),
+            GetTimelineError::Forbidden(_inner) => Some(_inner),
+            GetTimelineError::PayloadTooLarge(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::GetTimelineError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::GetTimelineError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::GetTimelineError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::GetTimelineError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::GetTimelineError {
+    fn from(variant: crate::error::InternalError) -> crate::error::GetTimelineError {
+        Self::InternalError(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Forbidden> for crate::error::GetTimelineError {
+    fn from(variant: crate::error::Forbidden) -> crate::error::GetTimelineError {
+        Self::Forbidden(variant)
+    }
+}
+impl ::std::convert::From<crate::error::PayloadTooLarge> for crate::error::GetTimelineError {
+    fn from(variant: crate::error::PayloadTooLarge) -> crate::error::GetTimelineError {
+        Self::PayloadTooLarge(variant)
+    }
+}
+
 /// 受けない要求。castlist を動かす機械の外からの名（`Host`）と、browser の中のページからの書く要求（`Origin` の付いた `GET`・`HEAD` のほか）を断る。どの操作の前でも効く（server の守りの層）。
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
