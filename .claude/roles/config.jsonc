@@ -17,6 +17,9 @@
       "guard": "pm-only",
       "match": [
         "--name castlist.box",
+        // 名を = で繋ぐ形（--name=…）。語も字も、空白で繋ぐ形の項目とは別なので、並べて置く（roster の pagetray の宣言と同じ形。roster の t-vp6r・台帳 #291）。
+        "--name=castlist.box",
+        "--name=castlist",
         "container start castlist.box",
         "container stop castlist.box",
         "container kill castlist.box",
@@ -34,6 +37,9 @@
         "container volume delete castlist-data*",
         "container volume rm castlist-data*",
         "-v castlist-data*",
+        // volume を付ける旗の、長い形（--volume …）。
+        "--volume castlist-data",
+        "--volume castlist-data*",
         // volume の略の v（container v rm …）。字も語も volume と違うので、略の形も並べる（roster の t-9tac）。
         "container v delete castlist-data*",
         "container v rm castlist-data*",
