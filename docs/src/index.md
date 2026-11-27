@@ -7,7 +7,7 @@ AI と人の「アクター」の台帳のサーバー。
 - 登場・退場と、誰が誰を起動したかを、足すだけの記録（書き替えも消しもしない）で残す。
 - 図（タイムライン・相関図）の元の値と、監査のための検索を、API で返す。
 
-v2.0.0 を出した（image は `ghcr.io/uraitakahito/castlist:v2.0.0`。API は Smithy の定義から作る `/api/` の下の物: [API](api.md)）。**2.0.0 から、castlist は画面を持たない。**アクターの一覧・プロフィール・タイムライン・相関図は、この API を通して [callboard](https://uraitakahito.github.io/callboard/) が出す（前の画面の URL `http://127.0.0.1:8802/…` は 404）。
+v2.1.0 を出した（image は `ghcr.io/uraitakahito/castlist:v2.1.0`。API は Smithy の定義から作る `/api/` の下の物: [API](api.md)）。**2.0.0 から、castlist は画面を持たない。**アクターの一覧・プロフィール・タイムライン・相関図は、この API を通して [callboard](https://uraitakahito.github.io/callboard/) が出す（前の画面の URL `http://127.0.0.1:8802/…` は 404）。
 
 ## 守り
 

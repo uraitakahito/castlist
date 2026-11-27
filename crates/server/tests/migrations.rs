@@ -12,12 +12,18 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
 /// 出した版が当てた移行の file と、その SHA-256。1 byte も替えない（替えると checksum が変わり、動いている DB
 /// （`castlist-data-v1`）を sqlx の移行が「中身の違う移行」として断る）。直す時は新しい番号の file を足す。
-const RELEASED: [(&str, &str); 1] = [(
-    "0001_init.sql",
-    "fa5a6f7ad5dbaf3669571346cf70d3b6ca5bb8167709f56c8c6cacc9227457a8",
-)];
+const RELEASED: [(&str, &str); 2] = [
+    (
+        "0001_init.sql",
+        "fa5a6f7ad5dbaf3669571346cf70d3b6ca5bb8167709f56c8c6cacc9227457a8",
+    ),
+    (
+        "0002_usage.sql",
+        "8965b173735677e449c17db18bf1e17493caa236eaad18ca36e012c1f1ef7453",
+    ),
+];
 /// 足したが、まだ出していない移行の file。出したら [`RELEASED`] に移す。
-const UNRELEASED: [&str; 1] = ["0002_usage.sql"];
+const UNRELEASED: [&str; 0] = [];
 
 fn migrations_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("migrations")
