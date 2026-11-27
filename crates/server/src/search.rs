@@ -1,5 +1,5 @@
 //! 監査の検索（ListActors・GetLineage・ListActorSettings・GetActorSettingAt・ListSettings・ListEvents）と、
-//! トークンの数と費えを読む口（ListUsage）の DB の所。
+//! トークンの使用量を読む口（ListUsage）の DB の所。
 //! 読む接続の 1 つの transaction の中で、揃った写しを読む。
 //!
 //! - 時刻の条件は、どれも castlist が受けた時刻（`received_at`）で比べる。問いの時刻は DB に残す字（[`crate::db::stamp`]）に直して渡す。
@@ -215,7 +215,7 @@ pub struct EventQuery {
     pub limit: i64,
 }
 
-/// トークンの数と費えの行を探す条件（どれも AND）。時刻は DB に残す字。
+/// トークンの使用量の行を探す条件（どれも AND）。時刻は DB に残す字。
 #[derive(Clone, Debug, Default)]
 pub struct UsageQuery {
     /// 区間の終わりの時刻（to_at）の窓。始めは含み、終わりは含まない。
@@ -229,7 +229,7 @@ pub struct UsageQuery {
     pub limit: i64,
 }
 
-/// トークンの数と費えの行に出てきたアクター。
+/// トークンの使用量の行に出てきたアクター。
 #[derive(Clone, Debug)]
 pub struct UsageActor {
     pub id: String,
@@ -237,7 +237,7 @@ pub struct UsageActor {
     pub labels: BTreeMap<String, String>,
 }
 
-/// トークンの数と費えの 1 頁と、その頁に出てきたアクター（行に初めて出た順に 1 度ずつ）。
+/// トークンの使用量の 1 頁と、その頁に出てきたアクター（行に初めて出た順に 1 度ずつ）。
 pub struct UsagePage {
     pub page: Page<Usage>,
     pub actors: Vec<UsageActor>,
@@ -825,7 +825,7 @@ impl Db {
         Ok(page(rows, Some(q.limit)))
     }
 
-    /// トークンの数と費えの行を、アクターをまたいで読む（受けた順）。その頁に出てきたアクター（id・名・ラベル）も、
+    /// トークンの使用量の行を、アクターをまたいで読む（受けた順）。その頁に出てきたアクター（id・名・ラベル）も、
     /// 同じ読む transaction の中で引く。
     pub async fn search_usage(&self, q: &UsageQuery) -> Result<UsagePage, sqlx::Error> {
         let mut tx = self.read().begin().await?;

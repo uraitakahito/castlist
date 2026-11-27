@@ -1360,7 +1360,7 @@ impl crate::constrained::Constrained for ActorRefs {
     type Unconstrained = crate::unconstrained::actor_refs_unconstrained::ActorRefsUnconstrained;
 }
 
-/// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+/// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
 ///
 /// This is a constrained type because its corresponding modeled Smithy shape has one or more
 /// [constraint traits]. Use [`SenderId::try_from`] to construct values of this type.
@@ -2162,7 +2162,7 @@ impl ActorBinding {
 /// 出来事 1 つ（欄は EventFields）。
 #[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
 pub struct Event {
-    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub id: ::std::string::String,
     /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
     pub actor_id: ::std::string::String,
@@ -2178,7 +2178,7 @@ pub struct Event {
     pub clock_skew: bool,
 }
 impl Event {
-    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub fn id(&self) -> &str {
         use std::ops::Deref;
         self.id.deref()
@@ -2222,7 +2222,7 @@ impl Event {
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]
 pub struct Link {
-    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub id: ::std::string::String,
     /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
     pub r#type: ::std::string::String,
@@ -2238,7 +2238,7 @@ pub struct Link {
     pub clock_skew: bool,
 }
 impl Link {
-    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub fn id(&self) -> &str {
         use std::ops::Deref;
         self.id.deref()
@@ -2437,7 +2437,7 @@ impl Resolution {
 /// 探した出来事の 1 行（出来事の欄に、アクターの名を足した物）。
 #[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
 pub struct EventRow {
-    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub id: ::std::string::String,
     /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
     pub actor_id: ::std::string::String,
@@ -2455,7 +2455,7 @@ pub struct EventRow {
     pub actor_name: ::std::string::String,
 }
 impl EventRow {
-    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub fn id(&self) -> &str {
         use std::ops::Deref;
         self.id.deref()
@@ -2729,7 +2729,7 @@ impl UsageBucket {
     }
 }
 
-/// トークンの数と費えの 1 行（欄は UsageFields）。
+/// トークンの使用量の 1 行（欄は UsageFields）。
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]
@@ -2882,7 +2882,7 @@ impl Usage {
     }
 }
 
-/// トークンの数と費えの行に出てきたアクター（id・名・ラベル）。
+/// トークンの使用量の行に出てきたアクター（id・名・ラベル）。
 #[derive(::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug)]
 pub struct UsageActor {
     /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
@@ -4899,7 +4899,7 @@ pub mod event {
         pub(crate) clock_skew: ::std::option::Option<bool>,
     }
     impl Builder {
-        /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+        /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
         pub fn id(mut self, input: ::std::string::String) -> Self {
             self.id = Some(input);
             self
@@ -5036,7 +5036,7 @@ pub mod link {
         pub(crate) clock_skew: ::std::option::Option<bool>,
     }
     impl Builder {
-        /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+        /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
         pub fn id(mut self, input: ::std::string::String) -> Self {
             self.id = Some(input);
             self
@@ -5494,7 +5494,7 @@ pub mod event_row {
         pub(crate) actor_name: ::std::option::Option<::std::string::String>,
     }
     impl Builder {
-        /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+        /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
         pub fn id(mut self, input: ::std::string::String) -> Self {
             self.id = Some(input);
             self

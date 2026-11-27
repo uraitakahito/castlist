@@ -1,4 +1,4 @@
-//! ListUsage: トークンの数と費えの行を、アクターをまたいで読む。値の形（時刻・`鍵:値`・ActorId）と、from と to が在ることは
+//! ListUsage: トークンの使用量の行を、アクターをまたいで読む。値の形（時刻・`鍵:値`・ActorId）と、from と to が在ることは
 //! 定義（model/）が見てあるので、ここでは窓の長さと頁の印を見る。集計はしない（まとめるのは呼ぶ側）。
 use std::sync::Arc;
 
@@ -78,7 +78,7 @@ fn query(input: ListUsageInput) -> Result<UsageQuery, ListUsageError> {
         after: input
             .next_token
             .as_deref()
-            .map(|t| token::seq_after(t, TOKEN_KIND, "トークンの数と費えの検索"))
+            .map(|t| token::seq_after(t, TOKEN_KIND, "使用量の検索"))
             .transpose()
             .map_err(invalid)?
             .unwrap_or(0),

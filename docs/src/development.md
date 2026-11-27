@@ -45,7 +45,7 @@ server は `crates/server`（package `castlist`・binary `castlist-server`）の
 | 層 | 中身 | 在り処 |
 |---|---|---|
 | 受け入れ | 本物の binary を空いた port で起こし、HTTP で叩く | `crates/server/tests/server.rs`（守りの層の誤りの形・HEAD・本文の上限・backup も。道具は `crates/server/tests/common/server.rs`） |
-| 道筋と DB | 試験ごとに一時の DB を作り、Router を直に呼ぶ。書く接続・読む接続を直に使って、DB の決まり（足すだけ・外のキー・索引）も見る | `crates/server/tests/` の `health.rs`・`register.rs`・`actor.rs`・`resolve.rs`・`events.rs`・`links.rs`・`settings.rs`・`usage.rs`（トークンの数と費え）・`lineage.rs`・`search_actors.rs`・`search_rows.rs`（監査の検索）・`graph.rs`・`db.rs`・`concurrency.rs`・`no_ui.rs`（前の画面の道が無いこと）・`guard.rs`（守りの層）・`backup.rs`（backup と logs の道）・`migrations.rs`（出した移行の file が替わっていない・後の版が書いた DB を移行を当てずに断る）（道具は `crates/server/tests/common/mod.rs`・`common/sample.rs`） |
+| 道筋と DB | 試験ごとに一時の DB を作り、Router を直に呼ぶ。書く接続・読む接続を直に使って、DB の決まり（足すだけ・外のキー・索引）も見る | `crates/server/tests/` の `health.rs`・`register.rs`・`actor.rs`・`resolve.rs`・`events.rs`・`links.rs`・`settings.rs`・`usage.rs`（トークンの使用量）・`lineage.rs`・`search_actors.rs`・`search_rows.rs`（監査の検索）・`graph.rs`・`db.rs`・`concurrency.rs`・`no_ui.rs`（前の画面の道が無いこと）・`guard.rs`（守りの層）・`backup.rs`（backup と logs の道）・`migrations.rs`（出した移行の file が替わっていない・後の版が書いた DB を移行を当てずに断る）（道具は `crates/server/tests/common/mod.rs`・`common/sample.rs`） |
 | 負荷 | 本物の binary を一時の DB で起こし、50 の客が 10 秒叩く（読む物の 2 割は監査の検索。ふだんは流さない）。CI では一時の DB を memory の上（`TMPDIR=/dev/shm`）に置く（CI の機械の disk の書き込みの詰まりを測らないため） | `crates/server/tests/load.rs`（CI の job `load`） |
 | 単体 | DB に触らない純な関数 | 各 file の `#[cfg(test)]` |
 | 終わり方と記録 | 本物の binary を、試験ごとの空の folder の DB で起こす。止める合図・合図なしの切断・DB を開けない、の後に起こし直して、前回の終わり方の行を見る。問い合わせの行が記録の file にだけ残ること・多く問い合わせた後の `logs/` の大きさが上限の内であること・読む道 `GET /api/logs` も見る | `crates/server/tests/runlog.rs`（書き手と印の単体は `crates/server/src/runlog.rs`） |

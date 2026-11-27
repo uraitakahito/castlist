@@ -98,7 +98,7 @@ const SETTING_HASH: &str = "select body_hash from settings where id = ?1";
 const LATEST_SETTING: &str =
     "select model_id, effort_id from settings where actor_id = ?1 order by seq desc limit 1";
 
-/// トークンの数と費えの行（model は名に直し、受けた順も）。`$tail` は where から後ろ。読む口（search.rs）でも同じ列を使う。
+/// トークンの使用量の行（model は名に直し、受けた順も）。`$tail` は where から後ろ。読む口（search.rs）でも同じ列を使う。
 macro_rules! usage_sql {
     ($tail:literal) => {
         concat!(
@@ -231,7 +231,7 @@ pub struct Bucket {
     pub cost_micro_usd: i64,
 }
 
-/// トークンの数と費えの中身（形は定義が、区間と段の決まりは handler が見てある）。
+/// トークンの使用量の中身（形は定義が、区間と段の決まりは handler が見てある）。
 pub struct NewUsage<'a> {
     pub issuer: &'a str,
     pub by: &'a Ref,
@@ -325,7 +325,7 @@ pub struct Setting {
     pub clock_skew: bool,
 }
 
-/// トークンの数と費えの行（model は名に直した物）。buckets は JSON の配列の字。
+/// トークンの使用量の行（model は名に直した物）。buckets は JSON の配列の字。
 #[derive(Clone, Debug, FromRow)]
 pub struct Usage {
     pub seq: i64,
@@ -975,7 +975,7 @@ impl Db {
         Ok(Put::Created(setting))
     }
 
-    /// トークンの数と費えを 1 行足す。同じ id の扱いは出来事と同じ（同じかは、id と本文の写しだけで決める。
+    /// トークンの使用量を 1 行足す。同じ id の扱いは出来事と同じ（同じかは、id と本文の写しだけで決める。
     /// model と effort の「最新と同じなら足さない」は無い: 同じ中身でも別の行でありうる）。知らない model の名は一覧に足す。
     pub async fn put_usage(&self, id: &str, new: &NewUsage<'_>) -> Result<Put<Usage>, WriteError> {
         let sent_at = sent_text(new.sent_at)?;
@@ -1012,7 +1012,7 @@ impl Db {
         let hash = body::hash(&body);
         let mut tx = self.write.begin().await?;
         if let Some(stored) = stored_hash(&mut tx, USAGE_HASH, id).await? {
-            return same_or_conflict(tx, stored, &hash, USAGE, id, "トークンの数と費え").await;
+            return same_or_conflict(tx, stored, &hash, USAGE, id, "トークンの使用量").await;
         }
         let actor = must_resolve(&mut tx, new.issuer, new.by, "by").await?;
         let received = received_at(&mut tx).await?;
