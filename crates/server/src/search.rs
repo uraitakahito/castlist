@@ -20,7 +20,7 @@ pub const MAX_DEPTH: u32 = 20;
 
 /// 一覧の 1 行（アクター）。初めの登場・最後の退場・稼働中か・最新の model と effort は、
 /// アクター 1 つごとの「order by seq limit 1」で引く（events(actor_id, type, seq)・settings(actor_id, seq)）。
-/// 稼働を替える出来事の最新（presence）と、時刻ずれの行を持つか（skewed）も、アクター 1 つごとに引く（画面の印。API の答えには出さない）。
+/// 稼働を替える出来事の最新（presence）と、時刻ずれの行を持つか（skewed）も、アクター 1 つごとに引く（画面の印と、答えの行の `presence`・`skewed`）。
 const ACTOR_ITEM: &str = concat!(
     "select a.seq, a.id, a.name, a.kind, a.issuer, a.sent_at, a.received_at, a.clock_skew,
        (select e.received_at from events e

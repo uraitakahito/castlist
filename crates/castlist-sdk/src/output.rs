@@ -673,6 +673,55 @@ impl GetGraphOutput {
         crate::output::get_graph_output::Builder::default()
     }
 }
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct GetTimelineOutput {
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+    /// 絞った組と、組に触れる線の向こうの端のアクター（受けた順）。GetGraph の `nodes` と同じ。
+    pub nodes: ::std::vec::Vec<crate::model::GraphNode>,
+    /// 組に触れる線の全部（受けた順）。GetGraph の `edges` と同じ。
+    pub edges: ::std::vec::Vec<crate::model::Link>,
+    /// 点のアクターの出来事の全部（受けた順）。
+    pub events: ::std::vec::Vec<crate::model::TimelineEvent>,
+    /// 点のアクターの model と effort の行の全部（受けた順）。
+    pub settings: ::std::vec::Vec<crate::model::Setting>,
+}
+impl GetTimelineOutput {
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+    /// 絞った組と、組に触れる線の向こうの端のアクター（受けた順）。GetGraph の `nodes` と同じ。
+    pub fn nodes(&self) -> &[crate::model::GraphNode] {
+        use std::ops::Deref;
+        self.nodes.deref()
+    }
+    /// 組に触れる線の全部（受けた順）。GetGraph の `edges` と同じ。
+    pub fn edges(&self) -> &[crate::model::Link] {
+        use std::ops::Deref;
+        self.edges.deref()
+    }
+    /// 点のアクターの出来事の全部（受けた順）。
+    pub fn events(&self) -> &[crate::model::TimelineEvent] {
+        use std::ops::Deref;
+        self.events.deref()
+    }
+    /// 点のアクターの model と effort の行の全部（受けた順）。
+    pub fn settings(&self) -> &[crate::model::Setting] {
+        use std::ops::Deref;
+        self.settings.deref()
+    }
+}
+impl GetTimelineOutput {
+    /// Creates a new builder-style object to manufacture [`GetTimelineOutput`](crate::output::GetTimelineOutput).
+    pub fn builder() -> crate::output::get_timeline_output::Builder {
+        crate::output::get_timeline_output::Builder::default()
+    }
+}
 /// See [`GetHealthOutput`](crate::output::GetHealthOutput).
 pub mod get_health_output {
 
@@ -2029,6 +2078,98 @@ pub mod get_graph_output {
                 as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
                 nodes: self.nodes.ok_or(ConstraintViolation::MissingNodes)?,
                 edges: self.edges.ok_or(ConstraintViolation::MissingEdges)?,
+            })
+        }
+    }
+}
+/// See [`GetTimelineOutput`](crate::output::GetTimelineOutput).
+pub mod get_timeline_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `as_of` was not provided but it is required when building `GetTimelineOutput`.
+        MissingAsOf,
+        /// `nodes` was not provided but it is required when building `GetTimelineOutput`.
+        MissingNodes,
+        /// `edges` was not provided but it is required when building `GetTimelineOutput`.
+        MissingEdges,
+        /// `events` was not provided but it is required when building `GetTimelineOutput`.
+        MissingEvents,
+        /// `settings` was not provided but it is required when building `GetTimelineOutput`.
+        MissingSettings,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingAsOf => write!(f, "`as_of` was not provided but it is required when building `GetTimelineOutput`"),
+                ConstraintViolation::MissingNodes => write!(f, "`nodes` was not provided but it is required when building `GetTimelineOutput`"),
+                ConstraintViolation::MissingEdges => write!(f, "`edges` was not provided but it is required when building `GetTimelineOutput`"),
+                ConstraintViolation::MissingEvents => write!(f, "`events` was not provided but it is required when building `GetTimelineOutput`"),
+                ConstraintViolation::MissingSettings => write!(f, "`settings` was not provided but it is required when building `GetTimelineOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::GetTimelineOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`GetTimelineOutput`](crate::output::GetTimelineOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) nodes: ::std::option::Option<::std::vec::Vec<crate::model::GraphNode>>,
+        pub(crate) edges: ::std::option::Option<::std::vec::Vec<crate::model::Link>>,
+        pub(crate) events: ::std::option::Option<::std::vec::Vec<crate::model::TimelineEvent>>,
+        pub(crate) settings: ::std::option::Option<::std::vec::Vec<crate::model::Setting>>,
+    }
+    impl Builder {
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        /// 絞った組と、組に触れる線の向こうの端のアクター（受けた順）。GetGraph の `nodes` と同じ。
+        pub fn nodes(mut self, input: ::std::vec::Vec<crate::model::GraphNode>) -> Self {
+            self.nodes = Some(input);
+            self
+        }
+        /// 組に触れる線の全部（受けた順）。GetGraph の `edges` と同じ。
+        pub fn edges(mut self, input: ::std::vec::Vec<crate::model::Link>) -> Self {
+            self.edges = Some(input);
+            self
+        }
+        /// 点のアクターの出来事の全部（受けた順）。
+        pub fn events(mut self, input: ::std::vec::Vec<crate::model::TimelineEvent>) -> Self {
+            self.events = Some(input);
+            self
+        }
+        /// 点のアクターの model と effort の行の全部（受けた順）。
+        pub fn settings(mut self, input: ::std::vec::Vec<crate::model::Setting>) -> Self {
+            self.settings = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`GetTimelineOutput`](crate::output::GetTimelineOutput).
+        ///
+        /// The builder fails to construct a [`GetTimelineOutput`](crate::output::GetTimelineOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::GetTimelineOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::GetTimelineOutput, ConstraintViolation> {
+            Ok(crate::output::GetTimelineOutput {
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+                nodes: self.nodes.ok_or(ConstraintViolation::MissingNodes)?,
+                edges: self.edges.ok_or(ConstraintViolation::MissingEdges)?,
+                events: self.events.ok_or(ConstraintViolation::MissingEvents)?,
+                settings: self.settings.ok_or(ConstraintViolation::MissingSettings)?,
             })
         }
     }

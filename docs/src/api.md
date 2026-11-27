@@ -42,6 +42,7 @@ API は Smithy の定義（`model/`）から作る。protocol は `aws.protocols
 | `ListSettings` | `GET /api/settings` | model と effort の行を、アクターをまたいで探す |
 | `ResolveActors` | `POST /api/resolve` | 鍵の付随する id からアクターを引く |
 | `GetGraph` | `GET /api/graph` | 図の点と線 |
+| `GetTimeline` | `GET /api/timeline` | タイムラインを描く元の値（図の点と線と、その点の出来事と、model と effort の行の全部。1.1.0 から） |
 
 手の道（Smithy の外）: 画面（`/`・`/actors/{id}`・`/graph/…`・`/static/…`。[画面](ui.md)）・`GET /api/backup`（SQLite の file）・`GET /api/logs`（字）。
 
@@ -187,7 +188,7 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
   "labels": { "project": "castlist", "tpm.key": "t-23zs", "tpm.role": "software-engineer" },
   "firstEnteredAt": "2026-11-22T02:10:00Z",
   "lastExitedAt": "2026-11-22T03:00:00Z", "lastExitType": "exited",
-  "present": false, "inferred": false,
+  "present": false, "inferred": false, "presence": "exited", "skewed": false,
   "model": "claude-opus-5-5", "effort": "high",
   "url": "/actors/019a…"
 }
@@ -197,6 +198,8 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 - `lastExitedAt`・`lastExitType`: 最後の退場（`cleared`・`exited`・`closed`）の受けた時刻と種類。
 - `present`: 今稼働中か（`GetActor` の `state.present` と同じ決め方）。
 - `inferred`: 推しの幕引きで停止したか（`GetActor` の `state.inferred` と同じ決め方）。
+- `presence`: 稼働を替える出来事（6 種）の最新の種類（`GetActor` の `state.presence` と同じ）。1 つも無ければ、欄ごと無い。1.1.0 で足した欄。
+- `skewed`: 時刻ずれの行（登録・出来事・model と effort のどれか）を持つか（絞りの `skewed` と同じ意味。線は見ない）。`clockSkew` は登録だけの印で、これとは別。1.1.0 で足した欄（前の版の答えには無い）。
 - `model`・`effort`: 最新（seq で）の名。
 - `url`: アクターのプロフィールの画面の path（[画面](ui.md)）。
 - 値の無い欄（まだ登場していない者の `firstEnteredAt` など）は、欄ごと無い。
@@ -331,6 +334,7 @@ Auditor の使い方（時刻は UTC。日本時間の 11:00〜12:00 は `02:00:
 ## 図と画面
 
 - `GetGraph`（`GET /api/graph?label=鍵:値&from=…&to=…`）: 画面の 2 つの図（タイムライン・相関図。[画面](ui.md)）が使う、アクターの点と線。ラベルと、登録を受けた時刻の窓（両端を含む）でアクターの組を絞り、組に触れる線（`from` か `to` が組の中）の全部と、その線の向こうの端のアクター（一歩だけ）も入れる（人の根が切れないように）。どれも無ければ全部のアクター。点も線も受けた順（seq）。重い読みの接続（2 本）の 1 つの読む transaction の中で読み、軽い読みの接続は使わない。引数はどれも 1 つだけ（重ねれば初めの物を使う）。
+- `GetTimeline`（`GET /api/timeline?label=鍵:値&from=…&to=…`。1.1.0 から）: タイムラインを描く元の値。引数と、点（`nodes`）と線（`edges`）は `GetGraph` と同じ（同じ絞り・同じ順）。それに、点のアクターの出来事の全部（`events`。受けた順。欄は `actorId`・`type`・`receivedAt`・`inferred`（推しの幕引きか）・`reason`（`detail.reason` が字の時だけ）で、`detail` の全部は出さない）と、model と effort の行の全部（`settings`。受けた順。`GetActor` の行と同じ形）を足す。4 つの並びは、重い読みの接続の 1 つの読む transaction の中で読んだ、揃った写し。並べる計算（帯・切れ・矢印・目盛り）は、呼ぶ側がする。頁は分けない（並べる計算は、組の全部を 1 度に要る）ので、答えの大きさは、組のアクターの出来事の数で決まる。広い組を引く時は、`label` か期間で絞る。
 - 点（`GraphNode`）は登録の欄と、`state`（`GetActor` の `state` と同じ形）と、`currentSettings`（`GetActor` の物と同じ形。無ければ無い）。線は `GetActor` の線と同じ形。
 
 ```json

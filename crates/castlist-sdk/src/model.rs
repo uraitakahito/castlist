@@ -2121,6 +2121,10 @@ pub struct ActorRow {
     pub present: bool,
     /// 今の停止が推しか（GetActor の `state.inferred` と同じ）。
     pub inferred: bool,
+    /// 稼働を替える出来事（6 種）の最新の種類（GetActor の `state.presence` と同じ）。1 つも無ければ無い。 1.1.0 で足した欄（前の版の答えには無い）。
+    pub presence: ::std::option::Option<::std::string::String>,
+    /// 時刻ずれの行（登録・出来事・model と effort のどれか）を持つか（ListActors の絞りの `skewed` と同じ意味。線は見ない）。 `clockSkew` は登録だけの印で、これとは別。1.1.0 で足した欄（前の版の答えには無い）。
+    pub skewed: ::std::option::Option<bool>,
     /// 最新の model（受けた順で）。
     pub model: ::std::option::Option<::std::string::String>,
     /// 最新の effort（受けた順で）。
@@ -2186,6 +2190,14 @@ impl ActorRow {
     /// 今の停止が推しか（GetActor の `state.inferred` と同じ）。
     pub fn inferred(&self) -> bool {
         self.inferred
+    }
+    /// 稼働を替える出来事（6 種）の最新の種類（GetActor の `state.presence` と同じ）。1 つも無ければ無い。 1.1.0 で足した欄（前の版の答えには無い）。
+    pub fn presence(&self) -> ::std::option::Option<&str> {
+        self.presence.as_deref()
+    }
+    /// 時刻ずれの行（登録・出来事・model と effort のどれか）を持つか（ListActors の絞りの `skewed` と同じ意味。線は見ない）。 `clockSkew` は登録だけの印で、これとは別。1.1.0 で足した欄（前の版の答えには無い）。
+    pub fn skewed(&self) -> ::std::option::Option<bool> {
+        self.skewed
     }
     /// 最新の model（受けた順で）。
     pub fn model(&self) -> ::std::option::Option<&str> {
@@ -2445,6 +2457,53 @@ impl GraphNode {
     /// Creates a new builder-style object to manufacture [`GraphNode`](crate::model::GraphNode).
     pub fn builder() -> crate::model::graph_node::Builder {
         crate::model::graph_node::Builder::default()
+    }
+}
+
+/// タイムラインの出来事 1 つ（帯と印に要る欄だけ。`detail` の全部は GetActor・ListEvents で読む）。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct TimelineEvent {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+    pub r#type: ::std::string::String,
+    /// 出来事を受けた castlist の時刻。
+    pub received_at: ::aws_smithy_types::DateTime,
+    /// 推しの幕引きか（`closed` で、`detail.inferred` が JSON の true）。
+    pub inferred: bool,
+    /// `detail.reason`（字の時だけ）。
+    pub reason: ::std::option::Option<::std::string::String>,
+}
+impl TimelineEvent {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+    pub fn r#type(&self) -> &str {
+        use std::ops::Deref;
+        self.r#type.deref()
+    }
+    /// 出来事を受けた castlist の時刻。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    /// 推しの幕引きか（`closed` で、`detail.inferred` が JSON の true）。
+    pub fn inferred(&self) -> bool {
+        self.inferred
+    }
+    /// `detail.reason`（字の時だけ）。
+    pub fn reason(&self) -> ::std::option::Option<&str> {
+        self.reason.as_deref()
+    }
+}
+impl TimelineEvent {
+    /// Creates a new builder-style object to manufacture [`TimelineEvent`](crate::model::TimelineEvent).
+    pub fn builder() -> crate::model::timeline_event::Builder {
+        crate::model::timeline_event::Builder::default()
     }
 }
 pub(crate) mod name_internal {
@@ -4558,6 +4617,8 @@ pub mod actor_row {
         pub(crate) last_exit_type: ::std::option::Option<::std::string::String>,
         pub(crate) present: ::std::option::Option<bool>,
         pub(crate) inferred: ::std::option::Option<bool>,
+        pub(crate) presence: ::std::option::Option<::std::string::String>,
+        pub(crate) skewed: ::std::option::Option<bool>,
         pub(crate) model: ::std::option::Option<::std::string::String>,
         pub(crate) effort: ::std::option::Option<::std::string::String>,
         pub(crate) url: ::std::option::Option<::std::string::String>,
@@ -4640,6 +4701,16 @@ pub mod actor_row {
             self.inferred = Some(input);
             self
         }
+        /// 稼働を替える出来事（6 種）の最新の種類（GetActor の `state.presence` と同じ）。1 つも無ければ無い。 1.1.0 で足した欄（前の版の答えには無い）。
+        pub fn presence(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.presence = input;
+            self
+        }
+        /// 時刻ずれの行（登録・出来事・model と effort のどれか）を持つか（ListActors の絞りの `skewed` と同じ意味。線は見ない）。 `clockSkew` は登録だけの印で、これとは別。1.1.0 で足した欄（前の版の答えには無い）。
+        pub fn skewed(mut self, input: ::std::option::Option<bool>) -> Self {
+            self.skewed = input;
+            self
+        }
         /// 最新の model（受けた順で）。
         pub fn model(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
             self.model = input;
@@ -4683,6 +4754,8 @@ pub mod actor_row {
                 last_exit_type: self.last_exit_type,
                 present: self.present.ok_or(ConstraintViolation::MissingPresent)?,
                 inferred: self.inferred.ok_or(ConstraintViolation::MissingInferred)?,
+                presence: self.presence,
+                skewed: self.skewed,
                 model: self.model,
                 effort: self.effort,
                 url: self.url.ok_or(ConstraintViolation::MissingUrl)?,
@@ -5219,6 +5292,97 @@ pub mod graph_node {
                     .ok_or(ConstraintViolation::MissingClockSkew)?,
                 state: self.state.ok_or(ConstraintViolation::MissingState)?,
                 current_settings: self.current_settings,
+            })
+        }
+    }
+}
+/// See [`TimelineEvent`](crate::model::TimelineEvent).
+pub mod timeline_event {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `actor_id` was not provided but it is required when building `TimelineEvent`.
+        MissingActorId,
+        /// `r#type` was not provided but it is required when building `TimelineEvent`.
+        MissingType,
+        /// `received_at` was not provided but it is required when building `TimelineEvent`.
+        MissingReceivedAt,
+        /// `inferred` was not provided but it is required when building `TimelineEvent`.
+        MissingInferred,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `TimelineEvent`"),
+                ConstraintViolation::MissingType => write!(f, "`r#type` was not provided but it is required when building `TimelineEvent`"),
+                ConstraintViolation::MissingReceivedAt => write!(f, "`received_at` was not provided but it is required when building `TimelineEvent`"),
+                ConstraintViolation::MissingInferred => write!(f, "`inferred` was not provided but it is required when building `TimelineEvent`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::model::TimelineEvent {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`TimelineEvent`](crate::model::TimelineEvent).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) r#type: ::std::option::Option<::std::string::String>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) inferred: ::std::option::Option<bool>,
+        pub(crate) reason: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 出来事の種類（10 種）。 居る・居ないを替えるのは entered・reentered・forked（居る）と cleared・exited・closed（居ない）。
+        pub fn r#type(mut self, input: ::std::string::String) -> Self {
+            self.r#type = Some(input);
+            self
+        }
+        /// 出来事を受けた castlist の時刻。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        /// 推しの幕引きか（`closed` で、`detail.inferred` が JSON の true）。
+        pub fn inferred(mut self, input: bool) -> Self {
+            self.inferred = Some(input);
+            self
+        }
+        /// `detail.reason`（字の時だけ）。
+        pub fn reason(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.reason = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`TimelineEvent`](crate::model::TimelineEvent).
+        ///
+        /// The builder fails to construct a [`TimelineEvent`](crate::model::TimelineEvent) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::model::TimelineEvent, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::model::TimelineEvent, ConstraintViolation> {
+            Ok(crate::model::TimelineEvent {
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                r#type: self.r#type.ok_or(ConstraintViolation::MissingType)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                inferred: self.inferred.ok_or(ConstraintViolation::MissingInferred)?,
+                reason: self.reason,
             })
         }
     }

@@ -192,7 +192,7 @@ impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for Get
     }
 }
 
-/// あるアクターの model と effort の行の全部（受けた順）。頁は分けない（1 つのアクターの行は少ない。今の server と同じ）。
+/// あるアクターの model と effort の行の全部（受けた順）。頁は分けない（1 つのアクターの行は少ない）。
 pub struct ListActorSettings;
 
 impl ::aws_smithy_http_server::operation::OperationShape for ListActorSettings {
@@ -513,6 +513,44 @@ impl ::aws_smithy_http_server::operation::OperationShape for GetGraph {
 }
 
 impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for GetGraph {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
+
+/// タイムラインを描く元の値。点と線は GetGraph と同じ組（同じ引数・同じ絞り・同じ順）で、その点のアクターの出来事 （帯と印に要る欄だけ。受けた順）と、model と effort の行の全部（受けた順）を足す。1 つの読む transaction の中で読むので、 4 つの並びは揃った写し。並べる計算（帯・切れ・矢印・目盛り）は、呼ぶ側がする。頁は分けない（並べる計算は、組の全部を 1 度に要る）。 重い読みの接続（2 本）だけを使う。1.1.0 で足した操作。
+pub struct GetTimeline;
+
+impl ::aws_smithy_http_server::operation::OperationShape for GetTimeline {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#GetTimeline",
+            "ai.castlist",
+            "GetTimeline",
+        );
+
+    type Input = crate::input::GetTimelineInput;
+    type Output = crate::output::GetTimelineOutput;
+    type Error = crate::error::GetTimelineError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for GetTimeline {
     type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
         ::aws_smithy_http_server::instrumentation::MakeIdentity,
         ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<

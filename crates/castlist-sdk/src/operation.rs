@@ -1051,6 +1051,8 @@ mod list_actors_test {
                 model: ::std::option::Option::Some("claude-opus-5-5".to_owned()),
                 effort: ::std::option::Option::Some("high".to_owned()),
                 url: "/actors/019abcde-0000-7000-8000-000000000001".to_owned(),
+                presence: ::std::option::Option::None,
+                skewed: ::std::option::Option::None,
             }],
             next_token: ::std::option::Option::None,
         };
@@ -1298,6 +1300,8 @@ mod get_lineage_test {
                 first_entered_at: ::std::option::Option::None,
                 last_exited_at: ::std::option::Option::None,
                 last_exit_type: ::std::option::Option::None,
+                presence: ::std::option::Option::None,
+                skewed: ::std::option::Option::None,
                 model: ::std::option::Option::None,
                 effort: ::std::option::Option::None,
             }],
@@ -3530,6 +3534,329 @@ mod get_graph_test {
             .to_bytes();
         ::aws_smithy_protocol_test::assert_ok(
         ::aws_smithy_protocol_test::validate_body(&body, "{\"asOf\":\"2026-11-24T00:00:02Z\",\"nodes\":[{\"id\":\"019abcde-0000-7000-8000-000000000001\",\"name\":\"se.1\",\"kind\":\"ai\",\"issuer\":\"tpm\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false,\"state\":{\"presence\":\"entered\",\"present\":true,\"inferred\":false,\"enteredAt\":\"2026-11-24T00:00:01Z\"},\"currentSettings\":{\"actorId\":\"019abcde-0000-7000-8000-000000000001\",\"model\":\"claude-opus-5-5\",\"effort\":\"high\",\"source\":\"requested\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false}},{\"id\":\"019abcde-0000-7000-8000-000000000002\",\"name\":\"pm.1\",\"kind\":\"human\",\"issuer\":\"tpm\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false,\"state\":{\"present\":false,\"inferred\":false}}],\"edges\":[{\"id\":\"l-1\",\"type\":\"launched\",\"from\":\"019abcde-0000-7000-8000-000000000002\",\"to\":\"019abcde-0000-7000-8000-000000000001\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false}]}", ::aws_smithy_protocol_test::MediaType::from("application/json"))
+        );
+    }
+}
+
+::pin_project_lite::pin_project! {
+    /// A [`Future`](std::future::Future) aggregating the body bytes of a [`Request`] and constructing the
+    /// [`GetTimelineInput`](crate::input::GetTimelineInput) using modelled bindings.
+    pub struct GetTimelineInputFuture {
+        inner: std::pin::Pin<Box<dyn std::future::Future<Output = Result<crate::input::GetTimelineInput, ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError>> + Send>>
+    }
+}
+
+impl std::future::Future for GetTimelineInputFuture {
+    type Output = Result<
+        crate::input::GetTimelineInput,
+        ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError,
+    >;
+
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        let this = self.project();
+        this.inner.as_mut().poll(cx)
+    }
+}
+
+impl<B>
+    ::aws_smithy_http_server::request::FromRequest<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+        B,
+    > for crate::input::GetTimelineInput
+where
+    B: ::aws_smithy_http_server::body::HttpBody + Send,
+    B: 'static,
+
+    B::Data: Send,
+    ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection:
+        From<<B as ::aws_smithy_http_server::body::HttpBody>::Error>,
+{
+    type Rejection = ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError;
+    type Future = GetTimelineInputFuture;
+
+    fn from_request(request: ::http_1x::Request<B>) -> Self::Future {
+        let fut = async move {
+            if !::aws_smithy_http_server::protocol::accept_header_classifier(
+                request.headers(),
+                &crate::mimes::CONTENT_TYPE_APPLICATION_JSON,
+            ) {
+                return Err(::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection::NotAcceptable);
+            }
+            crate::protocol_serde::shape_get_timeline::de_get_timeline_http_request(request).await
+        };
+        use ::futures_util::future::TryFutureExt;
+        let fut = fut.map_err(
+            |e: ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection| {
+                ::tracing::debug!(error = %e, "failed to deserialize request");
+                ::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(
+                    e,
+                )
+            },
+        );
+        GetTimelineInputFuture {
+            inner: Box::pin(fut),
+        }
+    }
+}
+impl
+    ::aws_smithy_http_server::response::IntoResponse<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+    > for crate::output::GetTimelineOutput
+{
+    fn into_response(self) -> ::aws_smithy_http_server::response::Response {
+        match crate::protocol_serde::shape_get_timeline::ser_get_timeline_http_response(self) {
+            Ok(response) => response,
+            Err(e) => {
+                ::tracing::error!(error = %e, "failed to serialize response");
+                ::aws_smithy_http_server::response::IntoResponse::<::aws_smithy_http_server::protocol::rest_json_1::RestJson1>::into_response(::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(e))
+            }
+        }
+    }
+}
+impl
+    ::aws_smithy_http_server::response::IntoResponse<
+        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+    > for crate::error::GetTimelineError
+{
+    fn into_response(self) -> ::aws_smithy_http_server::response::Response {
+        match crate::protocol_serde::shape_get_timeline::ser_get_timeline_http_error(&self) {
+            Ok(mut response) => {
+                response.extensions_mut().insert(
+                    ::aws_smithy_http_server::extension::ModeledErrorExtension::new(self.name()),
+                );
+                response
+            }
+            Err(e) => {
+                ::tracing::error!(error = %e, "failed to serialize response");
+                ::aws_smithy_http_server::response::IntoResponse::<::aws_smithy_http_server::protocol::rest_json_1::RestJson1>::into_response(::aws_smithy_http_server::protocol::rest_json_1::runtime_error::RuntimeError::from(e))
+            }
+        }
+    }
+}
+
+#[allow(unreachable_code, unused_variables)]
+#[cfg(test)]
+mod get_timeline_test {
+
+    /// 引数は GetGraph と同じ（ラベルと、登録を受けた時刻の窓）
+    /// Test ID: GetTimelineRequest
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn get_timeline_request_request() {
+        #[allow(unused_mut)]
+        let mut http_request = ::http_1x::Request::builder()
+            .uri("/api/timeline")
+            .method("GET")
+            .body(::aws_smithy_http_server::body::boxed(
+                ::http_body_util::Empty::new(),
+            ))
+            .unwrap();
+        *http_request.uri_mut() = "/api/timeline?label=tpm.key%3At-23zs&from=2026-11-24T00%3A00%3A00Z&to=2026-11-25T00%3A00%3A00Z".parse().unwrap();
+        #[allow(unused_mut)]
+        let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
+        let config = crate::service::CastlistConfig::builder().build();
+        let service =
+            crate::service::Castlist::builder::<::aws_smithy_http_server::body::BoxBody, _, _, _>(
+                config,
+            )
+            .get_timeline(
+                // Rust 1.94+ flags the moved `sender` as "value captured is never read"
+                // since `send()` only borrows it.
+                #[allow(unused_assignments)]
+                move |input: crate::input::GetTimelineInput| {
+                    let sender = sender.clone();
+                    async move {
+                        let result = {
+                            let expected = crate::input::GetTimelineInput {
+                                label: ::std::option::Option::Some("tpm.key:t-23zs".to_owned()),
+                                from: ::std::option::Option::Some(
+                                    ::aws_smithy_types::DateTime::from_fractional_secs(
+                                        1795478400, 0_f64,
+                                    ),
+                                ),
+                                to: ::std::option::Option::Some(
+                                    ::aws_smithy_types::DateTime::from_fractional_secs(
+                                        1795564800, 0_f64,
+                                    ),
+                                ),
+                            };
+                            ::pretty_assertions::assert_eq!(input, expected);
+                            let output = crate::output::GetTimelineOutput {
+                                as_of: ::aws_smithy_types::DateTime::from_fractional_secs(0, 0_f64),
+                                nodes: vec![],
+                                edges: vec![],
+                                events: vec![],
+                                settings: vec![],
+                            };
+                            Ok(output)
+                        };
+                        sender.send(()).await.expect("receiver dropped early");
+                        result
+                    }
+                },
+            )
+            .build_unchecked();
+        let http_response = ::tower::ServiceExt::oneshot(service, http_request)
+            .await
+            .expect("unable to make an HTTP request");
+        assert!(
+            receiver.recv().await.is_some(),
+            "we expected operation handler to be invoked but it was not entered"
+        );
+    }
+
+    /// 引数はどれも無くてよい（全部のアクター）
+    /// Test ID: GetTimelineRequestWithoutParams
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn get_timeline_request_without_params_request() {
+        #[allow(unused_mut)]
+        let mut http_request = ::http_1x::Request::builder()
+            .uri("/api/timeline")
+            .method("GET")
+            .body(::aws_smithy_http_server::body::boxed(
+                ::http_body_util::Empty::new(),
+            ))
+            .unwrap();
+        #[allow(unused_mut)]
+        let (sender, mut receiver) = ::tokio::sync::mpsc::channel(1);
+        let config = crate::service::CastlistConfig::builder().build();
+        let service =
+            crate::service::Castlist::builder::<::aws_smithy_http_server::body::BoxBody, _, _, _>(
+                config,
+            )
+            .get_timeline(
+                // Rust 1.94+ flags the moved `sender` as "value captured is never read"
+                // since `send()` only borrows it.
+                #[allow(unused_assignments)]
+                move |input: crate::input::GetTimelineInput| {
+                    let sender = sender.clone();
+                    async move {
+                        let result = {
+                            let expected = crate::input::GetTimelineInput {
+                                label: ::std::option::Option::None,
+                                from: ::std::option::Option::None,
+                                to: ::std::option::Option::None,
+                            };
+                            ::pretty_assertions::assert_eq!(input, expected);
+                            let output = crate::output::GetTimelineOutput {
+                                as_of: ::aws_smithy_types::DateTime::from_fractional_secs(0, 0_f64),
+                                nodes: vec![],
+                                edges: vec![],
+                                events: vec![],
+                                settings: vec![],
+                            };
+                            Ok(output)
+                        };
+                        sender.send(()).await.expect("receiver dropped early");
+                        result
+                    }
+                },
+            )
+            .build_unchecked();
+        let http_response = ::tower::ServiceExt::oneshot(service, http_request)
+            .await
+            .expect("unable to make an HTTP request");
+        assert!(
+            receiver.recv().await.is_some(),
+            "we expected operation handler to be invoked but it was not entered"
+        );
+    }
+
+    /// 点と線は GetGraph と同じ形。出来事は帯と印に要る欄だけ、model と effort は GetActor の行と同じ形
+    /// Test ID: GetTimelineResponse
+    #[::tokio::test]
+    #[::tracing_test::traced_test]
+    async fn get_timeline_response_response() {
+        let output = crate::output::GetTimelineOutput {
+            as_of: ::aws_smithy_types::DateTime::from_fractional_secs(1795478405, 0_f64),
+            nodes: vec![crate::model::GraphNode {
+                id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                name: "se.1".to_owned(),
+                kind: "ai".to_owned(),
+                issuer: "tpm".to_owned(),
+                sent_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478400, 0_f64),
+                received_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478401, 0_f64),
+                clock_skew: false,
+                state: crate::model::ActorState {
+                    presence: ::std::option::Option::Some("closed".to_owned()),
+                    present: false,
+                    inferred: true,
+                    entered_at: ::std::option::Option::Some(
+                        ::aws_smithy_types::DateTime::from_fractional_secs(1795478402, 0_f64),
+                    ),
+                    exited_at: ::std::option::Option::Some(
+                        ::aws_smithy_types::DateTime::from_fractional_secs(1795478404, 0_f64),
+                    ),
+                },
+                current_settings: ::std::option::Option::Some(crate::model::Setting {
+                    actor_id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                    model: "claude-opus-5-5".to_owned(),
+                    effort: "high".to_owned(),
+                    source: "requested".to_owned(),
+                    sent_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478400, 0_f64),
+                    received_at: ::aws_smithy_types::DateTime::from_fractional_secs(
+                        1795478401, 0_f64,
+                    ),
+                    clock_skew: false,
+                    id: ::std::option::Option::None,
+                }),
+            }],
+            edges: vec![],
+            events: vec![
+                crate::model::TimelineEvent {
+                    actor_id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                    r#type: "entered".to_owned(),
+                    received_at: ::aws_smithy_types::DateTime::from_fractional_secs(
+                        1795478402, 0_f64,
+                    ),
+                    inferred: false,
+                    reason: ::std::option::Option::None,
+                },
+                crate::model::TimelineEvent {
+                    actor_id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                    r#type: "closed".to_owned(),
+                    received_at: ::aws_smithy_types::DateTime::from_fractional_secs(
+                        1795478404, 0_f64,
+                    ),
+                    inferred: true,
+                    reason: ::std::option::Option::Some("workspace_gone".to_owned()),
+                },
+            ],
+            settings: vec![crate::model::Setting {
+                actor_id: "019abcde-0000-7000-8000-000000000001".to_owned(),
+                model: "claude-opus-5-5".to_owned(),
+                effort: "high".to_owned(),
+                source: "requested".to_owned(),
+                sent_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478400, 0_f64),
+                received_at: ::aws_smithy_types::DateTime::from_fractional_secs(1795478401, 0_f64),
+                clock_skew: false,
+                id: ::std::option::Option::None,
+            }],
+        };
+        use ::aws_smithy_http_server::response::IntoResponse;
+        let http_response = output.into_response();
+        ::pretty_assertions::assert_eq!(
+            ::http_1x::StatusCode::from_u16(200).expect("invalid expected HTTP status code"),
+            http_response.status()
+        );
+        let expected_headers = [("Content-Type", "application/json")];
+        ::aws_smithy_protocol_test::assert_ok(::aws_smithy_protocol_test::validate_headers(
+            http_response.headers(),
+            expected_headers,
+        ));
+        use ::http_body_util::BodyExt;
+        let body = http_response
+            .into_body()
+            .collect()
+            .await
+            .expect("unable to collect body")
+            .to_bytes();
+        ::aws_smithy_protocol_test::assert_ok(
+        ::aws_smithy_protocol_test::validate_body(&body, "{\"asOf\":\"2026-11-24T00:00:05Z\",\"nodes\":[{\"id\":\"019abcde-0000-7000-8000-000000000001\",\"name\":\"se.1\",\"kind\":\"ai\",\"issuer\":\"tpm\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false,\"state\":{\"presence\":\"closed\",\"present\":false,\"inferred\":true,\"enteredAt\":\"2026-11-24T00:00:02Z\",\"exitedAt\":\"2026-11-24T00:00:04Z\"},\"currentSettings\":{\"actorId\":\"019abcde-0000-7000-8000-000000000001\",\"model\":\"claude-opus-5-5\",\"effort\":\"high\",\"source\":\"requested\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false}}],\"edges\":[],\"events\":[{\"actorId\":\"019abcde-0000-7000-8000-000000000001\",\"type\":\"entered\",\"receivedAt\":\"2026-11-24T00:00:02Z\",\"inferred\":false},{\"actorId\":\"019abcde-0000-7000-8000-000000000001\",\"type\":\"closed\",\"receivedAt\":\"2026-11-24T00:00:04Z\",\"inferred\":true,\"reason\":\"workspace_gone\"}],\"settings\":[{\"actorId\":\"019abcde-0000-7000-8000-000000000001\",\"model\":\"claude-opus-5-5\",\"effort\":\"high\",\"source\":\"requested\",\"sentAt\":\"2026-11-24T00:00:00Z\",\"receivedAt\":\"2026-11-24T00:00:01Z\",\"clockSkew\":false}]}", ::aws_smithy_protocol_test::MediaType::from("application/json"))
         );
     }
 }

@@ -356,6 +356,69 @@ async fn the_actors_with_skewed_rows() {
     assert_eq!(names(&answer["actors"]), ["auditor.1"], "{answer}");
 }
 
+/// 行の `skewed` は、絞りの `skewed` と同じ意味（登録・出来事・model と effort のどれかに時刻ずれの行がある）。
+/// 登録だけの印の `clockSkew` とは別。
+#[tokio::test]
+async fn each_row_tells_whether_it_has_skewed_rows() {
+    let s = sample().await;
+    let answer = ok(&s.app, &format!("/api/actors?label=tpm.key:{KEY}")).await;
+    let skewed: Vec<&str> = answer["actors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|a| a["skewed"] == true)
+        .map(|a| a["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(skewed, ["auditor.1"], "{answer}");
+    for actor in answer["actors"].as_array().unwrap() {
+        assert!(actor["skewed"].is_boolean(), "{actor}");
+    }
+    // 出来事だけがずれている auditor.1 は、登録の印は立たない。
+    let auditor = answer["actors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["name"] == "auditor.1")
+        .unwrap();
+    assert_eq!(auditor["clockSkew"], false, "{auditor}");
+}
+
+/// 行の `presence` は、稼働を替える出来事（6 種）の最新の種類（GetActor の `state.presence` と同じ）。1 つも無ければ無い。
+#[tokio::test]
+async fn each_row_carries_the_latest_presence_event() {
+    let s = sample().await;
+    let answer = ok(&s.app, "/api/actors?label=project:castlist").await;
+    for row in answer["actors"].as_array().unwrap() {
+        let id = row["id"].as_str().unwrap();
+        let actor = ok(&s.app, &format!("/api/actors/{id}")).await;
+        assert_eq!(
+            row.get("presence"),
+            actor["state"].get("presence"),
+            "{}",
+            row["name"]
+        );
+    }
+    // 見本には、退いた者と稼働中の者の両方がいる。
+    let kinds: std::collections::BTreeSet<&str> = answer["actors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|a| a["presence"].as_str())
+        .collect();
+    assert!(kinds.contains("entered") && kinds.len() >= 2, "{kinds:?}");
+    // GetLineage の点も同じ形。
+    let se1 = s.id("se.1");
+    let lineage = ok(&s.app, &format!("/api/actors/{se1}/lineage")).await;
+    let me = lineage["nodes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|n| n["id"] == se1)
+        .unwrap();
+    assert_eq!(me["presence"], "cleared", "{me}");
+    assert_eq!(me["skewed"], false, "{me}");
+}
+
 /// 時刻ずれは、登録と model と effort の行でも数える（線は見ない）。
 #[tokio::test]
 async fn skewed_counts_registrations_and_settings_but_not_links() {
