@@ -2,6 +2,17 @@
 
 版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/api/`。定義は `model/`）と DB の移行（`crates/server/migrations/`）が変わったかを書く。0.4.x までの節の API は `/v1/`、移行は repo の頭の `migrations/` の物（もう無い）。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
 
+## 1.1.0
+
+画面を別の server（callboard）に移すために、API に足した版（AI-32）。足しただけで、前からある操作と欄は変えていない（定義は v1.0.0 から壊す形に変わっていない: `ci/gen.sh --diff`）。DB の移行の SQL は足していない（1.0.0 の volume でそのまま起きる。戻す時も、1.0.0 の image で同じ volume を開ける）。
+
+- API: 一覧の行（`ListActors` の `actors[]` と `GetLineage` の `nodes[]`）に、欄を 2 つ足した。`presence`（稼働を替える出来事の最新の種類。`GetActor` の `state.presence` と同じ）と `skewed`（時刻ずれの行を持つか。絞りの `skewed` と同じ意味）。どちらも、必ずあるとは決めていない欄（前の版の答えには無い）。
+- API: 操作 `GetTimeline`（`GET /api/timeline`）を足した。タイムラインを描く元の値（`GetGraph` と同じ組の点と線に、その点の出来事と、model と effort の行の全部を足す）。並べる計算は、呼ぶ側がする。
+- 画面は変えていない（一覧・プロフィール・タイムライン・相関図は、今までどおり castlist が出す）。
+- 定義の注: `ListActorSettings` の注から、0.4.x の server を指す字（「今の server と同じ」）を消した（wire の形は替わらない。定義の file の digest は替わる）。
+- 1.0.0 の節の直し: CI と release の smoke の打ち方は `ci/smoke-image.sh <image>`（引数は image だけ）。1.0.0 の節は `ci/smoke-image.sh <image> api` と書いているが、後ろの引数は、0.4.x の server の code を消した時に無くした。
+- smoke: `GET /api/timeline` が、書いた出来事を返すかを足した。
+
 ## 1.0.0
 
 AI-36 の作り直しの新しい server（`crates/server`）を、ふつうの release にした版。この版から、image（`Containerfile`）に入るのは新しい server で、今の server（0.4.x）の image は出さない。API と DB の移行の SQL は 1.0.0-rc.1 と同じ（0.4.x からは、どちらも替わる。1.0.0-rc.1 の節）。

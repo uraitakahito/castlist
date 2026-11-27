@@ -115,6 +115,10 @@ read_back() {
     "$tmp/read.json" >/dev/null
 }
 read_back
+# タイムラインを描く元の値（GetTimeline。1.1.0 から）: 点と、書いた出来事と、model と effort の並びが返る。
+curl -fsS -o "$tmp/timeline.json" "$url/api/timeline"
+jq -e --arg id "$actor" '[.nodes[].id] == [$id] and .edges == [] and [.events[] | .actorId + ":" + .type] == [$id + ":entered"] and .events[0].inferred == false and (.settings | type) == "array"' \
+  "$tmp/timeline.json" >/dev/null
 # 止める合図（SIGTERM）で、自分から終わるか（PID 1 は受け口が無いと合図を無視する）。
 docker stop "$name"
 test "$(docker inspect -f '{{.State.ExitCode}}' "$name")" = 0
