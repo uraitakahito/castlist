@@ -98,6 +98,22 @@ const SETTING_HASH: &str = "select body_hash from settings where id = ?1";
 const LATEST_SETTING: &str =
     "select model_id, effort_id from settings where actor_id = ?1 order by seq desc limit 1";
 
+/// トークンの数と費えの行（model は名に直し、受けた順も）。`$tail` は where から後ろ。読む口（search.rs）でも同じ列を使う。
+macro_rules! usage_sql {
+    ($tail:literal) => {
+        concat!(
+            "select u.seq, u.id, u.actor_id, m.name as model, u.agent, u.speed, u.service_tier, u.from_at, u.to_at, u.turns,
+                    u.input_tokens, u.output_tokens, u.cache_read_tokens, u.cache_write_5m_tokens, u.cache_write_1h_tokens,
+                    u.web_search_requests, u.web_fetch_requests, u.cost_micro_usd, u.max_context, u.buckets, u.sent_at, u.received_at, u.clock_skew
+             from usage u join models m on m.id = u.model_id",
+            $tail
+        )
+    };
+}
+pub(crate) use usage_sql;
+const USAGE: &str = usage_sql!(" where u.id = ?1");
+const USAGE_HASH: &str = "select body_hash from usage where id = ?1";
+
 /// 引き当てと見る SQL（名と SQL）。試験が `explain query plan` で、大きな表を端から読まないかを見る。
 pub const LOOKUPS: &[(&str, &str)] = &[
     ("resolve", RESOLVE),
@@ -118,6 +134,8 @@ pub const LOOKUPS: &[(&str, &str)] = &[
     ("setting", SETTING),
     ("setting_hash", SETTING_HASH),
     ("latest_setting", LATEST_SETTING),
+    ("usage", USAGE),
+    ("usage_hash", USAGE_HASH),
 ];
 
 /// どの表の最新の received_at より前にならないよう、表ごとの最新（seq の大きい方）を見る。
@@ -127,7 +145,8 @@ const CLOCK: &str = "select max(t) from (
        union all select (select received_at from bindings order by seq desc limit 1)
        union all select (select received_at from links order by seq desc limit 1)
        union all select (select received_at from events order by seq desc limit 1)
-       union all select (select received_at from settings order by seq desc limit 1))";
+       union all select (select received_at from settings order by seq desc limit 1)
+       union all select (select received_at from usage order by seq desc limit 1))";
 
 pub struct Db {
     /// DB の file（バックアップの一時の file を、この隣に作る）。
@@ -204,6 +223,41 @@ pub struct NewSetting<'a> {
     pub sent_at: OffsetDateTime,
 }
 
+/// 文脈の長さの段 1 つの、回の数と額。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Bucket {
+    pub bucket: i64,
+    pub turns: i64,
+    pub cost_micro_usd: i64,
+}
+
+/// トークンの数と費えの中身（形は定義が、区間と段の決まりは handler が見てある）。
+pub struct NewUsage<'a> {
+    pub issuer: &'a str,
+    pub by: &'a Ref,
+    pub model: &'a str,
+    /// 手伝い（subagent）の種類の名。本体の回なら無い。
+    pub agent: Option<&'a str>,
+    pub speed: &'a str,
+    pub service_tier: &'a str,
+    /// 区間の始めと終わり（DB に残す字。UTC・ミリ秒まで・24 字）。
+    pub from_at: &'a str,
+    pub to_at: &'a str,
+    pub turns: i64,
+    pub input_tokens: i64,
+    pub output_tokens: i64,
+    pub cache_read_tokens: i64,
+    pub cache_write_5m_tokens: i64,
+    pub cache_write_1h_tokens: i64,
+    pub web_search_requests: i64,
+    pub web_fetch_requests: i64,
+    pub cost_micro_usd: i64,
+    pub max_context: i64,
+    /// bucket の順。
+    pub buckets: &'a [Bucket],
+    pub sent_at: OffsetDateTime,
+}
+
 /// 送り手の id で足した結果。
 #[derive(Debug)]
 pub enum Put<T> {
@@ -266,6 +320,34 @@ pub struct Setting {
     pub model: String,
     pub effort: String,
     pub source: String,
+    pub sent_at: String,
+    pub received_at: String,
+    pub clock_skew: bool,
+}
+
+/// トークンの数と費えの行（model は名に直した物）。buckets は JSON の配列の字。
+#[derive(Clone, Debug, FromRow)]
+pub struct Usage {
+    pub seq: i64,
+    pub id: String,
+    pub actor_id: String,
+    pub model: String,
+    pub agent: Option<String>,
+    pub speed: String,
+    pub service_tier: String,
+    pub from_at: String,
+    pub to_at: String,
+    pub turns: i64,
+    pub input_tokens: i64,
+    pub output_tokens: i64,
+    pub cache_read_tokens: i64,
+    pub cache_write_5m_tokens: i64,
+    pub cache_write_1h_tokens: i64,
+    pub web_search_requests: i64,
+    pub web_fetch_requests: i64,
+    pub cost_micro_usd: i64,
+    pub max_context: i64,
+    pub buckets: String,
     pub sent_at: String,
     pub received_at: String,
     pub clock_skew: bool,
@@ -891,6 +973,85 @@ impl Db {
         let setting = sqlx::query_as(SETTING).bind(id).fetch_one(&mut *tx).await?;
         tx.commit().await?;
         Ok(Put::Created(setting))
+    }
+
+    /// トークンの数と費えを 1 行足す。同じ id の扱いは出来事と同じ（同じかは、id と本文の写しだけで決める。
+    /// model と effort の「最新と同じなら足さない」は無い: 同じ中身でも別の行でありうる）。知らない model の名は一覧に足す。
+    pub async fn put_usage(&self, id: &str, new: &NewUsage<'_>) -> Result<Put<Usage>, WriteError> {
+        let sent_at = sent_text(new.sent_at)?;
+        let buckets: serde_json::Value = new
+            .buckets
+            .iter()
+            .map(|b| json!({ "bucket": b.bucket, "turns": b.turns, "costMicroUsd": b.cost_micro_usd }))
+            .collect();
+        let mut body = json!({
+            "issuer": new.issuer,
+            "by": new.by.to_string(),
+            "model": new.model,
+            "speed": new.speed,
+            "serviceTier": new.service_tier,
+            "fromAt": new.from_at,
+            "toAt": new.to_at,
+            "turns": new.turns,
+            "inputTokens": new.input_tokens,
+            "outputTokens": new.output_tokens,
+            "cacheReadTokens": new.cache_read_tokens,
+            "cacheWrite5mTokens": new.cache_write_5m_tokens,
+            "cacheWrite1hTokens": new.cache_write_1h_tokens,
+            "webSearchRequests": new.web_search_requests,
+            "webFetchRequests": new.web_fetch_requests,
+            "costMicroUsd": new.cost_micro_usd,
+            "maxContext": new.max_context,
+            "buckets": buckets,
+            "sentAt": sent_at,
+        });
+        // 本体の回は、agent の欄ごと無い。
+        if let Some(agent) = new.agent {
+            body["agent"] = json!(agent);
+        }
+        let hash = body::hash(&body);
+        let mut tx = self.write.begin().await?;
+        if let Some(stored) = stored_hash(&mut tx, USAGE_HASH, id).await? {
+            return same_or_conflict(tx, stored, &hash, USAGE, id, "トークンの数と費え").await;
+        }
+        let actor = must_resolve(&mut tx, new.issuer, new.by, "by").await?;
+        let received = received_at(&mut tx).await?;
+        let model_id = master(&mut tx, Master::Models, new.model, &received).await?;
+        sqlx::query(
+            "insert into usage(id, actor_id, model_id, agent, speed, service_tier, from_at, to_at, turns,
+                               input_tokens, output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
+                               web_search_requests, web_fetch_requests,
+                               cost_micro_usd, max_context, buckets, sent_at, received_at, clock_skew, body_hash)
+             values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)",
+        )
+        .bind(id)
+        .bind(&actor.id)
+        .bind(model_id)
+        .bind(new.agent)
+        .bind(new.speed)
+        .bind(new.service_tier)
+        .bind(new.from_at)
+        .bind(new.to_at)
+        .bind(new.turns)
+        .bind(new.input_tokens)
+        .bind(new.output_tokens)
+        .bind(new.cache_read_tokens)
+        .bind(new.cache_write_5m_tokens)
+        .bind(new.cache_write_1h_tokens)
+        .bind(new.web_search_requests)
+        .bind(new.web_fetch_requests)
+        .bind(new.cost_micro_usd)
+        .bind(new.max_context)
+        .bind(body::canonical(&body["buckets"]))
+        .bind(&sent_at)
+        .bind(&received)
+        .bind(skewed(new.sent_at, &received))
+        .bind(&hash)
+        .execute(&mut *tx)
+        .await?;
+        let usage = sqlx::query_as(USAGE).bind(id).fetch_one(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(Put::Created(usage))
     }
 }
 

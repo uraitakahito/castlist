@@ -193,3 +193,42 @@ pub(crate) mod event_types_unconstrained {
         }
     }
 }
+pub(crate) mod usage_buckets_unconstrained {
+
+    #[derive(Debug, Clone)]
+    pub(crate) struct UsageBucketsUnconstrained(
+        pub(crate) std::vec::Vec<crate::model::usage_bucket_internal::Builder>,
+    );
+
+    impl From<UsageBucketsUnconstrained>
+        for crate::constrained::MaybeConstrained<crate::model::UsageBuckets>
+    {
+        fn from(value: UsageBucketsUnconstrained) -> Self {
+            Self::Unconstrained(value)
+        }
+    }
+    impl std::convert::TryFrom<UsageBucketsUnconstrained> for crate::model::UsageBuckets {
+        type Error = crate::model::usage_buckets_internal::ConstraintViolation;
+        fn try_from(value: UsageBucketsUnconstrained) -> std::result::Result<Self, Self::Error> {
+            let res: ::std::result::Result<
+                ::std::vec::Vec<crate::model::UsageBucket>,
+                (
+                    usize,
+                    crate::model::usage_bucket_internal::ConstraintViolation,
+                ),
+            > = value
+                .0
+                .into_iter()
+                .enumerate()
+                .map(|(idx, inner)| {
+                    inner
+                        .try_into()
+                        .map_err(|inner_violation| (idx, inner_violation))
+                })
+                .collect();
+            let inner =
+                res.map_err(|(idx, inner_violation)| Self::Error::Member(idx, inner_violation))?;
+            Self::try_from(inner)
+        }
+    }
+}

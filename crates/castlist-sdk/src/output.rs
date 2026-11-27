@@ -372,7 +372,7 @@ impl ResolveActorsOutput {
 /// 出来事の欄（GetActor の出来事と、PutEvent の答えで同じ形）。
 #[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
 pub struct PutEventOutput {
-    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub id: ::std::string::String,
     /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
     pub actor_id: ::std::string::String,
@@ -390,7 +390,7 @@ pub struct PutEventOutput {
     pub status: i32,
 }
 impl PutEventOutput {
-    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub fn id(&self) -> &str {
         use std::ops::Deref;
         self.id.deref()
@@ -470,7 +470,7 @@ impl ListEventsOutput {
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]
 pub struct PutLinkOutput {
-    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub id: ::std::string::String,
     /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
     pub r#type: ::std::string::String,
@@ -488,7 +488,7 @@ pub struct PutLinkOutput {
     pub status: i32,
 }
 impl PutLinkOutput {
-    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub fn id(&self) -> &str {
         use std::ops::Deref;
         self.id.deref()
@@ -720,6 +720,204 @@ impl GetTimelineOutput {
     /// Creates a new builder-style object to manufacture [`GetTimelineOutput`](crate::output::GetTimelineOutput).
     pub fn builder() -> crate::output::get_timeline_output::Builder {
         crate::output::get_timeline_output::Builder::default()
+    }
+}
+
+/// トークンの数と費えの欄（PutUsage の答えと、ListUsage の行で同じ形）。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct PutUsageOutput {
+    /// 送り手の id。
+    pub id: ::std::string::String,
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub model: ::std::string::String,
+    /// 手伝い（subagent）の種類の名。本体の回なら無い。
+    pub agent: ::std::option::Option<::std::string::String>,
+    /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+    pub speed: ::std::string::String,
+    /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+    pub service_tier: ::std::string::String,
+    /// 区間の始めの回の時刻（ミリ秒まで）。
+    pub from_at: ::aws_smithy_types::DateTime,
+    /// 区間の終わりの回の時刻（ミリ秒まで）。
+    pub to_at: ::aws_smithy_types::DateTime,
+    /// 回の数（1 以上）。
+    pub turns: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub input_tokens: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub output_tokens: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub cache_read_tokens: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub cache_write5m_tokens: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub cache_write1h_tokens: i64,
+    /// web の検索の回数。
+    pub web_search_requests: i64,
+    /// web の取得の回数。
+    pub web_fetch_requests: i64,
+    /// 額（100 万分の 1 ドル）。
+    pub cost_micro_usd: i64,
+    /// 区間の内でいちばん長い文脈（トークン）。同じ時の行をまとめる時は、大きい方を取る。
+    pub max_context: i64,
+    /// 文脈の長さの段ごとの数（`bucket` の順）。
+    pub buckets: ::std::vec::Vec<crate::model::UsageBucket>,
+    /// 時刻（RFC 3339）。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 時刻（RFC 3339）。
+    pub received_at: ::aws_smithy_types::DateTime,
+    #[allow(missing_docs)] // documentation missing in model
+    pub clock_skew: bool,
+    /// 新しく足せば 201、同じ id で同じ本文なら 200。
+    pub status: i32,
+}
+impl PutUsageOutput {
+    /// 送り手の id。
+    pub fn id(&self) -> &str {
+        use std::ops::Deref;
+        self.id.deref()
+    }
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn model(&self) -> &str {
+        use std::ops::Deref;
+        self.model.deref()
+    }
+    /// 手伝い（subagent）の種類の名。本体の回なら無い。
+    pub fn agent(&self) -> ::std::option::Option<&str> {
+        self.agent.as_deref()
+    }
+    /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+    pub fn speed(&self) -> &str {
+        use std::ops::Deref;
+        self.speed.deref()
+    }
+    /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+    pub fn service_tier(&self) -> &str {
+        use std::ops::Deref;
+        self.service_tier.deref()
+    }
+    /// 区間の始めの回の時刻（ミリ秒まで）。
+    pub fn from_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.from_at
+    }
+    /// 区間の終わりの回の時刻（ミリ秒まで）。
+    pub fn to_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.to_at
+    }
+    /// 回の数（1 以上）。
+    pub fn turns(&self) -> i64 {
+        self.turns
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn input_tokens(&self) -> i64 {
+        self.input_tokens
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn output_tokens(&self) -> i64 {
+        self.output_tokens
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn cache_read_tokens(&self) -> i64 {
+        self.cache_read_tokens
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn cache_write5m_tokens(&self) -> i64 {
+        self.cache_write5m_tokens
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn cache_write1h_tokens(&self) -> i64 {
+        self.cache_write1h_tokens
+    }
+    /// web の検索の回数。
+    pub fn web_search_requests(&self) -> i64 {
+        self.web_search_requests
+    }
+    /// web の取得の回数。
+    pub fn web_fetch_requests(&self) -> i64 {
+        self.web_fetch_requests
+    }
+    /// 額（100 万分の 1 ドル）。
+    pub fn cost_micro_usd(&self) -> i64 {
+        self.cost_micro_usd
+    }
+    /// 区間の内でいちばん長い文脈（トークン）。同じ時の行をまとめる時は、大きい方を取る。
+    pub fn max_context(&self) -> i64 {
+        self.max_context
+    }
+    /// 文脈の長さの段ごとの数（`bucket` の順）。
+    pub fn buckets(&self) -> &[crate::model::UsageBucket] {
+        use std::ops::Deref;
+        self.buckets.deref()
+    }
+    /// 時刻（RFC 3339）。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 時刻（RFC 3339）。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    #[allow(missing_docs)] // documentation missing in model
+    pub fn clock_skew(&self) -> bool {
+        self.clock_skew
+    }
+    /// 新しく足せば 201、同じ id で同じ本文なら 200。
+    pub fn status(&self) -> i32 {
+        self.status
+    }
+}
+impl PutUsageOutput {
+    /// Creates a new builder-style object to manufacture [`PutUsageOutput`](crate::output::PutUsageOutput).
+    pub fn builder() -> crate::output::put_usage_output::Builder {
+        crate::output::put_usage_output::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct ListUsageOutput {
+    /// 読み始める前の castlist の時刻。
+    pub as_of: ::aws_smithy_types::DateTime,
+    /// 受けた順。
+    pub usage: ::std::vec::Vec<crate::model::Usage>,
+    /// この頁の行に出てきたアクターを 1 度ずつ（行に初めて出た順）。
+    pub actors: ::std::vec::Vec<crate::model::UsageActor>,
+    /// 次の頁の印。終わりなら無い。
+    pub next_token: ::std::option::Option<::std::string::String>,
+}
+impl ListUsageOutput {
+    /// 読み始める前の castlist の時刻。
+    pub fn as_of(&self) -> &::aws_smithy_types::DateTime {
+        &self.as_of
+    }
+    /// 受けた順。
+    pub fn usage(&self) -> &[crate::model::Usage] {
+        use std::ops::Deref;
+        self.usage.deref()
+    }
+    /// この頁の行に出てきたアクターを 1 度ずつ（行に初めて出た順）。
+    pub fn actors(&self) -> &[crate::model::UsageActor] {
+        use std::ops::Deref;
+        self.actors.deref()
+    }
+    /// 次の頁の印。終わりなら無い。
+    pub fn next_token(&self) -> ::std::option::Option<&str> {
+        self.next_token.as_deref()
+    }
+}
+impl ListUsageOutput {
+    /// Creates a new builder-style object to manufacture [`ListUsageOutput`](crate::output::ListUsageOutput).
+    pub fn builder() -> crate::output::list_usage_output::Builder {
+        crate::output::list_usage_output::Builder::default()
     }
 }
 /// See [`GetHealthOutput`](crate::output::GetHealthOutput).
@@ -1531,7 +1729,7 @@ pub mod put_event_output {
         pub(crate) status: ::std::option::Option<i32>,
     }
     impl Builder {
-        /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+        /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
         pub fn id(mut self, input: ::std::string::String) -> Self {
             self.id = Some(input);
             self
@@ -1732,7 +1930,7 @@ pub mod put_link_output {
         pub(crate) status: ::std::option::Option<i32>,
     }
     impl Builder {
-        /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+        /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
         pub fn id(mut self, input: ::std::string::String) -> Self {
             self.id = Some(input);
             self
@@ -2170,6 +2368,387 @@ pub mod get_timeline_output {
                 edges: self.edges.ok_or(ConstraintViolation::MissingEdges)?,
                 events: self.events.ok_or(ConstraintViolation::MissingEvents)?,
                 settings: self.settings.ok_or(ConstraintViolation::MissingSettings)?,
+            })
+        }
+    }
+}
+/// See [`PutUsageOutput`](crate::output::PutUsageOutput).
+pub mod put_usage_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `id` was not provided but it is required when building `PutUsageOutput`.
+        MissingId,
+        /// `actor_id` was not provided but it is required when building `PutUsageOutput`.
+        MissingActorId,
+        /// `model` was not provided but it is required when building `PutUsageOutput`.
+        MissingModel,
+        /// `speed` was not provided but it is required when building `PutUsageOutput`.
+        MissingSpeed,
+        /// `service_tier` was not provided but it is required when building `PutUsageOutput`.
+        MissingServiceTier,
+        /// `from_at` was not provided but it is required when building `PutUsageOutput`.
+        MissingFromAt,
+        /// `to_at` was not provided but it is required when building `PutUsageOutput`.
+        MissingToAt,
+        /// `turns` was not provided but it is required when building `PutUsageOutput`.
+        MissingTurns,
+        /// `input_tokens` was not provided but it is required when building `PutUsageOutput`.
+        MissingInputTokens,
+        /// `output_tokens` was not provided but it is required when building `PutUsageOutput`.
+        MissingOutputTokens,
+        /// `cache_read_tokens` was not provided but it is required when building `PutUsageOutput`.
+        MissingCacheReadTokens,
+        /// `cache_write5m_tokens` was not provided but it is required when building `PutUsageOutput`.
+        MissingCacheWrite5mTokens,
+        /// `cache_write1h_tokens` was not provided but it is required when building `PutUsageOutput`.
+        MissingCacheWrite1hTokens,
+        /// `web_search_requests` was not provided but it is required when building `PutUsageOutput`.
+        MissingWebSearchRequests,
+        /// `web_fetch_requests` was not provided but it is required when building `PutUsageOutput`.
+        MissingWebFetchRequests,
+        /// `cost_micro_usd` was not provided but it is required when building `PutUsageOutput`.
+        MissingCostMicroUsd,
+        /// `max_context` was not provided but it is required when building `PutUsageOutput`.
+        MissingMaxContext,
+        /// `buckets` was not provided but it is required when building `PutUsageOutput`.
+        MissingBuckets,
+        /// `sent_at` was not provided but it is required when building `PutUsageOutput`.
+        MissingSentAt,
+        /// `received_at` was not provided but it is required when building `PutUsageOutput`.
+        MissingReceivedAt,
+        /// `clock_skew` was not provided but it is required when building `PutUsageOutput`.
+        MissingClockSkew,
+        /// `status` was not provided but it is required when building `PutUsageOutput`.
+        MissingStatus,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingId => write!(f, "`id` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingModel => write!(f, "`model` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingSpeed => write!(f, "`speed` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingServiceTier => write!(f, "`service_tier` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingFromAt => write!(f, "`from_at` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingToAt => write!(f, "`to_at` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingTurns => write!(f, "`turns` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingInputTokens => write!(f, "`input_tokens` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingOutputTokens => write!(f, "`output_tokens` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingCacheReadTokens => write!(f, "`cache_read_tokens` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingCacheWrite5mTokens => write!(f, "`cache_write5m_tokens` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingCacheWrite1hTokens => write!(f, "`cache_write1h_tokens` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingWebSearchRequests => write!(f, "`web_search_requests` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingWebFetchRequests => write!(f, "`web_fetch_requests` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingCostMicroUsd => write!(f, "`cost_micro_usd` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingMaxContext => write!(f, "`max_context` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingBuckets => write!(f, "`buckets` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingReceivedAt => write!(f, "`received_at` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingClockSkew => write!(f, "`clock_skew` was not provided but it is required when building `PutUsageOutput`"),
+                ConstraintViolation::MissingStatus => write!(f, "`status` was not provided but it is required when building `PutUsageOutput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::PutUsageOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutUsageOutput`](crate::output::PutUsageOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) model: ::std::option::Option<::std::string::String>,
+        pub(crate) agent: ::std::option::Option<::std::string::String>,
+        pub(crate) speed: ::std::option::Option<::std::string::String>,
+        pub(crate) service_tier: ::std::option::Option<::std::string::String>,
+        pub(crate) from_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) to_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) turns: ::std::option::Option<i64>,
+        pub(crate) input_tokens: ::std::option::Option<i64>,
+        pub(crate) output_tokens: ::std::option::Option<i64>,
+        pub(crate) cache_read_tokens: ::std::option::Option<i64>,
+        pub(crate) cache_write5m_tokens: ::std::option::Option<i64>,
+        pub(crate) cache_write1h_tokens: ::std::option::Option<i64>,
+        pub(crate) web_search_requests: ::std::option::Option<i64>,
+        pub(crate) web_fetch_requests: ::std::option::Option<i64>,
+        pub(crate) cost_micro_usd: ::std::option::Option<i64>,
+        pub(crate) max_context: ::std::option::Option<i64>,
+        pub(crate) buckets: ::std::option::Option<::std::vec::Vec<crate::model::UsageBucket>>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) clock_skew: ::std::option::Option<bool>,
+        pub(crate) status: ::std::option::Option<i32>,
+    }
+    impl Builder {
+        /// 送り手の id。
+        pub fn id(mut self, input: ::std::string::String) -> Self {
+            self.id = Some(input);
+            self
+        }
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn model(mut self, input: ::std::string::String) -> Self {
+            self.model = Some(input);
+            self
+        }
+        /// 手伝い（subagent）の種類の名。本体の回なら無い。
+        pub fn agent(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.agent = input;
+            self
+        }
+        /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+        pub fn speed(mut self, input: ::std::string::String) -> Self {
+            self.speed = Some(input);
+            self
+        }
+        /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+        pub fn service_tier(mut self, input: ::std::string::String) -> Self {
+            self.service_tier = Some(input);
+            self
+        }
+        /// 区間の始めの回の時刻（ミリ秒まで）。
+        pub fn from_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.from_at = Some(input);
+            self
+        }
+        /// 区間の終わりの回の時刻（ミリ秒まで）。
+        pub fn to_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.to_at = Some(input);
+            self
+        }
+        /// 回の数（1 以上）。
+        pub fn turns(mut self, input: i64) -> Self {
+            self.turns = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn input_tokens(mut self, input: i64) -> Self {
+            self.input_tokens = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn output_tokens(mut self, input: i64) -> Self {
+            self.output_tokens = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn cache_read_tokens(mut self, input: i64) -> Self {
+            self.cache_read_tokens = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn cache_write5m_tokens(mut self, input: i64) -> Self {
+            self.cache_write5m_tokens = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn cache_write1h_tokens(mut self, input: i64) -> Self {
+            self.cache_write1h_tokens = Some(input);
+            self
+        }
+        /// web の検索の回数。
+        pub fn web_search_requests(mut self, input: i64) -> Self {
+            self.web_search_requests = Some(input);
+            self
+        }
+        /// web の取得の回数。
+        pub fn web_fetch_requests(mut self, input: i64) -> Self {
+            self.web_fetch_requests = Some(input);
+            self
+        }
+        /// 額（100 万分の 1 ドル）。
+        pub fn cost_micro_usd(mut self, input: i64) -> Self {
+            self.cost_micro_usd = Some(input);
+            self
+        }
+        /// 区間の内でいちばん長い文脈（トークン）。同じ時の行をまとめる時は、大きい方を取る。
+        pub fn max_context(mut self, input: i64) -> Self {
+            self.max_context = Some(input);
+            self
+        }
+        /// 文脈の長さの段ごとの数（`bucket` の順）。
+        pub fn buckets(mut self, input: ::std::vec::Vec<crate::model::UsageBucket>) -> Self {
+            self.buckets = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn clock_skew(mut self, input: bool) -> Self {
+            self.clock_skew = Some(input);
+            self
+        }
+        /// 新しく足せば 201、同じ id で同じ本文なら 200。
+        pub fn status(mut self, input: i32) -> Self {
+            self.status = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`PutUsageOutput`](crate::output::PutUsageOutput).
+        ///
+        /// The builder fails to construct a [`PutUsageOutput`](crate::output::PutUsageOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::PutUsageOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::PutUsageOutput, ConstraintViolation> {
+            Ok(crate::output::PutUsageOutput {
+                id: self.id.ok_or(ConstraintViolation::MissingId)?,
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                model: self.model.ok_or(ConstraintViolation::MissingModel)?,
+                agent: self.agent,
+                speed: self.speed.ok_or(ConstraintViolation::MissingSpeed)?,
+                service_tier: self
+                    .service_tier
+                    .ok_or(ConstraintViolation::MissingServiceTier)?,
+                from_at: self.from_at.ok_or(ConstraintViolation::MissingFromAt)?,
+                to_at: self.to_at.ok_or(ConstraintViolation::MissingToAt)?,
+                turns: self.turns.ok_or(ConstraintViolation::MissingTurns)?,
+                input_tokens: self
+                    .input_tokens
+                    .ok_or(ConstraintViolation::MissingInputTokens)?,
+                output_tokens: self
+                    .output_tokens
+                    .ok_or(ConstraintViolation::MissingOutputTokens)?,
+                cache_read_tokens: self
+                    .cache_read_tokens
+                    .ok_or(ConstraintViolation::MissingCacheReadTokens)?,
+                cache_write5m_tokens: self
+                    .cache_write5m_tokens
+                    .ok_or(ConstraintViolation::MissingCacheWrite5mTokens)?,
+                cache_write1h_tokens: self
+                    .cache_write1h_tokens
+                    .ok_or(ConstraintViolation::MissingCacheWrite1hTokens)?,
+                web_search_requests: self
+                    .web_search_requests
+                    .ok_or(ConstraintViolation::MissingWebSearchRequests)?,
+                web_fetch_requests: self
+                    .web_fetch_requests
+                    .ok_or(ConstraintViolation::MissingWebFetchRequests)?,
+                cost_micro_usd: self
+                    .cost_micro_usd
+                    .ok_or(ConstraintViolation::MissingCostMicroUsd)?,
+                max_context: self
+                    .max_context
+                    .ok_or(ConstraintViolation::MissingMaxContext)?,
+                buckets: self.buckets.ok_or(ConstraintViolation::MissingBuckets)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                clock_skew: self
+                    .clock_skew
+                    .ok_or(ConstraintViolation::MissingClockSkew)?,
+                status: self.status.ok_or(ConstraintViolation::MissingStatus)?,
+            })
+        }
+    }
+}
+/// See [`ListUsageOutput`](crate::output::ListUsageOutput).
+pub mod list_usage_output {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `as_of` was not provided but it is required when building `ListUsageOutput`.
+        MissingAsOf,
+        /// `usage` was not provided but it is required when building `ListUsageOutput`.
+        MissingUsage,
+        /// `actors` was not provided but it is required when building `ListUsageOutput`.
+        MissingActors,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingAsOf => write!(
+                    f,
+                    "`as_of` was not provided but it is required when building `ListUsageOutput`"
+                ),
+                ConstraintViolation::MissingUsage => write!(
+                    f,
+                    "`usage` was not provided but it is required when building `ListUsageOutput`"
+                ),
+                ConstraintViolation::MissingActors => write!(
+                    f,
+                    "`actors` was not provided but it is required when building `ListUsageOutput`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::output::ListUsageOutput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListUsageOutput`](crate::output::ListUsageOutput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) as_of: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) usage: ::std::option::Option<::std::vec::Vec<crate::model::Usage>>,
+        pub(crate) actors: ::std::option::Option<::std::vec::Vec<crate::model::UsageActor>>,
+        pub(crate) next_token: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// 読み始める前の castlist の時刻。
+        pub fn as_of(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.as_of = Some(input);
+            self
+        }
+        /// 受けた順。
+        pub fn usage(mut self, input: ::std::vec::Vec<crate::model::Usage>) -> Self {
+            self.usage = Some(input);
+            self
+        }
+        /// この頁の行に出てきたアクターを 1 度ずつ（行に初めて出た順）。
+        pub fn actors(mut self, input: ::std::vec::Vec<crate::model::UsageActor>) -> Self {
+            self.actors = Some(input);
+            self
+        }
+        /// 次の頁の印。終わりなら無い。
+        pub fn next_token(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.next_token = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`ListUsageOutput`](crate::output::ListUsageOutput).
+        ///
+        /// The builder fails to construct a [`ListUsageOutput`](crate::output::ListUsageOutput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::output::ListUsageOutput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::output::ListUsageOutput, ConstraintViolation> {
+            Ok(crate::output::ListUsageOutput {
+                as_of: self.as_of.ok_or(ConstraintViolation::MissingAsOf)?,
+                usage: self.usage.ok_or(ConstraintViolation::MissingUsage)?,
+                actors: self.actors.ok_or(ConstraintViolation::MissingActors)?,
+                next_token: self.next_token,
             })
         }
     }

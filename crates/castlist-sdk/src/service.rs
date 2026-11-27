@@ -13,9 +13,11 @@ pub struct CastlistBuilder<Body, L, HttpPl, ModelPl> {
     list_actor_settings: Option<::aws_smithy_http_server::routing::Route<Body>>,
     list_events: Option<::aws_smithy_http_server::routing::Route<Body>>,
     list_settings: Option<::aws_smithy_http_server::routing::Route<Body>>,
+    list_usage: Option<::aws_smithy_http_server::routing::Route<Body>>,
     put_event: Option<::aws_smithy_http_server::routing::Route<Body>>,
     put_link: Option<::aws_smithy_http_server::routing::Route<Body>>,
     put_setting: Option<::aws_smithy_http_server::routing::Route<Body>>,
+    put_usage: Option<::aws_smithy_http_server::routing::Route<Body>>,
     register_actor: Option<::aws_smithy_http_server::routing::Route<Body>>,
     resolve_actors: Option<::aws_smithy_http_server::routing::Route<Body>>,
     layer: L,
@@ -1764,6 +1766,180 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
         self
     }
 
+    /// Sets the [`ListUsage`](crate::operation_shape::ListUsage) operation.
+    ///
+    /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
+    /// See the [operation module documentation](::aws_smithy_http_server::operation) for more information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use castlist_sdk::{Castlist, CastlistConfig};
+    ///
+    /// use castlist_sdk::{input, output, error};
+    ///
+    /// async fn handler(input: input::ListUsageInput) -> Result<output::ListUsageOutput, error::ListUsageError> {
+    ///     todo!()
+    /// }
+    ///
+    /// let config = CastlistConfig::builder().build();
+    /// let app = Castlist::builder(config)
+    ///     .list_usage(handler)
+    ///     /* Set other handlers */
+    ///     .build()
+    ///     .unwrap();
+    /// # let app: Castlist<::aws_smithy_http_server::routing::RoutingService<::aws_smithy_http_server::protocol::rest::router::RestRouter<::aws_smithy_http_server::routing::Route>, ::aws_smithy_http_server::protocol::rest_json_1::RestJson1>> = app;
+    /// ```
+    ///
+                    pub fn list_usage<HandlerType, HandlerExtractors, UpgradeExtractors>(self, handler: HandlerType) -> Self
+                    where
+                        HandlerType: ::aws_smithy_http_server::operation::Handler<crate::operation_shape::ListUsage, HandlerExtractors>,
+
+                        ModelPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListUsage,
+                            ::aws_smithy_http_server::operation::IntoService<crate::operation_shape::ListUsage, HandlerType>
+                        >,
+                        ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListUsage,
+                            ModelPl::Output
+                        >,
+                        HttpPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListUsage,
+                            <
+                                ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>
+                                as ::aws_smithy_http_server::plugin::Plugin<
+                                    Castlist<L>,
+                                    crate::operation_shape::ListUsage,
+                                    ModelPl::Output
+                                >
+                            >::Output
+                        >,
+
+                        HttpPl::Output: ::tower::Service<::http_1x::Request<Body>, Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>, Error = ::std::convert::Infallible> + Clone + Send + 'static,
+                        <HttpPl::Output as ::tower::Service<::http_1x::Request<Body>>>::Future: Send + 'static,
+
+{
+        use ::aws_smithy_http_server::operation::OperationShapeExt;
+        use ::aws_smithy_http_server::plugin::Plugin;
+        let svc = crate::operation_shape::ListUsage::from_handler(handler);
+        let svc = self.model_plugin.apply(svc);
+        let svc = ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>::new()
+            .with_request_body_read_timeout(
+                crate::service_config::service_config()
+                    .request_body
+                    .for_operation(&::aws_smithy_schema::ShapeId::from_parts(
+                        "ai.castlist#ListUsage",
+                        "ai.castlist",
+                        "ListUsage",
+                    ))
+                    .read_timeout
+                    .unwrap_or_default(),
+                "ai.castlist#ListUsage",
+            )
+            .apply(svc);
+        let svc = self.http_plugin.apply(svc);
+        self.list_usage_custom(svc)
+    }
+
+    /// Sets the [`ListUsage`](crate::operation_shape::ListUsage) operation.
+    ///
+    /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
+    /// See the [operation module documentation](::aws_smithy_http_server::operation) for more information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use castlist_sdk::{Castlist, CastlistConfig};
+    ///
+    /// use castlist_sdk::{input, output, error};
+    ///
+    /// async fn handler(input: input::ListUsageInput) -> Result<output::ListUsageOutput, error::ListUsageError> {
+    ///     todo!()
+    /// }
+    ///
+    /// let config = CastlistConfig::builder().build();
+    /// let svc = ::tower::util::service_fn(handler);
+    /// let app = Castlist::builder(config)
+    ///     .list_usage_service(svc)
+    ///     /* Set other handlers */
+    ///     .build()
+    ///     .unwrap();
+    /// # let app: Castlist<::aws_smithy_http_server::routing::RoutingService<::aws_smithy_http_server::protocol::rest::router::RestRouter<::aws_smithy_http_server::routing::Route>, ::aws_smithy_http_server::protocol::rest_json_1::RestJson1>> = app;
+    /// ```
+    ///
+                    pub fn list_usage_service<S, ServiceExtractors, UpgradeExtractors>(self, service: S) -> Self
+                    where
+                        S: ::aws_smithy_http_server::operation::OperationService<crate::operation_shape::ListUsage, ServiceExtractors>,
+
+                        ModelPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListUsage,
+                            ::aws_smithy_http_server::operation::Normalize<crate::operation_shape::ListUsage, S>
+                        >,
+                        ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListUsage,
+                            ModelPl::Output
+                        >,
+                        HttpPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::ListUsage,
+                            <
+                                ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>
+                                as ::aws_smithy_http_server::plugin::Plugin<
+                                    Castlist<L>,
+                                    crate::operation_shape::ListUsage,
+                                    ModelPl::Output
+                                >
+                            >::Output
+                        >,
+
+                        HttpPl::Output: ::tower::Service<::http_1x::Request<Body>, Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>, Error = ::std::convert::Infallible> + Clone + Send + 'static,
+                        <HttpPl::Output as ::tower::Service<::http_1x::Request<Body>>>::Future: Send + 'static,
+
+{
+        use ::aws_smithy_http_server::operation::OperationShapeExt;
+        use ::aws_smithy_http_server::plugin::Plugin;
+        let svc = crate::operation_shape::ListUsage::from_service(service);
+        let svc = self.model_plugin.apply(svc);
+        let svc = ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>::new()
+            .with_request_body_read_timeout(
+                crate::service_config::service_config()
+                    .request_body
+                    .for_operation(&::aws_smithy_schema::ShapeId::from_parts(
+                        "ai.castlist#ListUsage",
+                        "ai.castlist",
+                        "ListUsage",
+                    ))
+                    .read_timeout
+                    .unwrap_or_default(),
+                "ai.castlist#ListUsage",
+            )
+            .apply(svc);
+        let svc = self.http_plugin.apply(svc);
+        self.list_usage_custom(svc)
+    }
+
+    /// Sets the [`ListUsage`](crate::operation_shape::ListUsage) to a custom [`Service`](tower::Service).
+    /// not constrained by the Smithy contract.
+    fn list_usage_custom<S>(mut self, svc: S) -> Self
+    where
+        S: ::tower::Service<
+                ::http_1x::Request<Body>,
+                Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>,
+                Error = ::std::convert::Infallible,
+            > + Clone
+            + Send
+            + 'static,
+        S::Future: Send + 'static,
+    {
+        self.list_usage = Some(::aws_smithy_http_server::routing::Route::new(svc));
+        self
+    }
+
     /// Sets the [`PutEvent`](crate::operation_shape::PutEvent) operation.
     ///
     /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
@@ -2286,6 +2462,180 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
         self
     }
 
+    /// Sets the [`PutUsage`](crate::operation_shape::PutUsage) operation.
+    ///
+    /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
+    /// See the [operation module documentation](::aws_smithy_http_server::operation) for more information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use castlist_sdk::{Castlist, CastlistConfig};
+    ///
+    /// use castlist_sdk::{input, output, error};
+    ///
+    /// async fn handler(input: input::PutUsageInput) -> Result<output::PutUsageOutput, error::PutUsageError> {
+    ///     todo!()
+    /// }
+    ///
+    /// let config = CastlistConfig::builder().build();
+    /// let app = Castlist::builder(config)
+    ///     .put_usage(handler)
+    ///     /* Set other handlers */
+    ///     .build()
+    ///     .unwrap();
+    /// # let app: Castlist<::aws_smithy_http_server::routing::RoutingService<::aws_smithy_http_server::protocol::rest::router::RestRouter<::aws_smithy_http_server::routing::Route>, ::aws_smithy_http_server::protocol::rest_json_1::RestJson1>> = app;
+    /// ```
+    ///
+                    pub fn put_usage<HandlerType, HandlerExtractors, UpgradeExtractors>(self, handler: HandlerType) -> Self
+                    where
+                        HandlerType: ::aws_smithy_http_server::operation::Handler<crate::operation_shape::PutUsage, HandlerExtractors>,
+
+                        ModelPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::PutUsage,
+                            ::aws_smithy_http_server::operation::IntoService<crate::operation_shape::PutUsage, HandlerType>
+                        >,
+                        ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::PutUsage,
+                            ModelPl::Output
+                        >,
+                        HttpPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::PutUsage,
+                            <
+                                ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>
+                                as ::aws_smithy_http_server::plugin::Plugin<
+                                    Castlist<L>,
+                                    crate::operation_shape::PutUsage,
+                                    ModelPl::Output
+                                >
+                            >::Output
+                        >,
+
+                        HttpPl::Output: ::tower::Service<::http_1x::Request<Body>, Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>, Error = ::std::convert::Infallible> + Clone + Send + 'static,
+                        <HttpPl::Output as ::tower::Service<::http_1x::Request<Body>>>::Future: Send + 'static,
+
+{
+        use ::aws_smithy_http_server::operation::OperationShapeExt;
+        use ::aws_smithy_http_server::plugin::Plugin;
+        let svc = crate::operation_shape::PutUsage::from_handler(handler);
+        let svc = self.model_plugin.apply(svc);
+        let svc = ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>::new()
+            .with_request_body_read_timeout(
+                crate::service_config::service_config()
+                    .request_body
+                    .for_operation(&::aws_smithy_schema::ShapeId::from_parts(
+                        "ai.castlist#PutUsage",
+                        "ai.castlist",
+                        "PutUsage",
+                    ))
+                    .read_timeout
+                    .unwrap_or_default(),
+                "ai.castlist#PutUsage",
+            )
+            .apply(svc);
+        let svc = self.http_plugin.apply(svc);
+        self.put_usage_custom(svc)
+    }
+
+    /// Sets the [`PutUsage`](crate::operation_shape::PutUsage) operation.
+    ///
+    /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
+    /// See the [operation module documentation](::aws_smithy_http_server::operation) for more information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use castlist_sdk::{Castlist, CastlistConfig};
+    ///
+    /// use castlist_sdk::{input, output, error};
+    ///
+    /// async fn handler(input: input::PutUsageInput) -> Result<output::PutUsageOutput, error::PutUsageError> {
+    ///     todo!()
+    /// }
+    ///
+    /// let config = CastlistConfig::builder().build();
+    /// let svc = ::tower::util::service_fn(handler);
+    /// let app = Castlist::builder(config)
+    ///     .put_usage_service(svc)
+    ///     /* Set other handlers */
+    ///     .build()
+    ///     .unwrap();
+    /// # let app: Castlist<::aws_smithy_http_server::routing::RoutingService<::aws_smithy_http_server::protocol::rest::router::RestRouter<::aws_smithy_http_server::routing::Route>, ::aws_smithy_http_server::protocol::rest_json_1::RestJson1>> = app;
+    /// ```
+    ///
+                    pub fn put_usage_service<S, ServiceExtractors, UpgradeExtractors>(self, service: S) -> Self
+                    where
+                        S: ::aws_smithy_http_server::operation::OperationService<crate::operation_shape::PutUsage, ServiceExtractors>,
+
+                        ModelPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::PutUsage,
+                            ::aws_smithy_http_server::operation::Normalize<crate::operation_shape::PutUsage, S>
+                        >,
+                        ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::PutUsage,
+                            ModelPl::Output
+                        >,
+                        HttpPl: ::aws_smithy_http_server::plugin::Plugin<
+                            Castlist<L>,
+                            crate::operation_shape::PutUsage,
+                            <
+                                ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>
+                                as ::aws_smithy_http_server::plugin::Plugin<
+                                    Castlist<L>,
+                                    crate::operation_shape::PutUsage,
+                                    ModelPl::Output
+                                >
+                            >::Output
+                        >,
+
+                        HttpPl::Output: ::tower::Service<::http_1x::Request<Body>, Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>, Error = ::std::convert::Infallible> + Clone + Send + 'static,
+                        <HttpPl::Output as ::tower::Service<::http_1x::Request<Body>>>::Future: Send + 'static,
+
+{
+        use ::aws_smithy_http_server::operation::OperationShapeExt;
+        use ::aws_smithy_http_server::plugin::Plugin;
+        let svc = crate::operation_shape::PutUsage::from_service(service);
+        let svc = self.model_plugin.apply(svc);
+        let svc = ::aws_smithy_http_server::operation::UpgradePlugin::<UpgradeExtractors>::new()
+            .with_request_body_read_timeout(
+                crate::service_config::service_config()
+                    .request_body
+                    .for_operation(&::aws_smithy_schema::ShapeId::from_parts(
+                        "ai.castlist#PutUsage",
+                        "ai.castlist",
+                        "PutUsage",
+                    ))
+                    .read_timeout
+                    .unwrap_or_default(),
+                "ai.castlist#PutUsage",
+            )
+            .apply(svc);
+        let svc = self.http_plugin.apply(svc);
+        self.put_usage_custom(svc)
+    }
+
+    /// Sets the [`PutUsage`](crate::operation_shape::PutUsage) to a custom [`Service`](tower::Service).
+    /// not constrained by the Smithy contract.
+    fn put_usage_custom<S>(mut self, svc: S) -> Self
+    where
+        S: ::tower::Service<
+                ::http_1x::Request<Body>,
+                Response = ::http_1x::Response<::aws_smithy_http_server::body::BoxBody>,
+                Error = ::std::convert::Infallible,
+            > + Clone
+            + Send
+            + 'static,
+        S::Future: Send + 'static,
+    {
+        self.put_usage = Some(::aws_smithy_http_server::routing::Route::new(svc));
+        self
+    }
+
     /// Sets the [`RegisterActor`](crate::operation_shape::RegisterActor) operation.
     ///
     /// This should be an async function satisfying the [`Handler`](::aws_smithy_http_server::operation::Handler) trait.
@@ -2703,6 +3053,10 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
                 missing_operation_names
                     .insert(crate::operation_shape::ListSettings::ID, ".list_settings()");
             }
+            if self.list_usage.is_none() {
+                missing_operation_names
+                    .insert(crate::operation_shape::ListUsage::ID, ".list_usage()");
+            }
             if self.put_event.is_none() {
                 missing_operation_names
                     .insert(crate::operation_shape::PutEvent::ID, ".put_event()");
@@ -2713,6 +3067,10 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
             if self.put_setting.is_none() {
                 missing_operation_names
                     .insert(crate::operation_shape::PutSetting::ID, ".put_setting()");
+            }
+            if self.put_usage.is_none() {
+                missing_operation_names
+                    .insert(crate::operation_shape::PutUsage::ID, ".put_usage()");
             }
             if self.register_actor.is_none() {
                 missing_operation_names.insert(
@@ -2790,6 +3148,10 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
                     self.list_settings.expect(unexpected_error_msg),
                 ),
                 (
+                    request_specs::list_usage(),
+                    self.list_usage.expect(unexpected_error_msg),
+                ),
+                (
                     request_specs::put_event(),
                     self.put_event.expect(unexpected_error_msg),
                 ),
@@ -2800,6 +3162,10 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
                 (
                     request_specs::put_setting(),
                     self.put_setting.expect(unexpected_error_msg),
+                ),
+                (
+                    request_specs::put_usage(),
+                    self.put_usage.expect(unexpected_error_msg),
                 ),
                 (
                     request_specs::register_actor(),
@@ -2925,6 +3291,15 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
                 }),
             ),
             (
+                request_specs::list_usage(),
+                self.list_usage.unwrap_or_else(|| {
+                    let svc = ::aws_smithy_http_server::operation::MissingFailure::<
+                        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+                    >::default();
+                    ::aws_smithy_http_server::routing::Route::new(svc)
+                }),
+            ),
+            (
                 request_specs::put_event(),
                 self.put_event.unwrap_or_else(|| {
                     let svc = ::aws_smithy_http_server::operation::MissingFailure::<
@@ -2945,6 +3320,15 @@ impl<Body, L, HttpPl, ModelPl> CastlistBuilder<Body, L, HttpPl, ModelPl> {
             (
                 request_specs::put_setting(),
                 self.put_setting.unwrap_or_else(|| {
+                    let svc = ::aws_smithy_http_server::operation::MissingFailure::<
+                        ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
+                    >::default();
+                    ::aws_smithy_http_server::routing::Route::new(svc)
+                }),
+            ),
+            (
+                request_specs::put_usage(),
+                self.put_usage.unwrap_or_else(|| {
                     let svc = ::aws_smithy_http_server::operation::MissingFailure::<
                         ::aws_smithy_http_server::protocol::rest_json_1::RestJson1,
                     >::default();
@@ -3171,6 +3555,21 @@ mod request_specs {
                     ),
                 )
     }
+    pub(super) fn list_usage() -> ::aws_smithy_http_server::routing::request_spec::RequestSpec {
+        ::aws_smithy_http_server::routing::request_spec::RequestSpec::new(
+                    ::http_1x::Method::GET,
+                    ::aws_smithy_http_server::routing::request_spec::UriSpec::new(
+                        ::aws_smithy_http_server::routing::request_spec::PathAndQuerySpec::new(
+                            ::aws_smithy_http_server::routing::request_spec::PathSpec::from_vector_unchecked(vec![
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("api")),
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("usage")),
+]),
+                            ::aws_smithy_http_server::routing::request_spec::QuerySpec::from_vector_unchecked(vec![
+])
+                        )
+                    ),
+                )
+    }
     pub(super) fn put_event() -> ::aws_smithy_http_server::routing::request_spec::RequestSpec {
         ::aws_smithy_http_server::routing::request_spec::RequestSpec::new(
                     ::http_1x::Method::PUT,
@@ -3211,6 +3610,22 @@ mod request_specs {
                             ::aws_smithy_http_server::routing::request_spec::PathSpec::from_vector_unchecked(vec![
     ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("api")),
     ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("settings")),
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Label,
+]),
+                            ::aws_smithy_http_server::routing::request_spec::QuerySpec::from_vector_unchecked(vec![
+])
+                        )
+                    ),
+                )
+    }
+    pub(super) fn put_usage() -> ::aws_smithy_http_server::routing::request_spec::RequestSpec {
+        ::aws_smithy_http_server::routing::request_spec::RequestSpec::new(
+                    ::http_1x::Method::PUT,
+                    ::aws_smithy_http_server::routing::request_spec::UriSpec::new(
+                        ::aws_smithy_http_server::routing::request_spec::PathAndQuerySpec::new(
+                            ::aws_smithy_http_server::routing::request_spec::PathSpec::from_vector_unchecked(vec![
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("api")),
+    ::aws_smithy_http_server::routing::request_spec::PathSegment::Literal(String::from("usage")),
     ::aws_smithy_http_server::routing::request_spec::PathSegment::Label,
 ]),
                             ::aws_smithy_http_server::routing::request_spec::QuerySpec::from_vector_unchecked(vec![
@@ -3290,9 +3705,11 @@ impl Castlist<()> {
             list_actor_settings: None,
             list_events: None,
             list_settings: None,
+            list_usage: None,
             put_event: None,
             put_link: None,
             put_setting: None,
+            put_usage: None,
             register_actor: None,
             resolve_actors: None,
             layer: config.layers,
@@ -3332,9 +3749,11 @@ impl Castlist<()> {
             list_actor_settings: None,
             list_events: None,
             list_settings: None,
+            list_usage: None,
             put_event: None,
             put_link: None,
             put_setting: None,
+            put_usage: None,
             register_actor: None,
             resolve_actors: None,
             layer: ::tower::layer::util::Identity::new(),
@@ -3469,9 +3888,11 @@ pub enum Operation {
     ListActorSettings,
     ListEvents,
     ListSettings,
+    ListUsage,
     PutEvent,
     PutLink,
     PutSetting,
+    PutUsage,
     RegisterActor,
     ResolveActors,
 }
@@ -3530,6 +3951,11 @@ impl Operation {
                 "ai.castlist",
                 "ListSettings",
             ),
+            Operation::ListUsage => ::aws_smithy_http_server::shape_id::ShapeId::new(
+                "ai.castlist#ListUsage",
+                "ai.castlist",
+                "ListUsage",
+            ),
             Operation::PutEvent => ::aws_smithy_http_server::shape_id::ShapeId::new(
                 "ai.castlist#PutEvent",
                 "ai.castlist",
@@ -3544,6 +3970,11 @@ impl Operation {
                 "ai.castlist#PutSetting",
                 "ai.castlist",
                 "PutSetting",
+            ),
+            Operation::PutUsage => ::aws_smithy_http_server::shape_id::ShapeId::new(
+                "ai.castlist#PutUsage",
+                "ai.castlist",
+                "PutUsage",
             ),
             Operation::RegisterActor => ::aws_smithy_http_server::shape_id::ShapeId::new(
                 "ai.castlist#RegisterActor",
@@ -3610,6 +4041,11 @@ impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_sh
 {
     const VALUE: Operation = Operation::ListSettings;
 }
+impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_shape::ListUsage>
+    for Castlist<L>
+{
+    const VALUE: Operation = Operation::ListUsage;
+}
 impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_shape::PutEvent>
     for Castlist<L>
 {
@@ -3624,6 +4060,11 @@ impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_sh
     for Castlist<L>
 {
     const VALUE: Operation = Operation::PutSetting;
+}
+impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_shape::PutUsage>
+    for Castlist<L>
+{
+    const VALUE: Operation = Operation::PutUsage;
 }
 impl<L> ::aws_smithy_http_server::service::ContainsOperation<crate::operation_shape::RegisterActor>
     for Castlist<L>
@@ -3913,6 +4354,15 @@ macro_rules! scope {
                             scope! { @ $ name, $ contains (ListSettings $($ member)*) ($ other $($ temp)*) ($($ not_member)*) }
                         };
 
+                        // ListUsage match found, pop from both `member` and `not_member`
+                        (@ $ name: ident, $ contains: ident (ListUsage $($ member: ident)*) ($($ temp: ident)*) (ListUsage $($ not_member: ident)*)) => {
+                            scope! { @ $ name, $ contains ($($ member)*) ($($ temp)*) ($($ not_member)*) }
+                        };
+                        // ListUsage match not found, pop from `not_member` into `temp` stack
+                        (@ $ name: ident, $ contains: ident (ListUsage $($ member: ident)*) ($($ temp: ident)*) ($ other: ident $($ not_member: ident)*)) => {
+                            scope! { @ $ name, $ contains (ListUsage $($ member)*) ($ other $($ temp)*) ($($ not_member)*) }
+                        };
+
                         // PutEvent match found, pop from both `member` and `not_member`
                         (@ $ name: ident, $ contains: ident (PutEvent $($ member: ident)*) ($($ temp: ident)*) (PutEvent $($ not_member: ident)*)) => {
                             scope! { @ $ name, $ contains ($($ member)*) ($($ temp)*) ($($ not_member)*) }
@@ -3938,6 +4388,15 @@ macro_rules! scope {
                         // PutSetting match not found, pop from `not_member` into `temp` stack
                         (@ $ name: ident, $ contains: ident (PutSetting $($ member: ident)*) ($($ temp: ident)*) ($ other: ident $($ not_member: ident)*)) => {
                             scope! { @ $ name, $ contains (PutSetting $($ member)*) ($ other $($ temp)*) ($($ not_member)*) }
+                        };
+
+                        // PutUsage match found, pop from both `member` and `not_member`
+                        (@ $ name: ident, $ contains: ident (PutUsage $($ member: ident)*) ($($ temp: ident)*) (PutUsage $($ not_member: ident)*)) => {
+                            scope! { @ $ name, $ contains ($($ member)*) ($($ temp)*) ($($ not_member)*) }
+                        };
+                        // PutUsage match not found, pop from `not_member` into `temp` stack
+                        (@ $ name: ident, $ contains: ident (PutUsage $($ member: ident)*) ($($ temp: ident)*) ($ other: ident $($ not_member: ident)*)) => {
+                            scope! { @ $ name, $ contains (PutUsage $($ member)*) ($ other $($ temp)*) ($($ not_member)*) }
                         };
 
                         // RegisterActor match found, pop from both `member` and `not_member`
@@ -3972,7 +4431,7 @@ macro_rules! scope {
                                 excludes: []
                             }
                         }
-                        scope! { @ $ name, False ($($ include)*) () (GetActor GetActorSettingAt GetGraph GetHealth GetLineage GetTimeline ListActors ListActorSettings ListEvents ListSettings PutEvent PutLink PutSetting RegisterActor ResolveActors) }
+                        scope! { @ $ name, False ($($ include)*) () (GetActor GetActorSettingAt GetGraph GetHealth GetLineage GetTimeline ListActors ListActorSettings ListEvents ListSettings ListUsage PutEvent PutLink PutSetting PutUsage RegisterActor ResolveActors) }
                     };
                     (
                         $(#[$ attrs:meta])*
@@ -3989,6 +4448,6 @@ macro_rules! scope {
                                 excludes: [$($ exclude),*]
                             }
                         }
-                        scope! { @ $ name, True ($($ exclude)*) () (GetActor GetActorSettingAt GetGraph GetHealth GetLineage GetTimeline ListActors ListActorSettings ListEvents ListSettings PutEvent PutLink PutSetting RegisterActor ResolveActors) }
+                        scope! { @ $ name, True ($($ exclude)*) () (GetActor GetActorSettingAt GetGraph GetHealth GetLineage GetTimeline ListActors ListActorSettings ListEvents ListSettings ListUsage PutEvent PutLink PutSetting PutUsage RegisterActor ResolveActors) }
                     };
                 }

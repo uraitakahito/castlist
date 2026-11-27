@@ -19,11 +19,15 @@ pub(crate) mod shape_list_events;
 
 pub(crate) mod shape_list_settings;
 
+pub(crate) mod shape_list_usage;
+
 pub(crate) mod shape_put_event;
 
 pub(crate) mod shape_put_link;
 
 pub(crate) mod shape_put_setting;
+
+pub(crate) mod shape_put_usage;
 
 pub(crate) mod shape_register_actor;
 
@@ -73,6 +77,10 @@ pub(crate) mod shape_list_settings_input;
 
 pub(crate) mod shape_list_settings_output;
 
+pub(crate) mod shape_list_usage_input;
+
+pub(crate) mod shape_list_usage_output;
+
 pub(crate) mod shape_not_found;
 
 pub(crate) mod shape_payload_too_large;
@@ -97,6 +105,10 @@ pub(crate) mod shape_put_setting_input;
 
 pub(crate) mod shape_put_setting_output;
 
+pub(crate) mod shape_put_usage_input;
+
+pub(crate) mod shape_put_usage_output;
+
 pub(crate) mod shape_register_actor_output;
 
 pub(crate) mod shape_resolve_actors_output;
@@ -112,6 +124,8 @@ pub(crate) mod shape_bindings;
 pub(crate) mod shape_labels;
 
 pub(crate) mod shape_requested_settings;
+
+pub(crate) mod shape_usage_buckets;
 
 pub(crate) mod shape_actor_binding;
 
@@ -138,5 +152,11 @@ pub(crate) mod shape_setting;
 pub(crate) mod shape_setting_row;
 
 pub(crate) mod shape_timeline_event;
+
+pub(crate) mod shape_usage;
+
+pub(crate) mod shape_usage_actor;
+
+pub(crate) mod shape_usage_bucket;
 
 pub(crate) mod shape_validation_exception_field;

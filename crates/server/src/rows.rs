@@ -3,6 +3,7 @@
 use aws_smithy_types::{Document, Number};
 use castlist_sdk::model::{
     ActorRow, ActorState, Event, EventRow, GraphNode, Link, Setting, SettingRow, TimelineEvent,
+    Usage, UsageActor, UsageBucket,
 };
 
 use crate::datetime;
@@ -45,6 +46,63 @@ pub fn link(l: db::Link) -> Result<Link, String> {
         to: l.to_actor,
         clock_skew: l.clock_skew,
     })
+}
+
+/// トークンの数と費えの行を、答えの形にする（PutUsage の答えと、ListUsage の行で同じ形）。
+pub fn usage(u: db::Usage) -> Result<Usage, String> {
+    let broken = || {
+        format!(
+            "トークンの数と費え {} の buckets が読めない: {}",
+            u.id, u.buckets
+        )
+    };
+    let buckets: serde_json::Value = serde_json::from_str(&u.buckets).map_err(|_| broken())?;
+    let buckets = buckets
+        .as_array()
+        .ok_or_else(broken)?
+        .iter()
+        .map(|b| {
+            Some(UsageBucket {
+                bucket: i32::try_from(b["bucket"].as_i64()?).ok()?,
+                turns: b["turns"].as_i64()?,
+                cost_micro_usd: b["costMicroUsd"].as_i64()?,
+            })
+        })
+        .collect::<Option<Vec<_>>>()
+        .ok_or_else(broken)?;
+    Ok(Usage {
+        from_at: datetime(&u.from_at)?,
+        to_at: datetime(&u.to_at)?,
+        sent_at: datetime(&u.sent_at)?,
+        received_at: datetime(&u.received_at)?,
+        id: u.id,
+        actor_id: u.actor_id,
+        model: u.model,
+        agent: u.agent,
+        speed: u.speed,
+        service_tier: u.service_tier,
+        turns: u.turns,
+        input_tokens: u.input_tokens,
+        output_tokens: u.output_tokens,
+        cache_read_tokens: u.cache_read_tokens,
+        cache_write5m_tokens: u.cache_write_5m_tokens,
+        cache_write1h_tokens: u.cache_write_1h_tokens,
+        web_search_requests: u.web_search_requests,
+        web_fetch_requests: u.web_fetch_requests,
+        cost_micro_usd: u.cost_micro_usd,
+        max_context: u.max_context,
+        buckets,
+        clock_skew: u.clock_skew,
+    })
+}
+
+/// トークンの数と費えの行に出てきたアクターを、答えの形にする。
+pub fn usage_actor(a: search::UsageActor) -> UsageActor {
+    UsageActor {
+        id: a.id,
+        name: a.name,
+        labels: a.labels.into_iter().collect(),
+    }
 }
 
 /// 今の状態を、答えの形にする（GetActor の state と、図の点で同じ形）。

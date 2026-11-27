@@ -186,9 +186,11 @@
 //!        .list_actor_settings(list_actor_settings)
 //!        .list_events(list_events)
 //!        .list_settings(list_settings)
+//!        .list_usage(list_usage)
 //!        .put_event(put_event)
 //!        .put_link(put_link)
 //!        .put_setting(put_setting)
+//!        .put_usage(put_usage)
 //!        .register_actor(register_actor)
 //!        .resolve_actors(resolve_actors)
 //!        .build()
@@ -248,6 +250,10 @@
 //!     todo!()
 //! }
 //!
+//! async fn list_usage(input: input::ListUsageInput) -> Result<output::ListUsageOutput, error::ListUsageError> {
+//!     todo!()
+//! }
+//!
 //! async fn put_event(input: input::PutEventInput) -> Result<output::PutEventOutput, error::PutEventError> {
 //!     todo!()
 //! }
@@ -257,6 +263,10 @@
 //! }
 //!
 //! async fn put_setting(input: input::PutSettingInput) -> Result<output::PutSettingOutput, error::PutSettingError> {
+//!     todo!()
+//! }
+//!
+//! async fn put_usage(input: input::PutUsageInput) -> Result<output::PutUsageOutput, error::PutUsageError> {
 //!     todo!()
 //! }
 //!

@@ -742,6 +742,211 @@ impl GetTimelineInput {
         crate::input::get_timeline_input::Builder::default()
     }
 }
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct PutUsageInput {
+    /// 送り手の決める id。
+    pub usage_id: ::std::string::String,
+    /// 出し手。`by` は出し手の中で引く。
+    pub issuer: ::std::string::String,
+    /// トークンを使ったアクター（鍵の付随する id）。
+    pub by: ::std::string::String,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub model: ::std::string::String,
+    /// 手伝い（subagent）の種類の名。本体の回なら付けない。
+    pub agent: ::std::option::Option<::std::string::String>,
+    /// 速さの種類の名（例 `standard`）。
+    pub speed: ::std::string::String,
+    /// service tier の名（例 `standard`）。
+    pub service_tier: ::std::string::String,
+    /// 区間の始めの回の時刻。
+    pub from_at: ::aws_smithy_types::DateTime,
+    /// 区間の終わりの回の時刻。`fromAt` と同じ UTC の時の内。
+    pub to_at: ::aws_smithy_types::DateTime,
+    /// 回の数。
+    pub turns: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub input_tokens: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub output_tokens: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub cache_read_tokens: i64,
+    /// 5 分の cache に書いたトークンの数。
+    pub cache_write5m_tokens: i64,
+    /// 1 時間の cache に書いたトークンの数。
+    pub cache_write1h_tokens: i64,
+    /// web の検索の回数。
+    pub web_search_requests: i64,
+    /// web の取得の回数。
+    pub web_fetch_requests: i64,
+    /// 額（100 万分の 1 ドル）。
+    pub cost_micro_usd: i64,
+    /// 区間の内でいちばん長い文脈（トークン）。
+    pub max_context: i64,
+    /// 文脈の長さの段ごとの数。
+    pub buckets: ::std::vec::Vec<crate::model::UsageBucket>,
+    /// 送り手の時刻。
+    pub sent_at: ::aws_smithy_types::DateTime,
+}
+impl PutUsageInput {
+    /// 送り手の決める id。
+    pub fn usage_id(&self) -> &str {
+        use std::ops::Deref;
+        self.usage_id.deref()
+    }
+    /// 出し手。`by` は出し手の中で引く。
+    pub fn issuer(&self) -> &str {
+        use std::ops::Deref;
+        self.issuer.deref()
+    }
+    /// トークンを使ったアクター（鍵の付随する id）。
+    pub fn by(&self) -> &str {
+        use std::ops::Deref;
+        self.by.deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn model(&self) -> &str {
+        use std::ops::Deref;
+        self.model.deref()
+    }
+    /// 手伝い（subagent）の種類の名。本体の回なら付けない。
+    pub fn agent(&self) -> ::std::option::Option<&str> {
+        self.agent.as_deref()
+    }
+    /// 速さの種類の名（例 `standard`）。
+    pub fn speed(&self) -> &str {
+        use std::ops::Deref;
+        self.speed.deref()
+    }
+    /// service tier の名（例 `standard`）。
+    pub fn service_tier(&self) -> &str {
+        use std::ops::Deref;
+        self.service_tier.deref()
+    }
+    /// 区間の始めの回の時刻。
+    pub fn from_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.from_at
+    }
+    /// 区間の終わりの回の時刻。`fromAt` と同じ UTC の時の内。
+    pub fn to_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.to_at
+    }
+    /// 回の数。
+    pub fn turns(&self) -> i64 {
+        self.turns
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn input_tokens(&self) -> i64 {
+        self.input_tokens
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn output_tokens(&self) -> i64 {
+        self.output_tokens
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn cache_read_tokens(&self) -> i64 {
+        self.cache_read_tokens
+    }
+    /// 5 分の cache に書いたトークンの数。
+    pub fn cache_write5m_tokens(&self) -> i64 {
+        self.cache_write5m_tokens
+    }
+    /// 1 時間の cache に書いたトークンの数。
+    pub fn cache_write1h_tokens(&self) -> i64 {
+        self.cache_write1h_tokens
+    }
+    /// web の検索の回数。
+    pub fn web_search_requests(&self) -> i64 {
+        self.web_search_requests
+    }
+    /// web の取得の回数。
+    pub fn web_fetch_requests(&self) -> i64 {
+        self.web_fetch_requests
+    }
+    /// 額（100 万分の 1 ドル）。
+    pub fn cost_micro_usd(&self) -> i64 {
+        self.cost_micro_usd
+    }
+    /// 区間の内でいちばん長い文脈（トークン）。
+    pub fn max_context(&self) -> i64 {
+        self.max_context
+    }
+    /// 文脈の長さの段ごとの数。
+    pub fn buckets(&self) -> &[crate::model::UsageBucket] {
+        use std::ops::Deref;
+        self.buckets.deref()
+    }
+    /// 送り手の時刻。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+}
+impl crate::constrained::Constrained for crate::input::PutUsageInput {
+    type Unconstrained = crate::input::put_usage_input_internal::Builder;
+}
+impl PutUsageInput {
+    /// Creates a new builder-style object to manufacture [`PutUsageInput`](crate::input::PutUsageInput).
+    pub fn builder() -> crate::input::put_usage_input::Builder {
+        crate::input::put_usage_input::Builder::default()
+    }
+}
+
+#[allow(missing_docs)] // documentation missing in model
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct ListUsageInput {
+    /// 区間の終わりの時刻（`toAt`）の窓の始め（含む）。
+    pub from: ::aws_smithy_types::DateTime,
+    /// 区間の終わりの時刻（`toAt`）の窓の終わり（含まない）。`from` から 31 日まで。
+    pub to: ::aws_smithy_types::DateTime,
+    /// ラベル（`鍵:値`）。重ねれば、どれも持つアクターの行。
+    pub label: ::std::option::Option<::std::vec::Vec<::std::string::String>>,
+    /// そのアクターの行。
+    pub actor_id: ::std::option::Option<::std::string::String>,
+    /// 1 頁の数（既定 100）。
+    pub max_results: ::std::option::Option<i32>,
+    /// 前の答えの `nextToken`。
+    pub next_token: ::std::option::Option<::std::string::String>,
+}
+impl ListUsageInput {
+    /// 区間の終わりの時刻（`toAt`）の窓の始め（含む）。
+    pub fn from(&self) -> &::aws_smithy_types::DateTime {
+        &self.from
+    }
+    /// 区間の終わりの時刻（`toAt`）の窓の終わり（含まない）。`from` から 31 日まで。
+    pub fn to(&self) -> &::aws_smithy_types::DateTime {
+        &self.to
+    }
+    /// ラベル（`鍵:値`）。重ねれば、どれも持つアクターの行。
+    pub fn label(&self) -> ::std::option::Option<&[::std::string::String]> {
+        self.label.as_deref()
+    }
+    /// そのアクターの行。
+    pub fn actor_id(&self) -> ::std::option::Option<&str> {
+        self.actor_id.as_deref()
+    }
+    /// 1 頁の数（既定 100）。
+    pub fn max_results(&self) -> ::std::option::Option<i32> {
+        self.max_results
+    }
+    /// 前の答えの `nextToken`。
+    pub fn next_token(&self) -> ::std::option::Option<&str> {
+        self.next_token.as_deref()
+    }
+}
+impl crate::constrained::Constrained for crate::input::ListUsageInput {
+    type Unconstrained = crate::input::list_usage_input_internal::Builder;
+}
+impl ListUsageInput {
+    /// Creates a new builder-style object to manufacture [`ListUsageInput`](crate::input::ListUsageInput).
+    pub fn builder() -> crate::input::list_usage_input::Builder {
+        crate::input::list_usage_input::Builder::default()
+    }
+}
 /// See [`GetHealthInput`](crate::input::GetHealthInput).
 pub(crate) mod get_health_input_internal {
 
@@ -4950,6 +5155,1321 @@ pub mod get_timeline_input {
                 from: self.from,
                 to: self.to,
             }
+        }
+    }
+}
+/// See [`PutUsageInput`](crate::input::PutUsageInput).
+pub(crate) mod put_usage_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `usage_id` was not provided but it is required when building `PutUsageInput`.
+        MissingUsageId,
+        /// Constraint violation occurred building member `usage_id` when building `PutUsageInput`.
+        #[doc(hidden)]
+        UsageId(crate::model::sender_id_internal::ConstraintViolation),
+        /// `issuer` was not provided but it is required when building `PutUsageInput`.
+        MissingIssuer,
+        /// Constraint violation occurred building member `issuer` when building `PutUsageInput`.
+        #[doc(hidden)]
+        Issuer(crate::model::name_internal::ConstraintViolation),
+        /// `by` was not provided but it is required when building `PutUsageInput`.
+        MissingBy,
+        /// Constraint violation occurred building member `by` when building `PutUsageInput`.
+        #[doc(hidden)]
+        By(crate::model::actor_ref_internal::ConstraintViolation),
+        /// `model` was not provided but it is required when building `PutUsageInput`.
+        MissingModel,
+        /// Constraint violation occurred building member `model` when building `PutUsageInput`.
+        #[doc(hidden)]
+        Model(crate::model::name_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `agent` when building `PutUsageInput`.
+        #[doc(hidden)]
+        Agent(crate::model::text_internal::ConstraintViolation),
+        /// `speed` was not provided but it is required when building `PutUsageInput`.
+        MissingSpeed,
+        /// Constraint violation occurred building member `speed` when building `PutUsageInput`.
+        #[doc(hidden)]
+        Speed(crate::model::text_internal::ConstraintViolation),
+        /// `service_tier` was not provided but it is required when building `PutUsageInput`.
+        MissingServiceTier,
+        /// Constraint violation occurred building member `service_tier` when building `PutUsageInput`.
+        #[doc(hidden)]
+        ServiceTier(crate::model::text_internal::ConstraintViolation),
+        /// `from_at` was not provided but it is required when building `PutUsageInput`.
+        MissingFromAt,
+        /// `to_at` was not provided but it is required when building `PutUsageInput`.
+        MissingToAt,
+        /// `turns` was not provided but it is required when building `PutUsageInput`.
+        MissingTurns,
+        /// Constraint violation occurred building member `turns` when building `PutUsageInput`.
+        #[doc(hidden)]
+        Turns(crate::model::turn_count_internal::ConstraintViolation),
+        /// `input_tokens` was not provided but it is required when building `PutUsageInput`.
+        MissingInputTokens,
+        /// Constraint violation occurred building member `input_tokens` when building `PutUsageInput`.
+        #[doc(hidden)]
+        InputTokens(crate::model::amount_internal::ConstraintViolation),
+        /// `output_tokens` was not provided but it is required when building `PutUsageInput`.
+        MissingOutputTokens,
+        /// Constraint violation occurred building member `output_tokens` when building `PutUsageInput`.
+        #[doc(hidden)]
+        OutputTokens(crate::model::amount_internal::ConstraintViolation),
+        /// `cache_read_tokens` was not provided but it is required when building `PutUsageInput`.
+        MissingCacheReadTokens,
+        /// Constraint violation occurred building member `cache_read_tokens` when building `PutUsageInput`.
+        #[doc(hidden)]
+        CacheReadTokens(crate::model::amount_internal::ConstraintViolation),
+        /// `cache_write5m_tokens` was not provided but it is required when building `PutUsageInput`.
+        MissingCacheWrite5mTokens,
+        /// Constraint violation occurred building member `cache_write5m_tokens` when building `PutUsageInput`.
+        #[doc(hidden)]
+        CacheWrite5mTokens(crate::model::amount_internal::ConstraintViolation),
+        /// `cache_write1h_tokens` was not provided but it is required when building `PutUsageInput`.
+        MissingCacheWrite1hTokens,
+        /// Constraint violation occurred building member `cache_write1h_tokens` when building `PutUsageInput`.
+        #[doc(hidden)]
+        CacheWrite1hTokens(crate::model::amount_internal::ConstraintViolation),
+        /// `web_search_requests` was not provided but it is required when building `PutUsageInput`.
+        MissingWebSearchRequests,
+        /// Constraint violation occurred building member `web_search_requests` when building `PutUsageInput`.
+        #[doc(hidden)]
+        WebSearchRequests(crate::model::amount_internal::ConstraintViolation),
+        /// `web_fetch_requests` was not provided but it is required when building `PutUsageInput`.
+        MissingWebFetchRequests,
+        /// Constraint violation occurred building member `web_fetch_requests` when building `PutUsageInput`.
+        #[doc(hidden)]
+        WebFetchRequests(crate::model::amount_internal::ConstraintViolation),
+        /// `cost_micro_usd` was not provided but it is required when building `PutUsageInput`.
+        MissingCostMicroUsd,
+        /// Constraint violation occurred building member `cost_micro_usd` when building `PutUsageInput`.
+        #[doc(hidden)]
+        CostMicroUsd(crate::model::amount_internal::ConstraintViolation),
+        /// `max_context` was not provided but it is required when building `PutUsageInput`.
+        MissingMaxContext,
+        /// Constraint violation occurred building member `max_context` when building `PutUsageInput`.
+        #[doc(hidden)]
+        MaxContext(crate::model::amount_internal::ConstraintViolation),
+        /// `buckets` was not provided but it is required when building `PutUsageInput`.
+        MissingBuckets,
+        /// Constraint violation occurred building member `buckets` when building `PutUsageInput`.
+        #[doc(hidden)]
+        Buckets(crate::model::usage_buckets_internal::ConstraintViolation),
+        /// `sent_at` was not provided but it is required when building `PutUsageInput`.
+        MissingSentAt,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingUsageId => write!(f, "`usage_id` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::UsageId(_) => write!(f, "constraint violation occurred building member `usage_id` when building `PutUsageInput`"),
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::Issuer(_) => write!(f, "constraint violation occurred building member `issuer` when building `PutUsageInput`"),
+                ConstraintViolation::MissingBy => write!(f, "`by` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::By(_) => write!(f, "constraint violation occurred building member `by` when building `PutUsageInput`"),
+                ConstraintViolation::MissingModel => write!(f, "`model` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::Model(_) => write!(f, "constraint violation occurred building member `model` when building `PutUsageInput`"),
+                ConstraintViolation::Agent(_) => write!(f, "constraint violation occurred building member `agent` when building `PutUsageInput`"),
+                ConstraintViolation::MissingSpeed => write!(f, "`speed` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::Speed(_) => write!(f, "constraint violation occurred building member `speed` when building `PutUsageInput`"),
+                ConstraintViolation::MissingServiceTier => write!(f, "`service_tier` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::ServiceTier(_) => write!(f, "constraint violation occurred building member `service_tier` when building `PutUsageInput`"),
+                ConstraintViolation::MissingFromAt => write!(f, "`from_at` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingToAt => write!(f, "`to_at` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingTurns => write!(f, "`turns` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::Turns(_) => write!(f, "constraint violation occurred building member `turns` when building `PutUsageInput`"),
+                ConstraintViolation::MissingInputTokens => write!(f, "`input_tokens` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::InputTokens(_) => write!(f, "constraint violation occurred building member `input_tokens` when building `PutUsageInput`"),
+                ConstraintViolation::MissingOutputTokens => write!(f, "`output_tokens` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::OutputTokens(_) => write!(f, "constraint violation occurred building member `output_tokens` when building `PutUsageInput`"),
+                ConstraintViolation::MissingCacheReadTokens => write!(f, "`cache_read_tokens` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::CacheReadTokens(_) => write!(f, "constraint violation occurred building member `cache_read_tokens` when building `PutUsageInput`"),
+                ConstraintViolation::MissingCacheWrite5mTokens => write!(f, "`cache_write5m_tokens` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::CacheWrite5mTokens(_) => write!(f, "constraint violation occurred building member `cache_write5m_tokens` when building `PutUsageInput`"),
+                ConstraintViolation::MissingCacheWrite1hTokens => write!(f, "`cache_write1h_tokens` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::CacheWrite1hTokens(_) => write!(f, "constraint violation occurred building member `cache_write1h_tokens` when building `PutUsageInput`"),
+                ConstraintViolation::MissingWebSearchRequests => write!(f, "`web_search_requests` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::WebSearchRequests(_) => write!(f, "constraint violation occurred building member `web_search_requests` when building `PutUsageInput`"),
+                ConstraintViolation::MissingWebFetchRequests => write!(f, "`web_fetch_requests` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::WebFetchRequests(_) => write!(f, "constraint violation occurred building member `web_fetch_requests` when building `PutUsageInput`"),
+                ConstraintViolation::MissingCostMicroUsd => write!(f, "`cost_micro_usd` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::CostMicroUsd(_) => write!(f, "constraint violation occurred building member `cost_micro_usd` when building `PutUsageInput`"),
+                ConstraintViolation::MissingMaxContext => write!(f, "`max_context` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MaxContext(_) => write!(f, "constraint violation occurred building member `max_context` when building `PutUsageInput`"),
+                ConstraintViolation::MissingBuckets => write!(f, "`buckets` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::Buckets(_) => write!(f, "constraint violation occurred building member `buckets` when building `PutUsageInput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `PutUsageInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingUsageId => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/usageId' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/usageId",
+                                            },
+            ConstraintViolation::UsageId(inner) => inner.as_validation_exception_field(path + "/usageId"),
+            ConstraintViolation::MissingIssuer => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/issuer' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/issuer",
+                                            },
+            ConstraintViolation::Issuer(inner) => inner.as_validation_exception_field(path + "/issuer"),
+            ConstraintViolation::MissingBy => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/by' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/by",
+                                            },
+            ConstraintViolation::By(inner) => inner.as_validation_exception_field(path + "/by"),
+            ConstraintViolation::MissingModel => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/model' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/model",
+                                            },
+            ConstraintViolation::Model(inner) => inner.as_validation_exception_field(path + "/model"),
+            ConstraintViolation::Agent(inner) => inner.as_validation_exception_field(path + "/agent"),
+            ConstraintViolation::MissingSpeed => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/speed' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/speed",
+                                            },
+            ConstraintViolation::Speed(inner) => inner.as_validation_exception_field(path + "/speed"),
+            ConstraintViolation::MissingServiceTier => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/serviceTier' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/serviceTier",
+                                            },
+            ConstraintViolation::ServiceTier(inner) => inner.as_validation_exception_field(path + "/serviceTier"),
+            ConstraintViolation::MissingFromAt => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/fromAt' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/fromAt",
+                                            },
+            ConstraintViolation::MissingToAt => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/toAt' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/toAt",
+                                            },
+            ConstraintViolation::MissingTurns => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/turns' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/turns",
+                                            },
+            ConstraintViolation::Turns(inner) => inner.as_validation_exception_field(path + "/turns"),
+            ConstraintViolation::MissingInputTokens => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/inputTokens' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/inputTokens",
+                                            },
+            ConstraintViolation::InputTokens(inner) => inner.as_validation_exception_field(path + "/inputTokens"),
+            ConstraintViolation::MissingOutputTokens => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/outputTokens' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/outputTokens",
+                                            },
+            ConstraintViolation::OutputTokens(inner) => inner.as_validation_exception_field(path + "/outputTokens"),
+            ConstraintViolation::MissingCacheReadTokens => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/cacheReadTokens' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/cacheReadTokens",
+                                            },
+            ConstraintViolation::CacheReadTokens(inner) => inner.as_validation_exception_field(path + "/cacheReadTokens"),
+            ConstraintViolation::MissingCacheWrite5mTokens => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/cacheWrite5mTokens' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/cacheWrite5mTokens",
+                                            },
+            ConstraintViolation::CacheWrite5mTokens(inner) => inner.as_validation_exception_field(path + "/cacheWrite5mTokens"),
+            ConstraintViolation::MissingCacheWrite1hTokens => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/cacheWrite1hTokens' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/cacheWrite1hTokens",
+                                            },
+            ConstraintViolation::CacheWrite1hTokens(inner) => inner.as_validation_exception_field(path + "/cacheWrite1hTokens"),
+            ConstraintViolation::MissingWebSearchRequests => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/webSearchRequests' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/webSearchRequests",
+                                            },
+            ConstraintViolation::WebSearchRequests(inner) => inner.as_validation_exception_field(path + "/webSearchRequests"),
+            ConstraintViolation::MissingWebFetchRequests => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/webFetchRequests' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/webFetchRequests",
+                                            },
+            ConstraintViolation::WebFetchRequests(inner) => inner.as_validation_exception_field(path + "/webFetchRequests"),
+            ConstraintViolation::MissingCostMicroUsd => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/costMicroUsd' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/costMicroUsd",
+                                            },
+            ConstraintViolation::CostMicroUsd(inner) => inner.as_validation_exception_field(path + "/costMicroUsd"),
+            ConstraintViolation::MissingMaxContext => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/maxContext' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/maxContext",
+                                            },
+            ConstraintViolation::MaxContext(inner) => inner.as_validation_exception_field(path + "/maxContext"),
+            ConstraintViolation::MissingBuckets => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/buckets' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/buckets",
+                                            },
+            ConstraintViolation::Buckets(inner) => inner.as_validation_exception_field(path + "/buckets"),
+            ConstraintViolation::MissingSentAt => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/sentAt' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/sentAt",
+                                            },
+        }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::PutUsageInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::PutUsageInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutUsageInput`](crate::input::PutUsageInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) usage_id:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::SenderId>>,
+        pub(crate) issuer:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) by:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorRef>>,
+        pub(crate) model:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        pub(crate) agent:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Text>>,
+        pub(crate) speed:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Text>>,
+        pub(crate) service_tier:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Text>>,
+        pub(crate) from_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) to_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) turns:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::TurnCount>>,
+        pub(crate) input_tokens:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        pub(crate) output_tokens:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        pub(crate) cache_read_tokens:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        pub(crate) cache_write5m_tokens:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        pub(crate) cache_write1h_tokens:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        pub(crate) web_search_requests:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        pub(crate) web_fetch_requests:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        pub(crate) cost_micro_usd:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        pub(crate) max_context:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        pub(crate) buckets:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::UsageBuckets>>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// 送り手の決める id。
+        pub(crate) fn set_usage_id(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::SenderId>,
+            >,
+        ) -> Self {
+            self.usage_id = Some(input.into());
+            self
+        }
+        /// 出し手。`by` は出し手の中で引く。
+        pub(crate) fn set_issuer(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        ) -> Self {
+            self.issuer = Some(input.into());
+            self
+        }
+        /// トークンを使ったアクター（鍵の付随する id）。
+        pub(crate) fn set_by(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::ActorRef>,
+            >,
+        ) -> Self {
+            self.by = Some(input.into());
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub(crate) fn set_model(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Name>>,
+        ) -> Self {
+            self.model = Some(input.into());
+            self
+        }
+        /// 手伝い（subagent）の種類の名。本体の回なら付けない。
+        pub(crate) fn set_agent(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Text>>,
+            >,
+        ) -> Self {
+            self.agent = input.map(|v| v.into());
+            self
+        }
+        /// 速さの種類の名（例 `standard`）。
+        pub(crate) fn set_speed(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Text>>,
+        ) -> Self {
+            self.speed = Some(input.into());
+            self
+        }
+        /// service tier の名（例 `standard`）。
+        pub(crate) fn set_service_tier(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Text>>,
+        ) -> Self {
+            self.service_tier = Some(input.into());
+            self
+        }
+        /// 区間の始めの回の時刻。
+        pub(crate) fn set_from_at(
+            mut self,
+            input: impl ::std::convert::Into<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.from_at = Some(input.into());
+            self
+        }
+        /// 区間の終わりの回の時刻。`fromAt` と同じ UTC の時の内。
+        pub(crate) fn set_to_at(
+            mut self,
+            input: impl ::std::convert::Into<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.to_at = Some(input.into());
+            self
+        }
+        /// 回の数。
+        pub(crate) fn set_turns(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::TurnCount>,
+            >,
+        ) -> Self {
+            self.turns = Some(input.into());
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub(crate) fn set_input_tokens(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.input_tokens = Some(input.into());
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub(crate) fn set_output_tokens(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.output_tokens = Some(input.into());
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub(crate) fn set_cache_read_tokens(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.cache_read_tokens = Some(input.into());
+            self
+        }
+        /// 5 分の cache に書いたトークンの数。
+        pub(crate) fn set_cache_write5m_tokens(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.cache_write5m_tokens = Some(input.into());
+            self
+        }
+        /// 1 時間の cache に書いたトークンの数。
+        pub(crate) fn set_cache_write1h_tokens(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.cache_write1h_tokens = Some(input.into());
+            self
+        }
+        /// web の検索の回数。
+        pub(crate) fn set_web_search_requests(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.web_search_requests = Some(input.into());
+            self
+        }
+        /// web の取得の回数。
+        pub(crate) fn set_web_fetch_requests(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.web_fetch_requests = Some(input.into());
+            self
+        }
+        /// 額（100 万分の 1 ドル）。
+        pub(crate) fn set_cost_micro_usd(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.cost_micro_usd = Some(input.into());
+            self
+        }
+        /// 区間の内でいちばん長い文脈（トークン）。
+        pub(crate) fn set_max_context(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.max_context = Some(input.into());
+            self
+        }
+        /// 文脈の長さの段ごとの数。
+        pub(crate) fn set_buckets(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::UsageBuckets>,
+            >,
+        ) -> Self {
+            self.buckets = Some(input.into());
+            self
+        }
+        /// 送り手の時刻。
+        pub(crate) fn set_sent_at(
+            mut self,
+            input: impl ::std::convert::Into<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.sent_at = Some(input.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`PutUsageInput`](crate::input::PutUsageInput).
+        ///
+        /// The builder fails to construct a [`PutUsageInput`](crate::input::PutUsageInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::PutUsageInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::PutUsageInput, ConstraintViolation> {
+            Ok(crate::input::PutUsageInput {
+                usage_id: self
+                    .usage_id
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::UsageId))
+                    .transpose()?
+                    .map(|v: crate::model::SenderId| v.into())
+                    .ok_or(ConstraintViolation::MissingUsageId)?,
+                issuer: self
+                    .issuer
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Issuer))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into())
+                    .ok_or(ConstraintViolation::MissingIssuer)?,
+                by: self
+                    .by
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::By))
+                    .transpose()?
+                    .map(|v: crate::model::ActorRef| v.into())
+                    .ok_or(ConstraintViolation::MissingBy)?,
+                model: self
+                    .model
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Model))
+                    .transpose()?
+                    .map(|v: crate::model::Name| v.into())
+                    .ok_or(ConstraintViolation::MissingModel)?,
+                agent: self
+                    .agent
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Agent))
+                    .transpose()?
+                    .map(|v: crate::model::Text| v.into()),
+                speed: self
+                    .speed
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Speed))
+                    .transpose()?
+                    .map(|v: crate::model::Text| v.into())
+                    .ok_or(ConstraintViolation::MissingSpeed)?,
+                service_tier: self
+                    .service_tier
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::ServiceTier))
+                    .transpose()?
+                    .map(|v: crate::model::Text| v.into())
+                    .ok_or(ConstraintViolation::MissingServiceTier)?,
+                from_at: self.from_at.ok_or(ConstraintViolation::MissingFromAt)?,
+                to_at: self.to_at.ok_or(ConstraintViolation::MissingToAt)?,
+                turns: self
+                    .turns
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Turns))
+                    .transpose()?
+                    .map(|v: crate::model::TurnCount| v.into())
+                    .ok_or(ConstraintViolation::MissingTurns)?,
+                input_tokens: self
+                    .input_tokens
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::InputTokens))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingInputTokens)?,
+                output_tokens: self
+                    .output_tokens
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::OutputTokens))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingOutputTokens)?,
+                cache_read_tokens: self
+                    .cache_read_tokens
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::CacheReadTokens))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingCacheReadTokens)?,
+                cache_write5m_tokens: self
+                    .cache_write5m_tokens
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::CacheWrite5mTokens))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingCacheWrite5mTokens)?,
+                cache_write1h_tokens: self
+                    .cache_write1h_tokens
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::CacheWrite1hTokens))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingCacheWrite1hTokens)?,
+                web_search_requests: self
+                    .web_search_requests
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::WebSearchRequests))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingWebSearchRequests)?,
+                web_fetch_requests: self
+                    .web_fetch_requests
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::WebFetchRequests))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingWebFetchRequests)?,
+                cost_micro_usd: self
+                    .cost_micro_usd
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::CostMicroUsd))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingCostMicroUsd)?,
+                max_context: self
+                    .max_context
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::MaxContext))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingMaxContext)?,
+                buckets: self
+                    .buckets
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Buckets))
+                    .transpose()?
+                    .map(|v: crate::model::UsageBuckets| v.into())
+                    .ok_or(ConstraintViolation::MissingBuckets)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+            })
+        }
+    }
+}
+/// See [`PutUsageInput`](crate::input::PutUsageInput).
+pub mod put_usage_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `usage_id` was not provided but it is required when building `PutUsageInput`.
+        MissingUsageId,
+        /// `issuer` was not provided but it is required when building `PutUsageInput`.
+        MissingIssuer,
+        /// `by` was not provided but it is required when building `PutUsageInput`.
+        MissingBy,
+        /// `model` was not provided but it is required when building `PutUsageInput`.
+        MissingModel,
+        /// `speed` was not provided but it is required when building `PutUsageInput`.
+        MissingSpeed,
+        /// `service_tier` was not provided but it is required when building `PutUsageInput`.
+        MissingServiceTier,
+        /// `from_at` was not provided but it is required when building `PutUsageInput`.
+        MissingFromAt,
+        /// `to_at` was not provided but it is required when building `PutUsageInput`.
+        MissingToAt,
+        /// `turns` was not provided but it is required when building `PutUsageInput`.
+        MissingTurns,
+        /// `input_tokens` was not provided but it is required when building `PutUsageInput`.
+        MissingInputTokens,
+        /// `output_tokens` was not provided but it is required when building `PutUsageInput`.
+        MissingOutputTokens,
+        /// `cache_read_tokens` was not provided but it is required when building `PutUsageInput`.
+        MissingCacheReadTokens,
+        /// `cache_write5m_tokens` was not provided but it is required when building `PutUsageInput`.
+        MissingCacheWrite5mTokens,
+        /// `cache_write1h_tokens` was not provided but it is required when building `PutUsageInput`.
+        MissingCacheWrite1hTokens,
+        /// `web_search_requests` was not provided but it is required when building `PutUsageInput`.
+        MissingWebSearchRequests,
+        /// `web_fetch_requests` was not provided but it is required when building `PutUsageInput`.
+        MissingWebFetchRequests,
+        /// `cost_micro_usd` was not provided but it is required when building `PutUsageInput`.
+        MissingCostMicroUsd,
+        /// `max_context` was not provided but it is required when building `PutUsageInput`.
+        MissingMaxContext,
+        /// `buckets` was not provided but it is required when building `PutUsageInput`.
+        MissingBuckets,
+        /// `sent_at` was not provided but it is required when building `PutUsageInput`.
+        MissingSentAt,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingUsageId => write!(f, "`usage_id` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingIssuer => write!(f, "`issuer` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingBy => write!(f, "`by` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingModel => write!(f, "`model` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingSpeed => write!(f, "`speed` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingServiceTier => write!(f, "`service_tier` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingFromAt => write!(f, "`from_at` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingToAt => write!(f, "`to_at` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingTurns => write!(f, "`turns` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingInputTokens => write!(f, "`input_tokens` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingOutputTokens => write!(f, "`output_tokens` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingCacheReadTokens => write!(f, "`cache_read_tokens` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingCacheWrite5mTokens => write!(f, "`cache_write5m_tokens` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingCacheWrite1hTokens => write!(f, "`cache_write1h_tokens` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingWebSearchRequests => write!(f, "`web_search_requests` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingWebFetchRequests => write!(f, "`web_fetch_requests` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingCostMicroUsd => write!(f, "`cost_micro_usd` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingMaxContext => write!(f, "`max_context` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingBuckets => write!(f, "`buckets` was not provided but it is required when building `PutUsageInput`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `PutUsageInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::PutUsageInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`PutUsageInput`](crate::input::PutUsageInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) usage_id: ::std::option::Option<::std::string::String>,
+        pub(crate) issuer: ::std::option::Option<::std::string::String>,
+        pub(crate) by: ::std::option::Option<::std::string::String>,
+        pub(crate) model: ::std::option::Option<::std::string::String>,
+        pub(crate) agent: ::std::option::Option<::std::string::String>,
+        pub(crate) speed: ::std::option::Option<::std::string::String>,
+        pub(crate) service_tier: ::std::option::Option<::std::string::String>,
+        pub(crate) from_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) to_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) turns: ::std::option::Option<i64>,
+        pub(crate) input_tokens: ::std::option::Option<i64>,
+        pub(crate) output_tokens: ::std::option::Option<i64>,
+        pub(crate) cache_read_tokens: ::std::option::Option<i64>,
+        pub(crate) cache_write5m_tokens: ::std::option::Option<i64>,
+        pub(crate) cache_write1h_tokens: ::std::option::Option<i64>,
+        pub(crate) web_search_requests: ::std::option::Option<i64>,
+        pub(crate) web_fetch_requests: ::std::option::Option<i64>,
+        pub(crate) cost_micro_usd: ::std::option::Option<i64>,
+        pub(crate) max_context: ::std::option::Option<i64>,
+        pub(crate) buckets: ::std::option::Option<::std::vec::Vec<crate::model::UsageBucket>>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+    }
+    impl Builder {
+        /// 送り手の決める id。
+        pub fn usage_id(mut self, input: ::std::string::String) -> Self {
+            self.usage_id = Some(input);
+            self
+        }
+        /// 出し手。`by` は出し手の中で引く。
+        pub fn issuer(mut self, input: ::std::string::String) -> Self {
+            self.issuer = Some(input);
+            self
+        }
+        /// トークンを使ったアクター（鍵の付随する id）。
+        pub fn by(mut self, input: ::std::string::String) -> Self {
+            self.by = Some(input);
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn model(mut self, input: ::std::string::String) -> Self {
+            self.model = Some(input);
+            self
+        }
+        /// 手伝い（subagent）の種類の名。本体の回なら付けない。
+        pub fn agent(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.agent = input;
+            self
+        }
+        /// 速さの種類の名（例 `standard`）。
+        pub fn speed(mut self, input: ::std::string::String) -> Self {
+            self.speed = Some(input);
+            self
+        }
+        /// service tier の名（例 `standard`）。
+        pub fn service_tier(mut self, input: ::std::string::String) -> Self {
+            self.service_tier = Some(input);
+            self
+        }
+        /// 区間の始めの回の時刻。
+        pub fn from_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.from_at = Some(input);
+            self
+        }
+        /// 区間の終わりの回の時刻。`fromAt` と同じ UTC の時の内。
+        pub fn to_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.to_at = Some(input);
+            self
+        }
+        /// 回の数。
+        pub fn turns(mut self, input: i64) -> Self {
+            self.turns = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn input_tokens(mut self, input: i64) -> Self {
+            self.input_tokens = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn output_tokens(mut self, input: i64) -> Self {
+            self.output_tokens = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn cache_read_tokens(mut self, input: i64) -> Self {
+            self.cache_read_tokens = Some(input);
+            self
+        }
+        /// 5 分の cache に書いたトークンの数。
+        pub fn cache_write5m_tokens(mut self, input: i64) -> Self {
+            self.cache_write5m_tokens = Some(input);
+            self
+        }
+        /// 1 時間の cache に書いたトークンの数。
+        pub fn cache_write1h_tokens(mut self, input: i64) -> Self {
+            self.cache_write1h_tokens = Some(input);
+            self
+        }
+        /// web の検索の回数。
+        pub fn web_search_requests(mut self, input: i64) -> Self {
+            self.web_search_requests = Some(input);
+            self
+        }
+        /// web の取得の回数。
+        pub fn web_fetch_requests(mut self, input: i64) -> Self {
+            self.web_fetch_requests = Some(input);
+            self
+        }
+        /// 額（100 万分の 1 ドル）。
+        pub fn cost_micro_usd(mut self, input: i64) -> Self {
+            self.cost_micro_usd = Some(input);
+            self
+        }
+        /// 区間の内でいちばん長い文脈（トークン）。
+        pub fn max_context(mut self, input: i64) -> Self {
+            self.max_context = Some(input);
+            self
+        }
+        /// 文脈の長さの段ごとの数。
+        pub fn buckets(mut self, input: ::std::vec::Vec<crate::model::UsageBucket>) -> Self {
+            self.buckets = Some(input);
+            self
+        }
+        /// 送り手の時刻。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`PutUsageInput`](crate::input::PutUsageInput).
+        ///
+        /// The builder fails to construct a [`PutUsageInput`](crate::input::PutUsageInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::PutUsageInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::PutUsageInput, ConstraintViolation> {
+            Ok(crate::input::PutUsageInput {
+                usage_id: self.usage_id.ok_or(ConstraintViolation::MissingUsageId)?,
+                issuer: self.issuer.ok_or(ConstraintViolation::MissingIssuer)?,
+                by: self.by.ok_or(ConstraintViolation::MissingBy)?,
+                model: self.model.ok_or(ConstraintViolation::MissingModel)?,
+                agent: self.agent,
+                speed: self.speed.ok_or(ConstraintViolation::MissingSpeed)?,
+                service_tier: self
+                    .service_tier
+                    .ok_or(ConstraintViolation::MissingServiceTier)?,
+                from_at: self.from_at.ok_or(ConstraintViolation::MissingFromAt)?,
+                to_at: self.to_at.ok_or(ConstraintViolation::MissingToAt)?,
+                turns: self.turns.ok_or(ConstraintViolation::MissingTurns)?,
+                input_tokens: self
+                    .input_tokens
+                    .ok_or(ConstraintViolation::MissingInputTokens)?,
+                output_tokens: self
+                    .output_tokens
+                    .ok_or(ConstraintViolation::MissingOutputTokens)?,
+                cache_read_tokens: self
+                    .cache_read_tokens
+                    .ok_or(ConstraintViolation::MissingCacheReadTokens)?,
+                cache_write5m_tokens: self
+                    .cache_write5m_tokens
+                    .ok_or(ConstraintViolation::MissingCacheWrite5mTokens)?,
+                cache_write1h_tokens: self
+                    .cache_write1h_tokens
+                    .ok_or(ConstraintViolation::MissingCacheWrite1hTokens)?,
+                web_search_requests: self
+                    .web_search_requests
+                    .ok_or(ConstraintViolation::MissingWebSearchRequests)?,
+                web_fetch_requests: self
+                    .web_fetch_requests
+                    .ok_or(ConstraintViolation::MissingWebFetchRequests)?,
+                cost_micro_usd: self
+                    .cost_micro_usd
+                    .ok_or(ConstraintViolation::MissingCostMicroUsd)?,
+                max_context: self
+                    .max_context
+                    .ok_or(ConstraintViolation::MissingMaxContext)?,
+                buckets: self.buckets.ok_or(ConstraintViolation::MissingBuckets)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+            })
+        }
+    }
+}
+/// See [`ListUsageInput`](crate::input::ListUsageInput).
+pub(crate) mod list_usage_input_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `from` was not provided but it is required when building `ListUsageInput`.
+        MissingFrom,
+        /// `to` was not provided but it is required when building `ListUsageInput`.
+        MissingTo,
+        /// Constraint violation occurred building member `label` when building `ListUsageInput`.
+        #[doc(hidden)]
+        Label(crate::model::label_filters_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `actor_id` when building `ListUsageInput`.
+        #[doc(hidden)]
+        ActorId(crate::model::actor_id_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `max_results` when building `ListUsageInput`.
+        #[doc(hidden)]
+        MaxResults(crate::model::max_results_internal::ConstraintViolation),
+        /// Constraint violation occurred building member `next_token` when building `ListUsageInput`.
+        #[doc(hidden)]
+        NextToken(crate::model::next_token_internal::ConstraintViolation),
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingFrom => write!(f, "`from` was not provided but it is required when building `ListUsageInput`"),
+                ConstraintViolation::MissingTo => write!(f, "`to` was not provided but it is required when building `ListUsageInput`"),
+                ConstraintViolation::Label(_) => write!(f, "constraint violation occurred building member `label` when building `ListUsageInput`"),
+                ConstraintViolation::ActorId(_) => write!(f, "constraint violation occurred building member `actor_id` when building `ListUsageInput`"),
+                ConstraintViolation::MaxResults(_) => write!(f, "constraint violation occurred building member `max_results` when building `ListUsageInput`"),
+                ConstraintViolation::NextToken(_) => write!(f, "constraint violation occurred building member `next_token` when building `ListUsageInput`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                ConstraintViolation::MissingFrom => crate::model::ValidationExceptionField {
+                    message: format!(
+                        "Value at '{}/from' failed to satisfy constraint: Member must not be null",
+                        path
+                    ),
+                    path: path + "/from",
+                },
+                ConstraintViolation::MissingTo => crate::model::ValidationExceptionField {
+                    message: format!(
+                        "Value at '{}/to' failed to satisfy constraint: Member must not be null",
+                        path
+                    ),
+                    path: path + "/to",
+                },
+                ConstraintViolation::Label(inner) => {
+                    inner.as_validation_exception_field(path + "/label")
+                }
+                ConstraintViolation::ActorId(inner) => {
+                    inner.as_validation_exception_field(path + "/actorId")
+                }
+                ConstraintViolation::MaxResults(inner) => {
+                    inner.as_validation_exception_field(path + "/maxResults")
+                }
+                ConstraintViolation::NextToken(inner) => {
+                    inner.as_validation_exception_field(path + "/nextToken")
+                }
+            }
+        }
+    }
+    impl ::std::convert::From<ConstraintViolation>
+        for ::aws_smithy_http_server::protocol::rest_json_1::rejection::RequestRejection
+    {
+        fn from(constraint_violation: ConstraintViolation) -> Self {
+            let first_validation_exception_field =
+                constraint_violation.as_validation_exception_field("".to_owned());
+            let validation_exception = crate::error::ValidationException {
+                message: format!(
+                    "1 validation error detected. {}",
+                    &first_validation_exception_field.message
+                ),
+                field_list: Some(vec![first_validation_exception_field]),
+            };
+            Self::ConstraintViolation(
+                                crate::protocol_serde::shape_validation_exception::ser_validation_exception_error(&validation_exception)
+                                    .expect("validation exceptions should never fail to serialize; please file a bug report under https://github.com/smithy-lang/smithy-rs/issues")
+                            )
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::input::ListUsageInput>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::input::ListUsageInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListUsageInput`](crate::input::ListUsageInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) from: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) to: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) label: ::std::option::Option<
+            crate::constrained::MaybeConstrained<
+                crate::constrained::label_filters_constrained::LabelFiltersConstrained,
+            >,
+        >,
+        pub(crate) actor_id:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::ActorId>>,
+        pub(crate) max_results:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::MaxResults>>,
+        pub(crate) next_token:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::NextToken>>,
+    }
+    impl Builder {
+        /// 区間の終わりの時刻（`toAt`）の窓の始め（含む）。
+        pub(crate) fn set_from(
+            mut self,
+            input: impl ::std::convert::Into<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.from = Some(input.into());
+            self
+        }
+        /// 区間の終わりの時刻（`toAt`）の窓の終わり（含まない）。`from` から 31 日まで。
+        pub(crate) fn set_to(
+            mut self,
+            input: impl ::std::convert::Into<::aws_smithy_types::DateTime>,
+        ) -> Self {
+            self.to = Some(input.into());
+            self
+        }
+        /// ラベル（`鍵:値`）。重ねれば、どれも持つアクターの行。
+        pub(crate) fn set_label(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<
+                        crate::constrained::label_filters_constrained::LabelFiltersConstrained,
+                    >,
+                >,
+            >,
+        ) -> Self {
+            self.label = input.map(|v| v.into());
+            self
+        }
+        /// そのアクターの行。
+        pub(crate) fn set_actor_id(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::ActorId>>,
+            >,
+        ) -> Self {
+            self.actor_id = input.map(|v| v.into());
+            self
+        }
+        /// 1 頁の数（既定 100）。
+        pub(crate) fn set_max_results(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<
+                    crate::constrained::MaybeConstrained<crate::model::MaxResults>,
+                >,
+            >,
+        ) -> Self {
+            self.max_results = input.map(|v| v.into());
+            self
+        }
+        /// 前の答えの `nextToken`。
+        pub(crate) fn set_next_token(
+            mut self,
+            input: Option<
+                impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::NextToken>>,
+            >,
+        ) -> Self {
+            self.next_token = input.map(|v| v.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`ListUsageInput`](crate::input::ListUsageInput).
+        ///
+        /// The builder fails to construct a [`ListUsageInput`](crate::input::ListUsageInput) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::input::ListUsageInput, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::input::ListUsageInput, ConstraintViolation> {
+            Ok(crate::input::ListUsageInput {
+                from: self.from.ok_or(ConstraintViolation::MissingFrom)?,
+                to: self.to.ok_or(ConstraintViolation::MissingTo)?,
+                label: self
+                    .label
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map(|v| v.into()).map_err(ConstraintViolation::Label))
+                    .transpose()?,
+                actor_id: self
+                    .actor_id
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::ActorId))
+                    .transpose()?
+                    .map(|v: crate::model::ActorId| v.into()),
+                max_results: self
+                    .max_results
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::MaxResults))
+                    .transpose()?
+                    .map(|v: crate::model::MaxResults| v.into()),
+                next_token: self
+                    .next_token
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::NextToken))
+                    .transpose()?
+                    .map(|v: crate::model::NextToken| v.into()),
+            })
+        }
+    }
+}
+/// See [`ListUsageInput`](crate::input::ListUsageInput).
+pub mod list_usage_input {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `from` was not provided but it is required when building `ListUsageInput`.
+        MissingFrom,
+        /// `to` was not provided but it is required when building `ListUsageInput`.
+        MissingTo,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingFrom => write!(
+                    f,
+                    "`from` was not provided but it is required when building `ListUsageInput`"
+                ),
+                ConstraintViolation::MissingTo => write!(
+                    f,
+                    "`to` was not provided but it is required when building `ListUsageInput`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::input::ListUsageInput {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`ListUsageInput`](crate::input::ListUsageInput).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) from: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) to: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) label: ::std::option::Option<::std::vec::Vec<::std::string::String>>,
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) max_results: ::std::option::Option<i32>,
+        pub(crate) next_token: ::std::option::Option<::std::string::String>,
+    }
+    impl Builder {
+        /// 区間の終わりの時刻（`toAt`）の窓の始め（含む）。
+        pub fn from(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.from = Some(input);
+            self
+        }
+        /// 区間の終わりの時刻（`toAt`）の窓の終わり（含まない）。`from` から 31 日まで。
+        pub fn to(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.to = Some(input);
+            self
+        }
+        /// ラベル（`鍵:値`）。重ねれば、どれも持つアクターの行。
+        pub fn label(
+            mut self,
+            input: ::std::option::Option<::std::vec::Vec<::std::string::String>>,
+        ) -> Self {
+            self.label = input;
+            self
+        }
+        /// そのアクターの行。
+        pub fn actor_id(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.actor_id = input;
+            self
+        }
+        /// 1 頁の数（既定 100）。
+        pub fn max_results(mut self, input: ::std::option::Option<i32>) -> Self {
+            self.max_results = input;
+            self
+        }
+        /// 前の答えの `nextToken`。
+        pub fn next_token(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.next_token = input;
+            self
+        }
+        /// Consumes the builder and constructs a [`ListUsageInput`](crate::input::ListUsageInput).
+        ///
+        /// The builder fails to construct a [`ListUsageInput`](crate::input::ListUsageInput) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::input::ListUsageInput, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::input::ListUsageInput, ConstraintViolation> {
+            Ok(crate::input::ListUsageInput {
+                from: self.from.ok_or(ConstraintViolation::MissingFrom)?,
+                to: self.to.ok_or(ConstraintViolation::MissingTo)?,
+                label: self.label,
+                actor_id: self.actor_id,
+                max_results: self.max_results,
+                next_token: self.next_token,
+            })
         }
     }
 }

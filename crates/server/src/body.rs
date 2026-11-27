@@ -5,6 +5,10 @@
 //!    - 出来事: `issuer`・`by`・`type`・`detail`・`sentAt`
 //!    - 線: `issuer`・`type`・`from`・`to`・`sentAt`
 //!    - model と effort: `issuer`・`by`・`model`・`effort`・`source`・`sentAt`
+//!    - トークンの数と費え: `issuer`・`by`・`model`・`agent`（本体の回なら欄ごと無い）・`speed`・`serviceTier`・`fromAt`・`toAt`・
+//!      `turns`・`inputTokens`・`outputTokens`・`cacheReadTokens`・`cacheWrite5mTokens`・`cacheWrite1hTokens`・`webSearchRequests`・
+//!      `webFetchRequests`・`costMicroUsd`・`maxContext`・`buckets`・`sentAt`。`fromAt`・`toAt` は DB に残す字（UTC・ミリ秒まで・24 字）、`buckets` は `bucket` の順に
+//!      並べた `{bucket, turns, costMicroUsd}` の配列（送られた並びは問わない）
 //! 2. `detail` は、無ければ（JSON の null も）空の物 `{}`。`by`・`from`・`to` は送られた参照の字（`種類:値`）のまま。
 //! 3. `sentAt` は、DB に残す送り手の時刻と同じ字（UTC の RFC 3339。秒の下は要る桁だけ。例 `2026-11-24T00:00:00Z`・
 //!    `2026-11-24T00:00:00.5Z`）。同じ時刻の違う書き方は、同じ字になる。
