@@ -35,6 +35,7 @@ jobs:
       # 見張りが、そういう字を本当に当てるか（当てなければ落とす）。
       - run: "! ci/check-wording.sh ci/testdata/bad-wording.md"
       - run: "! ci/check-wording.sh ci/testdata/bad-label.md"
+      - run: "! ci/check-wording.sh ci/testdata/bad-usage.md"
       # 「動かす」の container の命令が、名 castlist.box を指し、pm-only の守り（.claude/roles/config.jsonc）に当たるか。
       - run: ci/check-run-docs.sh
       # 見張りが、名の違う命令と守りから漏れた命令を本当に当てるか（当てなければ落とす）。
