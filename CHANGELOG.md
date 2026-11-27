@@ -2,6 +2,17 @@
 
 版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/api/`。定義は `model/`）と DB の移行（`crates/server/migrations/`）が変わったかを書く。0.4.x までの節の API は `/v1/`、移行は repo の頭の `migrations/` の物（もう無い）。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
 
+## 2.1.0
+
+アクターごとの「トークンの数と費え」を残す版（t-j4pp）。足しただけで、前からある操作と欄は変えていない（定義は v2.0.0 から壊す形に変わっていない: `ci/gen.sh --diff`。`common.smithy` は変えていない）。
+
+- API: 操作 `PutUsage`（`PUT /api/usage/{usageId}`）を足した。1 行は、アクター 1 人の、時計の 1 時間（UTC の時）の内の、同じ種類（model・手伝いの種類・speed・service tier）の回のまとめ（回の数・トークンの数・web の検索と取得の回数・額・いちばん長い文脈・文脈の長さの段ごとの数）。同じ id で同じ本文は 200、違う本文は 409。区間が同じ UTC の時の内に無い・同じ段が 2 つ・段の和が行と合わない、は 400。
+- API: 操作 `ListUsage`（`GET /api/usage`）を足した。`from`・`to`（必ず要る。`from <= toAt < to`。31 日まで）・`label`・`actorId` で絞り、行と、その頁に出てきたアクター（id・名・ラベル）を返す。集計はしない（まとめるのは呼ぶ側）。
+- **読む側の決まり**: 同じアクター・同じ時・同じ種類の行は 2 つ以上在りうる（送り手が、増えた分を新しい行で送る）。数は足し、`maxContext` は大きい方を取る（[API](docs/src/api.md)）。
+- **DB の移行の SQL を足した**（`0002_usage.sql`。表 `usage` を 1 つ足すだけで、今の表には触らない）。**この版を当てた volume は、前の版（2.0.0）の image では開けない**（戻すなら、上げる前のバックアップから: [動かす](docs/src/run.md) の「版を上げる」）。
+- 圧縮の出来事（`compacted`）の `detail` に、送り手が圧縮の前後の長さを載せるようになる（roster の側の変更。castlist は、今までどおり `detail` を好きな JSON の物として受ける）。
+- smoke: 数の行を書いて読み返すことを足した。
+
 ## 2.0.0
 
 **画面を外した版（壊す変わり）。**アクターの一覧・プロフィール・タイムライン・相関図は、castlist の API を通して [callboard](https://github.com/uraitakahito/callboard)（0.2.0 から）が出す（AI-32）。API と DB は変えていない。

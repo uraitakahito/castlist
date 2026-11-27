@@ -78,6 +78,13 @@ read_back
 curl -fsS -o "$tmp/timeline.json" "$url/api/timeline"
 jq -e --arg id "$actor" '[.nodes[].id] == [$id] and .edges == [] and [.events[] | .actorId + ":" + .type] == [$id + ":entered"] and .events[0].inferred == false and (.settings | type) == "array"' \
   "$tmp/timeline.json" >/dev/null
+# トークンの数と費え（PutUsage・ListUsage。2.1.0 から）: 1 行足して（201、同じ本文の送り直しは 200）、窓で読み返す。
+usage="{\"issuer\":\"smoke\",\"by\":\"claude.session:smoke-1\",\"model\":\"claude-opus-5-5\",\"speed\":\"standard\",\"serviceTier\":\"standard\",\"fromAt\":\"2026-01-01T00:05:00Z\",\"toAt\":\"2026-01-01T00:40:00Z\",\"turns\":2,\"inputTokens\":10,\"outputTokens\":20,\"cacheReadTokens\":30,\"cacheWrite5mTokens\":0,\"cacheWrite1hTokens\":40,\"webSearchRequests\":0,\"webFetchRequests\":0,\"costMicroUsd\":7,\"maxContext\":80,\"buckets\":[{\"bucket\":0,\"turns\":2,\"costMicroUsd\":7}],\"sentAt\":\"$sent\"}"
+test "$(code -X PUT -H "$json" --data "$usage" "$url/api/usage/smoke-u-1")" = 201
+test "$(code -X PUT -H "$json" --data "$usage" "$url/api/usage/smoke-u-1")" = 200
+curl -fsS -o "$tmp/usage.json" "$url/api/usage?from=2026-01-01T00:00:00Z&to=2026-01-01T01:00:00Z"
+jq -e --arg id "$actor" '[.usage[] | .id + ":" + .actorId + ":" + (.turns | tostring)] == ["smoke-u-1:" + $id + ":2"] and [.actors[].id] == [$id]' \
+  "$tmp/usage.json" >/dev/null
 # 止める合図（SIGTERM）で、自分から終わるか（PID 1 は受け口が無いと合図を無視する）。
 docker stop "$name"
 test "$(docker inspect -f '{{.State.ExitCode}}' "$name")" = 0
