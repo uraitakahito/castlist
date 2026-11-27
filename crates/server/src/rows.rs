@@ -48,11 +48,11 @@ pub fn link(l: db::Link) -> Result<Link, String> {
     })
 }
 
-/// トークンの数と費えの行を、答えの形にする（PutUsage の答えと、ListUsage の行で同じ形）。
+/// トークンの使用量の行を、答えの形にする（PutUsage の答えと、ListUsage の行で同じ形）。
 pub fn usage(u: db::Usage) -> Result<Usage, String> {
     let broken = || {
         format!(
-            "トークンの数と費え {} の buckets が読めない: {}",
+            "トークンの使用量 {} の buckets が読めない: {}",
             u.id, u.buckets
         )
     };
@@ -96,7 +96,7 @@ pub fn usage(u: db::Usage) -> Result<Usage, String> {
     })
 }
 
-/// トークンの数と費えの行に出てきたアクターを、答えの形にする。
+/// トークンの使用量の行に出てきたアクターを、答えの形にする。
 pub fn usage_actor(a: search::UsageActor) -> UsageActor {
     UsageActor {
         id: a.id,

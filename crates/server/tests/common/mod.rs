@@ -214,7 +214,7 @@ impl App {
         .unwrap_or_else(|e| panic!("設定 {id}: {e}"));
     }
 
-    /// トークンの数と費えの行を 1 つ、アクターの id で書く接続に直に置く（区間の終わりの時刻と受けた時刻を決めて置く試験のため）。
+    /// トークンの使用量の行を 1 つ、アクターの id で書く接続に直に置く（区間の終わりの時刻と受けた時刻を決めて置く試験のため）。
     /// 区間の始めは終わりと同じ、回の数は 1、ほかの数は 0。model は claude-opus-5-5（無ければ一覧に足す）。
     pub async fn usage_at(&self, id: &str, actor: &str, to_at: &str, received: &str) {
         sqlx::query(
@@ -238,7 +238,7 @@ impl App {
         .bind(received)
         .execute(self.db.write())
         .await
-        .unwrap_or_else(|e| panic!("トークンの数と費え {id}: {e}"));
+        .unwrap_or_else(|e| panic!("トークンの使用量 {id}: {e}"));
     }
 
     /// 書く接続で SQL を 1 つ流す（試験の見本を直に置く）。

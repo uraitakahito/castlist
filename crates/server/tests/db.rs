@@ -7,7 +7,7 @@ use serde_json::json;
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::{ConnectOptions, Connection};
 
-/// どの表にも 1 行以上ある DB を作る（線と出来事とトークンの数と費えは、直に置く）。
+/// どの表にも 1 行以上ある DB を作る（線と出来事とトークンの使用量は、直に置く）。
 async fn filled() -> (App, String) {
     let app = App::start().await;
     let mut body = ai("se", "s-1");

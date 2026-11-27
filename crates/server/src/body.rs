@@ -5,7 +5,7 @@
 //!    - 出来事: `issuer`・`by`・`type`・`detail`・`sentAt`
 //!    - 線: `issuer`・`type`・`from`・`to`・`sentAt`
 //!    - model と effort: `issuer`・`by`・`model`・`effort`・`source`・`sentAt`
-//!    - トークンの数と費え: `issuer`・`by`・`model`・`agent`（本体の回なら欄ごと無い）・`speed`・`serviceTier`・`fromAt`・`toAt`・
+//!    - トークンの使用量: `issuer`・`by`・`model`・`agent`（本体の回なら欄ごと無い）・`speed`・`serviceTier`・`fromAt`・`toAt`・
 //!      `turns`・`inputTokens`・`outputTokens`・`cacheReadTokens`・`cacheWrite5mTokens`・`cacheWrite1hTokens`・`webSearchRequests`・
 //!      `webFetchRequests`・`costMicroUsd`・`maxContext`・`buckets`・`sentAt`。`fromAt`・`toAt` は DB に残す字（UTC・ミリ秒まで・24 字）、`buckets` は `bucket` の順に
 //!      並べた `{bucket, turns, costMicroUsd}` の配列（送られた並びは問わない）

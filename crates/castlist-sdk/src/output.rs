@@ -372,7 +372,7 @@ impl ResolveActorsOutput {
 /// 出来事の欄（GetActor の出来事と、PutEvent の答えで同じ形）。
 #[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
 pub struct PutEventOutput {
-    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub id: ::std::string::String,
     /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
     pub actor_id: ::std::string::String,
@@ -390,7 +390,7 @@ pub struct PutEventOutput {
     pub status: i32,
 }
 impl PutEventOutput {
-    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub fn id(&self) -> &str {
         use std::ops::Deref;
         self.id.deref()
@@ -470,7 +470,7 @@ impl ListEventsOutput {
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]
 pub struct PutLinkOutput {
-    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub id: ::std::string::String,
     /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
     pub r#type: ::std::string::String,
@@ -488,7 +488,7 @@ pub struct PutLinkOutput {
     pub status: i32,
 }
 impl PutLinkOutput {
-    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub fn id(&self) -> &str {
         use std::ops::Deref;
         self.id.deref()
@@ -723,7 +723,7 @@ impl GetTimelineOutput {
     }
 }
 
-/// トークンの数と費えの欄（PutUsage の答えと、ListUsage の行で同じ形）。
+/// トークンの使用量の欄（PutUsage の答えと、ListUsage の行で同じ形）。
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]
@@ -1729,7 +1729,7 @@ pub mod put_event_output {
         pub(crate) status: ::std::option::Option<i32>,
     }
     impl Builder {
-        /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+        /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
         pub fn id(mut self, input: ::std::string::String) -> Self {
             self.id = Some(input);
             self
@@ -1930,7 +1930,7 @@ pub mod put_link_output {
         pub(crate) status: ::std::option::Option<i32>,
     }
     impl Builder {
-        /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
+        /// 送り手が付ける id（出来事・線・model と effort・トークンの使用量）: 空白の無い ASCII の印字できる字で 128 字まで。
         pub fn id(mut self, input: ::std::string::String) -> Self {
             self.id = Some(input);
             self

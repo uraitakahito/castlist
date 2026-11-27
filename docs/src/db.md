@@ -1,6 +1,6 @@
 # DB
 
-SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表・索引・view は `crates/server/migrations/0001_init.sql` にあり（1.0.0 から。0.4.x の 3 つの移行を当てた後の形を 1 つにまとめた物）、トークンの数と費えの表（`usage`）は `0002_usage.sql` が足す（2.1.0 から）。移行の SQL は binary に埋め込む。移行は足すだけで、出した file は替えない（替えていないことは `crates/server/tests/migrations.rs` が中身の写しで見る）。後の版が書いた DB は、開かずに断る（[API](api.md) の「データ」）。
+SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表・索引・view は `crates/server/migrations/0001_init.sql` にあり（1.0.0 から。0.4.x の 3 つの移行を当てた後の形を 1 つにまとめた物）、トークンの使用量の表（`usage`）は `0002_usage.sql` が足す（2.1.0 から）。移行の SQL は binary に埋め込む。移行は足すだけで、出した file は替えない（替えていないことは `crates/server/tests/migrations.rs` が中身の写しで見る）。後の版が書いた DB は、開かずに断る（[API](api.md) の「データ」）。
 
 ## 接続
 
@@ -119,7 +119,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 <g data-table="usage">
 <rect x="210" y="410" width="220" height="120" rx="6" style="fill:var(--bg);stroke:var(--table-border-color);stroke-width:2"/>
 <rect x="210" y="410" width="220" height="24" rx="6" style="fill:var(--table-header-bg);stroke:var(--table-border-color);stroke-width:2"/>
-<text x="220" y="427" font-weight="bold">usage（トークンの数と費え）</text>
+<text x="220" y="427" font-weight="bold">usage（トークンの使用量）</text>
 <text x="220" y="452">actor_id　外のキー</text>
 <text x="220" y="470">model_id　外のキー</text>
 <text x="220" y="488">id・from_at・to_at</text>
@@ -142,7 +142,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `events` | 出来事（10 の種類）。`detail` は JSON の物 | `actor_id → actors(id)`。`type` と `detail` は CHECK で見る |
 | `models`・`efforts` | 名の一覧（master）。`id`・`name`・`first_seen_at`。`efforts` は移行で low・medium・high・xhigh・max を入れる | `name` は unique で、形を CHECK で見る |
 | `settings` | model と effort（`requested`・`observed`）。`id` は送り手の id（登録の時の物は null） | `actor_id → actors(id)`・`model_id → models(id)`・`effort_id → efforts(id)` |
-| `usage` | トークンの数と費え（2.1.0 から）。1 行は、アクター 1 人の、時計の 1 時間（UTC の時）の内の、同じ種類（model・`agent`・`speed`・`service_tier`）の回のまとめ。`id` は送り手の id、`body_hash` は本文の写し | `actor_id → actors(id)`・`model_id → models(id)`。数は `CHECK` で 0 以上（`turns` は 1 以上）。同じアクター・同じ時・同じ種類の行は 2 つ以上在りうる（unique にしない）。**読む側は、数を足し、`max_context` は大きい方を取る** |
+| `usage` | トークンの使用量（2.1.0 から）。1 行は、アクター 1 人の、時計の 1 時間（UTC の時）の内の、同じ種類（model・`agent`・`speed`・`service_tier`）の回のまとめ。`id` は送り手の id、`body_hash` は本文の写し | `actor_id → actors(id)`・`model_id → models(id)`。数は `CHECK` で 0 以上（`turns` は 1 以上）。同じアクター・同じ時・同じ種類の行は 2 つ以上在りうる（unique にしない）。**読む側は、数を足し、`max_context` は大きい方を取る** |
 
 ## 列
 
@@ -297,7 +297,7 @@ SQLite の file 1 つ（`CASTLIST_DB`。既定は `/data/castlist.db`）。表�
 | `actors(clock_skew)`・`events(clock_skew)`・`settings(clock_skew)` | `skewed=true`（時刻ずれのある行を持つアクター・出来事・model と effort）。後ろに seq が付くので、受けた順にも引ける |
 | `events(received_at)`・`settings(received_at)` | `from`・`to` の窓だけで引く出来事と model と effort（「T から後に起きた物」） |
 
-トークンの数と費え（`0002_usage.sql`）:
+トークンの使用量（`0002_usage.sql`）:
 
 | 索引 | 使う所 |
 |---|---|
