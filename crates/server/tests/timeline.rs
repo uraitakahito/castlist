@@ -35,6 +35,55 @@ async fn the_nodes_and_edges_are_the_same_set_as_the_graph() {
 }
 
 #[tokio::test]
+async fn a_window_cuts_the_same_part_of_the_set_as_the_graph() {
+    let s = sample().await;
+    let all = ok(&s.app, "/api/graph").await;
+    let nodes = all["nodes"].as_array().unwrap();
+    // 見本の中ほど（2 人目の登録から 4 人目の登録まで）で切る。両端を含む。
+    let (from, to) = (
+        nodes[1]["receivedAt"].as_str().unwrap(),
+        nodes[3]["receivedAt"].as_str().unwrap(),
+    );
+    for query in [
+        format!("?from={from}&to={to}"),
+        format!("?to={to}"),
+        format!("?from={from}"),
+        format!("?label=project:castlist&to={to}"),
+    ] {
+        let graph = ok(&s.app, &format!("/api/graph{query}")).await;
+        let timeline = ok(&s.app, &format!("/api/timeline{query}")).await;
+        assert_eq!(timeline["nodes"], graph["nodes"], "{query}");
+        assert_eq!(timeline["edges"], graph["edges"], "{query}");
+        let n = timeline["nodes"].as_array().unwrap().len();
+        assert!(n >= 1, "{query}: {timeline}");
+        // 出来事と model と effort は、切った組の点の物だけ。
+        let ids = field(&timeline["nodes"], "id");
+        for key in ["events", "settings"] {
+            for row in timeline[key].as_array().unwrap() {
+                assert!(
+                    ids.contains(&row["actorId"].as_str().unwrap()),
+                    "{query}: {key}"
+                );
+            }
+        }
+    }
+    // to だけで切った組は、全部より少ない（窓の終わりが効いている）。
+    let cut = ok(
+        &s.app,
+        &format!(
+            "/api/timeline?to={}",
+            nodes[0]["receivedAt"].as_str().unwrap()
+        ),
+    )
+    .await;
+    assert!(
+        cut["nodes"].as_array().unwrap().len() < nodes.len(),
+        "{cut}"
+    );
+    assert!(!cut["nodes"].as_array().unwrap().is_empty(), "{cut}");
+}
+
+#[tokio::test]
 async fn the_events_of_the_nodes_come_in_the_order_received_with_only_the_fields_for_drawing() {
     let s = sample().await;
     let timeline = ok(&s.app, "/api/timeline").await;

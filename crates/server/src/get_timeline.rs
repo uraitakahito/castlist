@@ -6,10 +6,9 @@ use castlist_sdk::error::{GetTimelineError, ValidationException};
 use castlist_sdk::input::GetTimelineInput;
 use castlist_sdk::output::GetTimelineOutput;
 
-use crate::db::{self, Db, Ref};
+use crate::db::{self, Db};
 use crate::errors::Failure;
-use crate::graph::GraphQuery;
-use crate::{datetime, rows, stored_time};
+use crate::{datetime, get_graph, rows};
 
 const OPERATION: &str = "GetTimeline";
 
@@ -18,24 +17,18 @@ pub async fn get_timeline(
     input: GetTimelineInput,
 ) -> Result<GetTimelineOutput, GetTimelineError> {
     let as_of = db::now();
-    let time = |name: &str, t: Option<&aws_smithy_types::DateTime>| {
-        t.map(|t| stored_time(name, t))
-            .transpose()
-            .map_err(|message| {
-                GetTimelineError::from(ValidationException {
-                    message,
-                    field_list: None,
-                })
-            })
-    };
-    let query = GraphQuery {
-        label: input.label.as_deref().map(|l| {
-            let r = Ref::parse(l);
-            (r.kind, r.value)
-        }),
-        from: time("from", input.from.as_ref())?.unwrap_or_default(),
-        to: time("to", input.to.as_ref())?.unwrap_or_else(|| "9999".to_owned()),
-    };
+    // 引数の読み方は GetGraph と同じ物を使う（同じ引数からは、同じ組）。
+    let query = get_graph::query(
+        input.label.as_deref(),
+        input.from.as_ref(),
+        input.to.as_ref(),
+    )
+    .map_err(|message| {
+        GetTimelineError::from(ValidationException {
+            message,
+            field_list: None,
+        })
+    })?;
     let timeline = db
         .timeline(&query)
         .await

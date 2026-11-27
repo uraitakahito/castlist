@@ -12,26 +12,42 @@ use crate::{datetime, rows, stored_time};
 
 const OPERATION: &str = "GetGraph";
 
-pub async fn get_graph(db: Arc<Db>, input: GetGraphInput) -> Result<GetGraphOutput, GetGraphError> {
-    let as_of = db::now();
-    let time = |name: &str, t: Option<&aws_smithy_types::DateTime>| {
-        t.map(|t| stored_time(name, t))
-            .transpose()
-            .map_err(|message| {
-                GetGraphError::from(ValidationException {
-                    message,
-                    field_list: None,
-                })
-            })
-    };
-    let query = GraphQuery {
-        label: input.label.as_deref().map(|l| {
+/// 図の引数（ラベルと、登録を受けた時刻の窓）を、図の絞りにする（窓が無ければ全部）。扱えない時刻なら、その訳。
+/// GetGraph と GetTimeline が共に使う（同じ引数からは、同じ組）。
+pub fn query(
+    label: Option<&str>,
+    from: Option<&aws_smithy_types::DateTime>,
+    to: Option<&aws_smithy_types::DateTime>,
+) -> Result<GraphQuery, String> {
+    Ok(GraphQuery {
+        label: label.map(|l| {
             let r = Ref::parse(l);
             (r.kind, r.value)
         }),
-        from: time("from", input.from.as_ref())?.unwrap_or_default(),
-        to: time("to", input.to.as_ref())?.unwrap_or_else(|| "9999".to_owned()),
-    };
+        from: from
+            .map(|t| stored_time("from", t))
+            .transpose()?
+            .unwrap_or_default(),
+        to: to
+            .map(|t| stored_time("to", t))
+            .transpose()?
+            .unwrap_or_else(|| "9999".to_owned()),
+    })
+}
+
+pub async fn get_graph(db: Arc<Db>, input: GetGraphInput) -> Result<GetGraphOutput, GetGraphError> {
+    let as_of = db::now();
+    let query = query(
+        input.label.as_deref(),
+        input.from.as_ref(),
+        input.to.as_ref(),
+    )
+    .map_err(|message| {
+        GetGraphError::from(ValidationException {
+            message,
+            field_list: None,
+        })
+    })?;
     let graph = db
         .graph(&query)
         .await
