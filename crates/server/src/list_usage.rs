@@ -78,7 +78,7 @@ fn query(input: ListUsageInput) -> Result<UsageQuery, ListUsageError> {
         after: input
             .next_token
             .as_deref()
-            .map(|t| token::seq_after(t, TOKEN_KIND, "トークンの使用量の検索"))
+            .map(|t| token::seq_after(t, TOKEN_KIND, "使用量の検索"))
             .transpose()
             .map_err(invalid)?
             .unwrap_or(0),

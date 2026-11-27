@@ -6,10 +6,10 @@
 
 字だけの版（t-5dhg）。API・DB・動きは 2.1.0 と同じ。
 
-- 呼び方: データの名「トークンの数と費え」を「トークンの使用量」に替えた（Product Manager の答え。callboard の画面の名「費え」も「使用量」に替える）。定義（`model/`）のコメントと、作り直した `crates/castlist-sdk/`、本の api・db・development、README、コードのコメント、409 の誤りの文の字（`同じ id（…）のトークンの使用量が、違う中身で既にある`）。定義は wire の形が同じ（`ci/gen.sh --diff` が通る）。`common.smithy` は変えていない。
+- 呼び方: データの名「トークンの数と費え」を「トークンの使用量」に替えた（Product Manager の答え。callboard の画面の名「費え」も「使用量」に替える）。定義（`model/`）のコメントと、作り直した `crates/castlist-sdk/`、本の api・db・development、README、コードのコメント、外に出る誤りの文 2 つの字（PutUsage の 409「同じ id（…）のトークンの使用量が、違う中身で既にある」と、ListUsage に崩れた `nextToken` を渡した時の 400「nextToken が読めない（使用量の検索の nextToken ではない）」）。定義は wire の形が同じ（`ci/gen.sh --diff` が通る）。`common.smithy` は変えていない。
 - 出した移行の file（`0002_usage.sql`）のコメントは、替えない決まりなので前の字のまま。
 - DB の移行の SQL は足していない（2.1.0 の volume でそのまま起き、2.1.0 の image へそのまま戻せる）。
-- `ci/check-wording.sh` が「費え」も止める（README・本。前の節の記録が残る CHANGELOG.md は見ない）。
+- `ci/check-wording.sh` が「費え」も止める（README・本・定義（`model/model`）。前の節の記録が残る CHANGELOG.md は見ない）。
 
 ## 2.1.0
 
