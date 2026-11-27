@@ -111,6 +111,25 @@ fn 画面は無く_前の画面の道は_404() {
 }
 
 #[test]
+fn head_の_content_length_は_get_と同じ() {
+    // HEAD で大きさを見る client のため（pagetray の review-17）。時刻の入らない答え（無い道の 404。本文は空でない JSON か、空）で、
+    // 本物の接続の頭を比べる。本文は、HEAD では返さない。
+    let server = Server::start();
+    let get = server.get("/no/such");
+    let head =
+        server.send_text("HEAD /no/such HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n");
+    assert_eq!(get.status, 404, "{get:?}");
+    assert_eq!(head.status, 404, "{head:?}");
+    assert!(head.body.is_empty(), "{head:?}");
+    assert!(get.header("content-length").is_some(), "{get:?}");
+    assert_eq!(head.header("content-length"), get.header("content-length"));
+    assert_eq!(
+        get.header("content-length"),
+        Some(get.body.len().to_string())
+    );
+}
+
+#[test]
 fn backup_は_sqlite_の_file_を返す() {
     let server = Server::start();
     let answer = server.json("POST", "/api/actors", &ai("se", "s-1"));

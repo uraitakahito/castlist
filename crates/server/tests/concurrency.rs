@@ -255,7 +255,7 @@ async fn reads_answer_within_100_ms_while_the_write_lock_is_held_for_2_seconds()
 /// タイムラインの元の値（GetTimeline）の重い読みは、DB の重い読みの接続だけを使う（並べる計算は、画面を持つ callboard がする）。
 /// 500 のアクター（登場と model の替わり目つき）のタイムラインの元の値を並べて引かせている間も、引き当て（ResolveActors）は 100 ms で答える。
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn resolving_answers_in_100_ms_while_timelines_of_500_actors_are_built() {
+async fn resolving_answers_in_100_ms_while_timelines_of_500_actors_are_read() {
     let app = App::start().await;
     app.register(&human("pm")).await;
     for i in 0..500 {

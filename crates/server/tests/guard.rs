@@ -1,4 +1,4 @@
-//! 守りの層の振る舞い。生成した道の前でも、手の道（画面・backup・logs）の前でも効く。
+//! 守りの層の振る舞い。生成した道の前でも、手の道（backup・logs）の前でも効く。
 //! - 断る答えは、生成した層の誤りと同じ restJson1 の形（header `X-Amzn-Errortype` と、本文の JSON の `message`）。
 //!   種類は定義（ai.common）の `Forbidden`（403）・`PayloadTooLarge`（413）・`Unavailable`（503）。
 //! - Host と Origin（0.4.x の server と同じ）・HEAD（GET と同じに答え、本文を捨てる）・本文の上限・時間切れ。
@@ -112,27 +112,17 @@ async fn head_is_answered_like_get_without_the_body() {
     let answer = app.register(&ai("se", "s-1")).await;
     let id = answer["actor"]["id"].as_str().unwrap().to_owned();
     // 生成した道（GET の操作）は、GET と同じ状態と header で、本文なし（画面の道は、2.0.0 で外した）。
-    // 組の 3 つ目は、本文に今の時刻（/healthz の now・GetActor の asOf）が入るか。時刻の字は秒の下の終わりの 0 を落とすので、
-    // 問うたびに長さが替わりうる。その道では Content-Length が有ることだけを見る。
-    for (path, content_type, timed) in [
-        ("/healthz".to_owned(), "application/json", true),
-        (format!("/api/actors/{id}"), "application/json", true),
+    // 本文に今の時刻（/healthz の now・GetActor の asOf）が入り、時刻の字は秒の下の終わりの 0 を落とすので、問うたびに長さが替わりうる。
+    // ここでは Content-Length が有ることだけを見る。長さが GET と同じことは、時刻の無い答え（無い道の 404）で、
+    // 本物の接続の試験（tests/server.rs）が見る。
+    for (path, content_type) in [
+        ("/healthz".to_owned(), "application/json"),
+        (format!("/api/actors/{id}"), "application/json"),
     ] {
         let (status, headers, body) = app.send(with_host("HEAD", &path, "127.0.0.1:8802")).await;
         assert_eq!(status, StatusCode::OK, "{path}: {body}");
         assert!(body.is_empty(), "{path}: {body}");
-        // HEAD で大きさを見る client のため、Content-Length も GET と同じ（pagetray の review-17）。
-        let (_, get_headers, _) = app.send(with_host("GET", &path, "127.0.0.1:8802")).await;
-        if timed {
-            assert!(headers.get(header::CONTENT_LENGTH).is_some(), "{path}");
-            assert!(get_headers.get(header::CONTENT_LENGTH).is_some(), "{path}");
-        } else {
-            assert_eq!(
-                headers.get(header::CONTENT_LENGTH),
-                get_headers.get(header::CONTENT_LENGTH),
-                "{path}"
-            );
-        }
+        assert!(headers.get(header::CONTENT_LENGTH).is_some(), "{path}");
         assert_eq!(
             headers.get(header::CONTENT_TYPE).unwrap(),
             content_type,
