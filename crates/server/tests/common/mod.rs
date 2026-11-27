@@ -227,9 +227,10 @@ impl App {
         sqlx::query(
             "insert into usage(id, actor_id, model_id, speed, service_tier, from_at, to_at, turns,
                                input_tokens, output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
+                               web_search_requests, web_fetch_requests,
                                cost_micro_usd, max_context, buckets, sent_at, received_at, clock_skew, body_hash)
              values(?1, ?2, (select id from models where name = 'claude-opus-5-5'), 'standard', 'standard', ?3, ?3, 1,
-                    0, 0, 0, 0, 0, 0, 0, '[{\"bucket\":0,\"costMicroUsd\":0,\"turns\":1}]', ?4, ?4, 0, 'x')",
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, '[{\"bucket\":0,\"costMicroUsd\":0,\"turns\":1}]', ?4, ?4, 0, 'x')",
         )
         .bind(id)
         .bind(actor)

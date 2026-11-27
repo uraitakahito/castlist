@@ -31,6 +31,8 @@ fn usage(by: &str, from_at: &str, to_at: &str) -> Value {
         "cacheReadTokens": 90000,
         "cacheWrite5mTokens": 0,
         "cacheWrite1hTokens": 4000,
+        "webSearchRequests": 2,
+        "webFetchRequests": 5,
         "costMicroUsd": 250_000,
         "maxContext": 61000,
         "buckets": [
@@ -117,6 +119,8 @@ async fn a_new_usage_is_201_and_the_stored_row_reads_back() {
     assert_eq!(answer["cacheReadTokens"], 90000);
     assert_eq!(answer["cacheWrite5mTokens"], 0);
     assert_eq!(answer["cacheWrite1hTokens"], 4000);
+    assert_eq!(answer["webSearchRequests"], 2);
+    assert_eq!(answer["webFetchRequests"], 5);
     assert_eq!(answer["costMicroUsd"], 250_000);
     assert_eq!(answer["maxContext"], 61000);
     assert_eq!(
@@ -152,6 +156,8 @@ async fn the_agent_of_a_subagent_turn_is_kept_and_big_numbers_survive() {
     // 32 bit に収まらない数（Long）。段は両端（0 と 40）。
     body["cacheReadTokens"] = json!(9_000_000_000_i64);
     body["costMicroUsd"] = json!(5_000_000_000_i64);
+    body["webSearchRequests"] = json!(0);
+    body["webFetchRequests"] = json!(6_000_000_000_i64);
     body["maxContext"] = json!(1_000_000);
     body["buckets"] = json!([
         { "bucket": 0, "turns": 2, "costMicroUsd": 1 },
@@ -163,6 +169,8 @@ async fn the_agent_of_a_subagent_turn_is_kept_and_big_numbers_survive() {
     assert_eq!(answer["serviceTier"], "priority");
     assert_eq!(answer["cacheReadTokens"], 9_000_000_000_i64);
     assert_eq!(answer["costMicroUsd"], 5_000_000_000_i64);
+    assert_eq!(answer["webSearchRequests"], 0);
+    assert_eq!(answer["webFetchRequests"], 6_000_000_000_i64);
     assert_eq!(answer["buckets"], body["buckets"]);
     let listed = ok(&app, &format!("/api/usage?{DAY}")).await;
     assert_eq!(listed["usage"], json!([answer]), "{listed}");
@@ -214,6 +222,8 @@ async fn the_same_id_with_a_different_body_is_409_and_the_old_row_stays() {
         ("cacheReadTokens", json!(90001)),
         ("cacheWrite5mTokens", json!(1)),
         ("cacheWrite1hTokens", json!(4001)),
+        ("webSearchRequests", json!(3)),
+        ("webFetchRequests", json!(6)),
         ("maxContext", json!(61001)),
         (
             "buckets",
@@ -364,6 +374,8 @@ async fn bodies_that_break_the_rules_of_a_row_are_400() {
         "cacheReadTokens",
         "cacheWrite5mTokens",
         "cacheWrite1hTokens",
+        "webSearchRequests",
+        "webFetchRequests",
         "costMicroUsd",
         "maxContext",
     ] {
@@ -416,7 +428,16 @@ async fn bodies_that_break_the_rules_of_a_row_are_400() {
     .await;
     assert!(message.contains("costMicroUsd"), "{message}");
     // 要る欄が無い・形の違う名。
-    for field in ["model", "speed", "serviceTier", "fromAt", "toAt", "buckets"] {
+    for field in [
+        "model",
+        "speed",
+        "serviceTier",
+        "fromAt",
+        "toAt",
+        "buckets",
+        "webSearchRequests",
+        "webFetchRequests",
+    ] {
         let mut body = usage(SE1, T1, T2);
         body.as_object_mut().unwrap().remove(field);
         invalid(&app, &format!("v-missing-{field}"), &body).await;
@@ -771,7 +792,7 @@ async fn the_list_uses_the_light_read_connections() {
 // --- DB の決まり（足すだけ・外のキー・trigger の一覧は tests/db.rs、移行の file は tests/migrations.rs） ---
 
 /// usage の表の列（seq のほか）。
-const COLUMNS: [&str; 21] = [
+const COLUMNS: [&str; 23] = [
     "id",
     "actor_id",
     "model_id",
@@ -786,6 +807,8 @@ const COLUMNS: [&str; 21] = [
     "cache_read_tokens",
     "cache_write_5m_tokens",
     "cache_write_1h_tokens",
+    "web_search_requests",
+    "web_fetch_requests",
     "cost_micro_usd",
     "max_context",
     "buckets",
@@ -831,6 +854,8 @@ async fn the_table_refuses_negative_numbers_and_buckets_that_are_not_a_json_arra
         ("cache_read_tokens", "-1"),
         ("cache_write_5m_tokens", "-1"),
         ("cache_write_1h_tokens", "-1"),
+        ("web_search_requests", "-1"),
+        ("web_fetch_requests", "-1"),
         ("cost_micro_usd", "-1"),
         ("max_context", "-1"),
         ("buckets", "'{}'"),

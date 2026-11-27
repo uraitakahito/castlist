@@ -208,11 +208,11 @@ async fn every_foreign_key_refuses_a_missing_parent() {
         ),
         (
             "usage.actor_id",
-            "insert into usage(id, actor_id, model_id, speed, service_tier, from_at, to_at, turns, input_tokens, output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens, cost_micro_usd, max_context, buckets, sent_at, received_at, clock_skew, body_hash) values('fk-4', 'missing', (select min(id) from models), 's', 's', ?2, ?2, 1, 0, 0, 0, 0, 0, 0, 0, '[]', ?2, ?2, 0, 'x')",
+            "insert into usage(id, actor_id, model_id, speed, service_tier, from_at, to_at, turns, input_tokens, output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens, web_search_requests, web_fetch_requests, cost_micro_usd, max_context, buckets, sent_at, received_at, clock_skew, body_hash) values('fk-4', 'missing', (select min(id) from models), 's', 's', ?2, ?2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, '[]', ?2, ?2, 0, 'x')",
         ),
         (
             "usage.model_id",
-            "insert into usage(id, actor_id, model_id, speed, service_tier, from_at, to_at, turns, input_tokens, output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens, cost_micro_usd, max_context, buckets, sent_at, received_at, clock_skew, body_hash) values('fk-5', ?1, 999999, 's', 's', ?2, ?2, 1, 0, 0, 0, 0, 0, 0, 0, '[]', ?2, ?2, 0, 'x')",
+            "insert into usage(id, actor_id, model_id, speed, service_tier, from_at, to_at, turns, input_tokens, output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens, web_search_requests, web_fetch_requests, cost_micro_usd, max_context, buckets, sent_at, received_at, clock_skew, body_hash) values('fk-5', ?1, 999999, 's', 's', ?2, ?2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, '[]', ?2, ?2, 0, 'x')",
         ),
     ];
     for (column, sql) in cases {
