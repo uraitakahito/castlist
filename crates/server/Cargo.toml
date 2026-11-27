@@ -1,5 +1,5 @@
 # castlist の server。定義（model/）から作った骨（crates/castlist-sdk/）に処理を入れ、
-# 手の道（画面・backup・logs）と 1 つの axum の Router に並べる。
+# 手の道（backup・logs）と 1 つの axum の Router に並べる。
 [package]
 name = "castlist"
 version.workspace = true
@@ -15,10 +15,7 @@ path = "src/main.rs"
 
 [dependencies]
 castlist_sdk = { path = "../castlist-sdk" }
-# 画面の HTML（repo の templates/。askama.toml）。
-askama = "0.16.1"
-# query は、画面の URL の引数を名と値の並びで読むため。
-axum = { version = "0.8.9", default-features = false, features = ["http1", "query", "tokio"] }
+axum = { version = "0.8.9", default-features = false, features = ["http1", "tokio"] }
 aws-smithy-types = "1.9.4"
 bytes = "1"
 http-body = "1"
@@ -30,8 +27,7 @@ sha2 = { version = "0.11.1", default-features = false }
 # SQL は動く時に組む形（query・query_as）だけを使う。macros は、移行の SQL を埋め込む migrate!() のため。
 sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
 time = { version = "0.3", features = ["formatting", "parsing"] }
-# タイムラインを組む重い計算を、tokio の糸の外（spawn_blocking）で走らせる。binary の起動・待ち受け・止める合図・時間切れ・
-# backup の file にも使う。
+# binary の起動・待ち受け・止める合図・時間切れ・backup の file と、記録を読む重い手（spawn_blocking）に使う。
 tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "net", "signal", "fs", "time"] }
 # backup の file を、読みながら送る。
 tokio-util = { version = "0.7", features = ["io"] }

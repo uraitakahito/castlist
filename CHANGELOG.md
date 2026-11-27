@@ -2,6 +2,18 @@
 
 版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/api/`。定義は `model/`）と DB の移行（`crates/server/migrations/`）が変わったかを書く。0.4.x までの節の API は `/v1/`、移行は repo の頭の `migrations/` の物（もう無い）。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
 
+## 2.0.0
+
+**画面を外した版（壊す変わり）。**アクターの一覧・プロフィール・タイムライン・相関図は、castlist の API を通して [callboard](https://github.com/uraitakahito/callboard)（0.2.0 から）が出す（AI-32）。API と DB は変えていない。
+
+- **前の画面の URL は、どれも 404 になる**（閉じる。callboard へは送らない。Product Manager の決め）: `GET /`（一覧）・`GET /actors/{id}`（プロフィール）・`GET /graph/timeline`・`GET /graph/network`・`GET /static/…`。同じ画面は、callboard の `http://127.0.0.1:8803/actors/`・`/actors/{id}`・`/graph/timeline`・`/graph/network` にある（プロフィールと図の path は同じで、番地だけが替わる。一覧は `/` から `/actors/` に替わる）。
+- **上げる前に**: callboard を 0.2.0 からにして、castlist の 4 つの画面が callboard で開くことを見る。castlist の画面の URL を指している所（roster の `castlist` の命令が出すプロフィールの URL・pagetray の `PAGETRAY_CASTLIST_LINK_URL`）を、callboard の番地に替える。
+- API: 操作と欄は 1.1.0 と同じ（定義は v1.1.0 から壊す形に変わっていない: `ci/gen.sh --diff`）。一覧の行の `url`（`/actors/{id}`）は、そのまま（callboard の画面の path。castlist の番地に付けても開かない）。定義は、この欄の注を直しただけで、wire の形は替わらない。
+- DB の移行の SQL は足していない（1.1.0 の volume でそのまま起きる。戻す時も、1.1.0 の image で同じ volume を開ける）。
+- 答えの頭の印: HTML の答えが無くなったので、Content-Security-Policy は付けない。`X-Content-Type-Options: nosniff` と `Referrer-Policy: no-referrer` は、今までどおり、どの答えにも付く。
+- 無くした物: 画面の code（`templates/`・`static/`・`crates/server/src/ui.rs`・`ui/params.rs`・並べる計算の `timeline.rs`）・画面の試験（`crates/server/tests/ui.rs`・`e2e/`）・取り込んだ cytoscape と、その突き合わせ（`ci/check-vendor.sh`）・画面の本（`docs/src/ui.md`。callboard の本の「画面」に移った）。image の binary から、template・CSS・script が消える。
+- CI: job `e2e` を無くした（ruleset で必須にしている時は、外す）。`ci/check-wording.sh` の、画面の字の決まりは callboard に移した。smoke は、前の画面の道が 404 なことを見る。
+
 ## 1.1.0
 
 画面を別の server（callboard）に移すために、API に足した版（AI-32）。足しただけで、前からある操作と欄は変えていない（定義は v1.0.0 から壊す形に変わっていない: `ci/gen.sh --diff`）。DB の移行の SQL は足していない（1.0.0 の volume でそのまま起きる。戻す時も、1.0.0 の image で同じ volume を開ける）。

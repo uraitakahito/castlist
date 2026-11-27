@@ -88,29 +88,44 @@ fn 上限を_1_byte_超える本文は_payload_too_large_で断る() {
 }
 
 #[test]
-fn 画面の応答に_csp_を付ける() {
+fn 画面は無く_前の画面の道は_404() {
+    // 2.0.0 で画面を外した（画面は callboard が出す）。本物の接続でも、前の道は 404 で、HTML も CSP も返さない。
     let server = Server::start();
-    let answer = server.get("/");
-    assert_eq!(answer.status, 200, "{answer:?}");
-    assert!(
-        answer
-            .header("content-type")
-            .unwrap_or_default()
-            .starts_with("text/html"),
-        "{answer:?}"
-    );
+    for path in ["/", "/graph/network", "/static/site.css"] {
+        let answer = server.get(path);
+        assert_eq!(answer.status, 404, "{path}: {answer:?}");
+        assert!(
+            !answer
+                .header("content-type")
+                .unwrap_or_default()
+                .starts_with("text/html"),
+            "{path}: {answer:?}"
+        );
+        assert_eq!(answer.header("content-security-policy"), None, "{path}");
+        assert_eq!(
+            answer.header("x-content-type-options").as_deref(),
+            Some("nosniff"),
+            "{path}"
+        );
+    }
+}
+
+#[test]
+fn head_の_content_length_は_get_と同じ() {
+    // HEAD で大きさを見る client のため（pagetray の review-17）。時刻の入らない答え（無い道の 404。本文は空でない JSON か、空）で、
+    // 本物の接続の頭を比べる。本文は、HEAD では返さない。
+    let server = Server::start();
+    let get = server.get("/no/such");
+    let head =
+        server.send_text("HEAD /no/such HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n");
+    assert_eq!(get.status, 404, "{get:?}");
+    assert_eq!(head.status, 404, "{head:?}");
+    assert!(head.body.is_empty(), "{head:?}");
+    assert!(get.header("content-length").is_some(), "{get:?}");
+    assert_eq!(head.header("content-length"), get.header("content-length"));
     assert_eq!(
-        answer.header("content-security-policy").as_deref(),
-        Some(castlist::CSP),
-        "{answer:?}"
-    );
-    assert_eq!(
-        answer.header("x-content-type-options").as_deref(),
-        Some("nosniff")
-    );
-    assert!(
-        !answer.text().contains("<script>"),
-        "inline の script を出さない"
+        get.header("content-length"),
+        Some(get.body.len().to_string())
     );
 }
 

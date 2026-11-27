@@ -1,7 +1,8 @@
 //! 新しい castlist の server（AI-36）。
 //!
 //! 定義（model/）から作った骨（crates/castlist-sdk/）に処理（handler）を入れ、守りの層（[`guard`]）を前に掛ける。
-//! 手の道（Smithy の定義の外）の画面（[`ui`]）と backup・logs（[`hand`]）は、同じ Router に並べる。
+//! 手の道（Smithy の定義の外）の backup・logs（[`hand`]）は、同じ Router に並べる。画面は持たない（2.0.0 で外した。
+//! 画面は、API を通して callboard が出す）。
 //! 起こす binary（src/main.rs）は、 0.4.x の server と同じく記録の file（[`runlog`]）を DB の隣の `logs/` に残す。
 mod actor;
 mod actor_settings;
@@ -26,9 +27,7 @@ mod rows;
 pub mod runlog;
 pub mod search;
 mod setting;
-mod timeline;
 mod token;
-mod ui;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -43,10 +42,6 @@ use tracing::Level;
 
 use crate::db::Db;
 use crate::generated::Generated;
-
-/// 画面の応答に付ける Content-Security-Policy。script と style は、castlist 自身が配る file だけを許す。
-/// form は castlist 自身へだけ送れる（一覧の絞りの form は GET で `/` に送る）。 0.4.x の server（v0.4.0 の tag の src/lib.rs）と同じ。
-pub const CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
 /// 1 つの問い合わせにかけてよい長さ。過ぎれば 503 `Unavailable` で返す（0.4.x の server と同じ）。
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
@@ -139,8 +134,7 @@ pub fn app_with(db: Arc<Db>, config: Config) -> Router {
         })
         .build()
         .expect("どの操作にも handler がある");
-    ui::routes(db.clone())
-        .merge(hand::routes(db, config.runlog))
+    hand::routes(db, config.runlog)
         .fallback_service(Generated::new(generated))
         .layer(middleware::from_fn(guard::limit))
         .layer(middleware::from_fn_with_state(

@@ -3,9 +3,5 @@
 *.db-shm
 *.db-wal
 /docs/book
-# 画面の browser の試験（e2e/）が作る物。
-/e2e/node_modules
-/e2e/test-results
-/e2e/playwright-report
 # 定義から作る時の作業の folder（ci/gen.sh）。
 /model/build

@@ -1,4 +1,4 @@
-//! 手の道（Smithy の定義の外）のうち、画面のほかの物。 0.4.x の server の `GET /v1/backup`・`GET /v1/logs` と同じ振る舞い。
+//! 手の道（Smithy の定義の外。backup・logs）。 0.4.x の server の `GET /v1/backup`・`GET /v1/logs` と同じ振る舞い。
 //! - `GET /api/backup`: 動かしたまま、DB の揃ったバックアップを 1 つの SQLite の file で返す
 //!   （`curl -fsS -o castlist-backup.db http://127.0.0.1:8802/api/backup`）。
 //! - `GET /api/logs`: 残した記録（終わり方の印と、時刻つきの行）を、古い順の字で返す。記録の置き場がある時だけ。

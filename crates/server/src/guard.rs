@@ -1,4 +1,4 @@
-//! 守りの層。生成した道と手の道（画面・backup・logs）の前に、外から順に掛ける（[`crate::app_with`]）:
+//! 守りの層。生成した道と手の道（backup・logs）の前に、外から順に掛ける（[`crate::app_with`]）:
 //!
 //! 1. [`stamp`]: どの答えにも型の推し量りを止める header などを付ける（断った答えにも付く）。
 //! 2. 問い合わせごとの記録の 1 行（tower-http の TraceLayer。断った物も残る）。
@@ -17,8 +17,8 @@ use axum::middleware::Next;
 use axum::response::Response;
 use http_body_util::{BodyExt, LengthLimitError, Limited};
 
+use crate::BODY_LIMIT;
 use crate::errors::reply;
-use crate::{BODY_LIMIT, CSP};
 
 /// host（castlist を動かす機械）の中からの要求だけを受ける（0.4.x の server の guard と同じ）。
 /// - `Host` が 127.0.0.1・localhost でなければ断る（外の site が名前を付け替えて届ける要求を防ぐ）。
@@ -121,8 +121,8 @@ pub async fn limit(request: Request, next: Next) -> Response {
     }
 }
 
-/// どの答えにも、型の推し量りを止める header と、referrer を送らせない header を付け、画面（HTML）の答えには CSP を付ける
-/// （0.4.x の server（v0.4.0 の tag）の src/lib.rs の stamp と同じ）。
+/// どの答えにも、型の推し量りを止める header と、referrer を送らせない header を付ける。
+/// 画面（HTML）の答えは無いので、CSP は付けない（2.0.0 で画面を外した）。
 pub async fn stamp(request: Request, next: Next) -> Response {
     let mut response = next.run(request).await;
     let headers = response.headers_mut();
@@ -134,16 +134,6 @@ pub async fn stamp(request: Request, next: Next) -> Response {
         header::REFERRER_POLICY,
         HeaderValue::from_static("no-referrer"),
     );
-    let html = headers
-        .get(header::CONTENT_TYPE)
-        .and_then(|v| v.to_str().ok())
-        .is_some_and(|v| v.starts_with("text/html"));
-    if html {
-        headers.insert(
-            header::CONTENT_SECURITY_POLICY,
-            HeaderValue::from_static(CSP),
-        );
-    }
     response
 }
 

@@ -20,7 +20,7 @@ pub const MAX_DEPTH: u32 = 20;
 
 /// 一覧の 1 行（アクター）。初めの登場・最後の退場・稼働中か・最新の model と effort は、
 /// アクター 1 つごとの「order by seq limit 1」で引く（events(actor_id, type, seq)・settings(actor_id, seq)）。
-/// 稼働を替える出来事の最新（presence）と、時刻ずれの行を持つか（skewed）も、アクター 1 つごとに引く（画面の印と、答えの行の `presence`・`skewed`）。
+/// 稼働を替える出来事の最新（presence）と、時刻ずれの行を持つか（skewed）も、アクター 1 つごとに引く（答えの行の `presence`・`skewed`）。
 const ACTOR_ITEM: &str = concat!(
     "select a.seq, a.id, a.name, a.kind, a.issuer, a.sent_at, a.received_at, a.clock_skew,
        (select e.received_at from events e
@@ -159,9 +159,9 @@ pub struct ActorItem {
     pub present: bool,
     /// 今の停止が推しの幕引き（`closed` で `detail.inferred` が JSON の true）か。
     pub inferred: bool,
-    /// 稼働を替える出来事（6 種）の最新の種類（画面に出す。API の答えには出さない）。
+    /// 稼働を替える出来事（6 種）の最新の種類（答えの行の `presence`）。
     pub presence: Option<String>,
-    /// アクター・出来事・model と effort のどれかに、時刻ずれの行がある（画面の印。API の答えには出さない）。
+    /// アクター・出来事・model と effort のどれかに、時刻ずれの行がある（答えの行の `skewed`）。
     pub skewed: bool,
     pub model: Option<String>,
     pub effort: Option<String>,
