@@ -214,6 +214,33 @@ impl App {
         .unwrap_or_else(|e| panic!("設定 {id}: {e}"));
     }
 
+    /// トークンの数と費えの行を 1 つ、アクターの id で書く接続に直に置く（区間の終わりの時刻と受けた時刻を決めて置く試験のため）。
+    /// 区間の始めは終わりと同じ、回の数は 1、ほかの数は 0。model は claude-opus-5-5（無ければ一覧に足す）。
+    pub async fn usage_at(&self, id: &str, actor: &str, to_at: &str, received: &str) {
+        sqlx::query(
+            "insert into models(name, first_seen_at) values('claude-opus-5-5', ?1) on conflict(name) do nothing",
+        )
+        .bind(received)
+        .execute(self.db.write())
+        .await
+        .unwrap_or_else(|e| panic!("models: {e}"));
+        sqlx::query(
+            "insert into usage(id, actor_id, model_id, speed, service_tier, from_at, to_at, turns,
+                               input_tokens, output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
+                               web_search_requests, web_fetch_requests,
+                               cost_micro_usd, max_context, buckets, sent_at, received_at, clock_skew, body_hash)
+             values(?1, ?2, (select id from models where name = 'claude-opus-5-5'), 'standard', 'standard', ?3, ?3, 1,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, '[{\"bucket\":0,\"costMicroUsd\":0,\"turns\":1}]', ?4, ?4, 0, 'x')",
+        )
+        .bind(id)
+        .bind(actor)
+        .bind(to_at)
+        .bind(received)
+        .execute(self.db.write())
+        .await
+        .unwrap_or_else(|e| panic!("トークンの数と費え {id}: {e}"));
+    }
+
     /// 書く接続で SQL を 1 つ流す（試験の見本を直に置く）。
     pub async fn execute(&self, sql: &str) {
         sqlx::query(sqlx::AssertSqlSafe(sql.to_owned()))

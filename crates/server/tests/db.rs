@@ -7,7 +7,7 @@ use serde_json::json;
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::{ConnectOptions, Connection};
 
-/// どの表にも 1 行以上ある DB を作る（線と出来事の道はまだ無いので、その 2 つは直に置く）。
+/// どの表にも 1 行以上ある DB を作る（線と出来事とトークンの数と費えは、直に置く）。
 async fn filled() -> (App, String) {
     let app = App::start().await;
     let mut body = ai("se", "s-1");
@@ -27,6 +27,8 @@ async fn filled() -> (App, String) {
          values('e-1', '{id}', 'entered', '{now}', '{now}', 0, 'x')"
     ))
     .await;
+    app.usage_at("u-1", &id, "2026-11-24T10:00:00.000Z", &castlist::db::now())
+        .await;
     (app, id)
 }
 
@@ -38,6 +40,7 @@ const TABLES: &[(&str, &str, &str)] = &[
     ("links", "seq", "sent_at"),
     ("events", "seq", "sent_at"),
     ("settings", "seq", "sent_at"),
+    ("usage", "seq", "sent_at"),
     ("models", "id", "name"),
     ("efforts", "id", "name"),
 ];
@@ -63,13 +66,14 @@ async fn the_migration_makes_the_tables_and_views_of_the_ledger() {
             "table links",
             "table models",
             "table settings",
+            "table usage",
             "view actor_current_bindings",
             "view actor_current_settings",
             "view actor_state",
         ]
     );
     // 送り手の時刻の列は sent_at（0.4.x の server の 0003 の後の形）。at の列はどこにも無い。
-    for table in ["actors", "bindings", "links", "events", "settings"] {
+    for table in ["actors", "bindings", "links", "events", "settings", "usage"] {
         let columns: Vec<String> = app
             .column(&format!("select name from pragma_table_info('{table}')"))
             .await;
@@ -202,6 +206,14 @@ async fn every_foreign_key_refuses_a_missing_parent() {
             "settings.effort_id",
             "insert into settings(actor_id, model_id, effort_id, source, sent_at, received_at, clock_skew) values(?1, (select min(id) from models), 999999, 'observed', ?2, ?2, 0)",
         ),
+        (
+            "usage.actor_id",
+            "insert into usage(id, actor_id, model_id, speed, service_tier, from_at, to_at, turns, input_tokens, output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens, web_search_requests, web_fetch_requests, cost_micro_usd, max_context, buckets, sent_at, received_at, clock_skew, body_hash) values('fk-4', 'missing', (select min(id) from models), 's', 's', ?2, ?2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, '[]', ?2, ?2, 0, 'x')",
+        ),
+        (
+            "usage.model_id",
+            "insert into usage(id, actor_id, model_id, speed, service_tier, from_at, to_at, turns, input_tokens, output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens, web_search_requests, web_fetch_requests, cost_micro_usd, max_context, buckets, sent_at, received_at, clock_skew, body_hash) values('fk-5', ?1, 999999, 's', 's', ?2, ?2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, '[]', ?2, ?2, 0, 'x')",
+        ),
     ];
     for (column, sql) in cases {
         let refused = sqlx::query(sql)
@@ -264,7 +276,8 @@ async fn opening_again_keeps_the_rows_and_does_not_migrate_twice() {
         .fetch_one(db.read())
         .await
         .unwrap();
-    assert_eq!((actors, migrations), (1, 1));
+    // 移行は 0001_init.sql と 0002_usage.sql の 2 つ。
+    assert_eq!((actors, migrations), (1, 2));
     db.close().await;
     remove_db(&path);
 }
@@ -289,6 +302,8 @@ async fn lookups_use_an_index_and_do_not_scan_a_big_table() {
         "link",
         "setting",
         "latest_setting",
+        "usage",
+        "usage_hash",
     ] {
         assert!(names.contains(&want), "{want} が LOOKUPS に無い: {names:?}");
     }

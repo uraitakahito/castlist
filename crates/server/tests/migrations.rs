@@ -17,7 +17,7 @@ const RELEASED: [(&str, &str); 1] = [(
     "fa5a6f7ad5dbaf3669571346cf70d3b6ca5bb8167709f56c8c6cacc9227457a8",
 )];
 /// 足したが、まだ出していない移行の file。出したら [`RELEASED`] に移す。
-const UNRELEASED: [&str; 0] = [];
+const UNRELEASED: [&str; 1] = ["0002_usage.sql"];
 
 fn migrations_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("migrations")
@@ -120,6 +120,12 @@ async fn released_migrations_stay_byte_for_byte() {
     for (file, want) in RELEASED {
         assert_eq!(sha256(&migrations_dir().join(file)).await, want, "{file}");
     }
+    for file in UNRELEASED {
+        assert!(
+            migrations_dir().join(file).is_file(),
+            "{file}: UNRELEASED に名指した file が migrations/ に無い"
+        );
+    }
     let mut files: Vec<String> = std::fs::read_dir(migrations_dir())
         .unwrap()
         .flatten()
@@ -135,22 +141,22 @@ async fn released_migrations_stay_byte_for_byte() {
 }
 
 /// 後の版（移行を足した版）が書いた DB は、書いた版で起こすよう言って断り、この server の移行を 1 つも当てない
-/// （版 1 を当てていない DB に、後の版 2 だけがある形。当てれば、0001_init.sql の表ができる）。
+/// （この server の版 1・2 を当てていない DB に、後の版 3 だけがある形。当てれば、0001_init.sql の表ができる）。
 #[tokio::test]
 async fn a_database_from_a_later_version_is_refused_without_migrating() {
-    let path = ledger_db("later", &[(2, "later", "00".repeat(48))]).await;
+    let path = ledger_db("later", &[(3, "later", "00".repeat(48))]).await;
     let e = match Db::open(&path).await {
         Ok(_) => panic!("後の版の DB を開いた"),
         Err(e) => e,
     };
     assert_eq!(
         e.to_string(),
-        "この server より新しい版の DB（この server の migrations に無い移行 2 を当ててある）。\
+        "この server より新しい版の DB（この server の migrations に無い移行 3 を当ててある）。\
          開かずに止める。書いた版の image で起こす"
     );
     assert_eq!(
         tables_and_versions(&path).await,
-        (vec!["_sqlx_migrations".to_owned()], vec![2])
+        (vec!["_sqlx_migrations".to_owned()], vec![3])
     );
     common::remove_db(&path);
 }

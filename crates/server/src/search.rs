@@ -1,4 +1,5 @@
-//! 監査の検索（ListActors・GetLineage・ListActorSettings・GetActorSettingAt・ListSettings・ListEvents）の DB の所。
+//! 監査の検索（ListActors・GetLineage・ListActorSettings・GetActorSettingAt・ListSettings・ListEvents）と、
+//! トークンの数と費えを読む口（ListUsage）の DB の所。
 //! 読む接続の 1 つの transaction の中で、揃った写しを読む。
 //!
 //! - 時刻の条件は、どれも castlist が受けた時刻（`received_at`）で比べる。問いの時刻は DB に残す字（[`crate::db::stamp`]）に直して渡す。
@@ -11,7 +12,7 @@ use std::collections::{BTreeMap, HashSet};
 use serde_json::Value;
 use sqlx::{FromRow, QueryBuilder, Sqlite, Transaction};
 
-use crate::db::{Db, Event, Link, Ref, Setting, inferred_sql};
+use crate::db::{Db, Event, Link, Ref, Setting, Usage, inferred_sql, usage_sql};
 
 /// 1 頁の既定。
 pub const LIMIT: i64 = 100;
@@ -89,6 +90,10 @@ const MISMATCH: &str = " and s.source = 'observed'
 const EVENT_ROW: &str = "select e.seq, e.id, e.actor_id, a.name as actor_name, e.type, e.detail,
             e.sent_at, e.received_at, e.clock_skew
      from events e join actors a on a.id = e.actor_id";
+
+/// 頁に出てきたアクターの id と名（JSON の配列の id で）。ラベルは [`ACTOR_LABELS`] で引く。
+const USAGE_ACTORS: &str =
+    "select id, name from actors where id in (select value from json_each(?1))";
 
 /// アクターの一覧の並べ方。
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -208,6 +213,34 @@ pub struct EventQuery {
     /// 前の頁の最後の seq（無ければ 0）。
     pub after: i64,
     pub limit: i64,
+}
+
+/// トークンの数と費えの行を探す条件（どれも AND）。時刻は DB に残す字。
+#[derive(Clone, Debug, Default)]
+pub struct UsageQuery {
+    /// 区間の終わりの時刻（to_at）の窓。始めは含み、終わりは含まない。
+    pub from: String,
+    pub to: String,
+    /// ラベル（鍵・値）。どれも持つアクターの行。
+    pub labels: Vec<(String, String)>,
+    pub actor: Option<String>,
+    /// 前の頁の最後の seq（無ければ 0）。
+    pub after: i64,
+    pub limit: i64,
+}
+
+/// トークンの数と費えの行に出てきたアクター。
+#[derive(Clone, Debug)]
+pub struct UsageActor {
+    pub id: String,
+    pub name: String,
+    pub labels: BTreeMap<String, String>,
+}
+
+/// トークンの数と費えの 1 頁と、その頁に出てきたアクター（行に初めて出た順に 1 度ずつ）。
+pub struct UsagePage {
+    pub page: Page<Usage>,
+    pub actors: Vec<UsageActor>,
 }
 
 /// 探した model と effort の 1 行（アクターの名と、受けた順も）。
@@ -427,6 +460,33 @@ impl EventQuery {
     }
 }
 
+impl UsageQuery {
+    /// 窓は区間の終わりの時刻（to_at）で、usage(to_at) の索引で引く（アクターを名指した時は usage(actor_id, seq)）。
+    /// ラベルの条件は、索引を選ばせない形（`+u.actor_id`）で書く: 広いラベル（project など）のアクターの行を初めから全部辿らせず、
+    /// 窓の中の行だけを読む（表は増え続けるが、窓は 31 日まで）。
+    fn builder(&self) -> QueryBuilder<Sqlite> {
+        let mut q = QueryBuilder::new(usage_sql!(" where u.to_at >= "));
+        q.push_bind(self.from.clone())
+            .push(" and u.to_at < ")
+            .push_bind(self.to.clone())
+            .push(" and u.seq > ")
+            .push_bind(self.after);
+        if let Some(actor) = &self.actor {
+            q.push(" and u.actor_id = ").push_bind(actor.clone());
+        }
+        for (k, v) in &self.labels {
+            q.push(" and +u.actor_id in (select l.actor_id from labels l where l.key = ")
+                .push_bind(k.clone())
+                .push(" and l.value = ")
+                .push_bind(v.clone())
+                .push(")");
+        }
+        // 次の頁があるかを見るため、1 つ多く読む。
+        q.push(" order by u.seq limit ").push_bind(self.limit + 1);
+        q
+    }
+}
+
 /// 検索の SQL（名と SQL）。試験が `explain query plan` で、大きな表を端から読まないかを見る。
 /// 条件を 1 つずつと、全部を重ねた物。値は bind するので、ここでは仮の値を入れる。
 pub fn plans() -> Vec<(&'static str, String)> {
@@ -451,6 +511,14 @@ pub fn plans() -> Vec<(&'static str, String)> {
         let mut q = EventQuery {
             limit: LIMIT,
             ..EventQuery::default()
+        };
+        f(&mut q);
+        q.builder().into_string()
+    };
+    let usage = |f: fn(&mut UsageQuery)| {
+        let mut q = UsageQuery {
+            limit: LIMIT,
+            ..UsageQuery::default()
         };
         f(&mut q);
         q.builder().into_string()
@@ -578,6 +646,26 @@ pub fn plans() -> Vec<(&'static str, String)> {
                 }
             }),
         ),
+        ("usage_window", usage(|_| ())),
+        ("usage_actor", usage(|q| q.actor = x())),
+        (
+            "usage_labels",
+            usage(|q| q.labels = vec![("k".into(), "v".into()); 2]),
+        ),
+        (
+            "usage_all",
+            usage(|q| {
+                *q = UsageQuery {
+                    from: "x".into(),
+                    to: "x".into(),
+                    labels: vec![("k".into(), "v".into()); 2],
+                    actor: x(),
+                    after: 1,
+                    limit: LIMIT,
+                }
+            }),
+        ),
+        ("usage_actors", USAGE_ACTORS.to_owned()),
     ]
 }
 
@@ -735,6 +823,50 @@ impl Db {
         let rows = q.builder().build_query_as().fetch_all(&mut *tx).await?;
         tx.commit().await?;
         Ok(page(rows, Some(q.limit)))
+    }
+
+    /// トークンの数と費えの行を、アクターをまたいで読む（受けた順）。その頁に出てきたアクター（id・名・ラベル）も、
+    /// 同じ読む transaction の中で引く。
+    pub async fn search_usage(&self, q: &UsageQuery) -> Result<UsagePage, sqlx::Error> {
+        let mut tx = self.read().begin().await?;
+        let rows: Vec<Usage> = q.builder().build_query_as().fetch_all(&mut *tx).await?;
+        let page = page(rows, Some(q.limit));
+        // 行に初めて出た順に、1 度ずつ。
+        let mut seen = HashSet::new();
+        let order: Vec<&str> = page
+            .rows
+            .iter()
+            .map(|u| u.actor_id.as_str())
+            .filter(|id| seen.insert(*id))
+            .collect();
+        let ids = Value::from(order.clone()).to_string();
+        let mut names: BTreeMap<String, String> = sqlx::query_as(USAGE_ACTORS)
+            .bind(&ids)
+            .fetch_all(&mut *tx)
+            .await?
+            .into_iter()
+            .collect();
+        let labels: Vec<(String, String, String)> = sqlx::query_as(ACTOR_LABELS)
+            .bind(&ids)
+            .fetch_all(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        let mut by_actor: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
+        for (actor, key, value) in labels {
+            by_actor.entry(actor).or_default().insert(key, value);
+        }
+        // 行はアクターを指す外のキーを持つので、名は必ず引ける。
+        let actors = order
+            .into_iter()
+            .filter_map(|id| {
+                Some(UsageActor {
+                    name: names.remove(id)?,
+                    labels: by_actor.remove(id).unwrap_or_default(),
+                    id: id.to_owned(),
+                })
+            })
+            .collect();
+        Ok(UsagePage { page, actors })
     }
 
     /// 出来事を、アクターをまたいで探す（受けた順）。

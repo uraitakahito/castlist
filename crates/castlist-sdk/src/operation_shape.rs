@@ -571,3 +571,79 @@ impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for Get
         ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
     }
 }
+
+/// アクターのトークンの数と費えを 1 行足す（2.1.0 から）。同じ id で同じ本文なら 200（足さない）、同じ id で本文が違えば 409（前の行はそのまま）。 同じ id かは、`by` を引くより先に見る。 - 1 行は、アクター 1 人の、時計の 1 時間（UTC の時）の内の、同じ種類（`model`・`agent`・`speed`・`serviceTier`）の回のまとめ。 同じアクター・同じ時・同じ種類の行は、2 つ以上在りうる（送り手が、増えた分を新しい id の行で送る）。 PutSetting の「最新と同じなら足さない」は無い（同じかは、id と本文だけで決める）。 - 読む側は、数（`turns`・トークンの数・web の検索と取得の回数・`costMicroUsd`・`buckets` の段ごとの数）を足し、`maxContext` は大きい方を取る。 - `fromAt`・`toAt` は区間の始めの回と終わりの回の時刻。`fromAt` は `toAt` より後でなく、2 つは同じ UTC の時（年月日と時が同じ）の内（違えば 400）。 ミリ秒まで残す（それより下は切る）。 - `buckets` は、文脈の長さの段ごとの数。同じ `bucket` は 1 度だけで、`turns` の和は行の `turns` と、`costMicroUsd` の和は行の `costMicroUsd` と合う（違えば 400）。並びは問わない（答えは `bucket` の順）。 - 知らない model の名は、初めて来た時に一覧に足す。
+pub struct PutUsage;
+
+impl ::aws_smithy_http_server::operation::OperationShape for PutUsage {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#PutUsage",
+            "ai.castlist",
+            "PutUsage",
+        );
+
+    type Input = crate::input::PutUsageInput;
+    type Output = crate::output::PutUsageOutput;
+    type Error = crate::error::PutUsageError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for PutUsage {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}
+
+/// トークンの数と費えの行を、アクターをまたいで読む（2.1.0 から）。条件はどれも AND。並びは受けた順。集計はしない（まとめるのは呼ぶ側）。 - `from`・`to` は、区間の終わりの時刻（`toAt`）の窓（`from &lt;= toAt &lt; to`。始めは含み、終わりは含まない）。どちらも要る。 `to - from` は 31 日まで（越えれば 400）。受けた時刻（`receivedAt`）とは比べない。 - `label` は `鍵:値`（ListActors の `label` と同じ）。重ねれば、どれも持つアクターの行。`actorId` は、そのアクターの行。 - `actors` は、この頁の行に出てきたアクターを 1 度ずつ（行に初めて出た順）。 - 同じアクター・同じ時・同じ種類の行は、2 つ以上在りうる。読む側は、数（`turns`・トークンの数・web の検索と取得の回数・`costMicroUsd`・`buckets` の段ごとの数）を足し、 `maxContext` は大きい方を取る。 - 頁は受けた順で後ろから続ける（辿る間に行が足されても、元の組に穴も重なりも出ない）。`nextToken` はこの検索の答えの物を渡す（違えば 400）。
+pub struct ListUsage;
+
+impl ::aws_smithy_http_server::operation::OperationShape for ListUsage {
+    const ID: ::aws_smithy_http_server::shape_id::ShapeId =
+        ::aws_smithy_http_server::shape_id::ShapeId::new(
+            "ai.castlist#ListUsage",
+            "ai.castlist",
+            "ListUsage",
+        );
+
+    type Input = crate::input::ListUsageInput;
+    type Output = crate::output::ListUsageOutput;
+    type Error = crate::error::ListUsageError;
+}
+
+impl ::aws_smithy_http_server::instrumentation::sensitivity::Sensitivity for ListUsage {
+    type RequestFmt = ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::sensitivity::uri::MakeUri<
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+            ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        >,
+    >;
+    type ResponseFmt = ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt<
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+        ::aws_smithy_http_server::instrumentation::MakeIdentity,
+    >;
+
+    fn request_fmt() -> Self::RequestFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::RequestFmt::new()
+    }
+
+    fn response_fmt() -> Self::ResponseFmt {
+        ::aws_smithy_http_server::instrumentation::sensitivity::ResponseFmt::new()
+    }
+}

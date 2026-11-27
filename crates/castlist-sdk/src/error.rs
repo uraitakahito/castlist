@@ -1498,6 +1498,210 @@ impl ::std::convert::From<crate::error::PayloadTooLarge> for crate::error::GetTi
     }
 }
 
+/// Error type for the `PutUsage` operation.
+/// Each variant represents an error that can occur for the `PutUsage` operation.
+#[derive(::std::fmt::Debug)]
+pub enum PutUsageError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 同じ id の物がもうあり、中身が違う。
+    Conflict(crate::error::Conflict),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。 時間切れは、どの操作の前でも効く（server の守りの層）。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+    /// 受けない要求。castlist を動かす機械の外からの名（`Host`）と、browser の中のページからの書く要求（`Origin` の付いた `GET`・`HEAD` のほか）を断る。どの操作の前でも効く（server の守りの層）。
+    Forbidden(crate::error::Forbidden),
+    /// 本文が上限より大きい。どの操作の前でも効く（server の守りの層。上限は server が決める）。
+    PayloadTooLarge(crate::error::PayloadTooLarge),
+}
+impl ::std::fmt::Display for PutUsageError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            PutUsageError::ValidationException(_inner) => _inner.fmt(f),
+            PutUsageError::Conflict(_inner) => _inner.fmt(f),
+            PutUsageError::Unavailable(_inner) => _inner.fmt(f),
+            PutUsageError::InternalError(_inner) => _inner.fmt(f),
+            PutUsageError::Forbidden(_inner) => _inner.fmt(f),
+            PutUsageError::PayloadTooLarge(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl PutUsageError {
+    /// Returns `true` if the error kind is `PutUsageError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, PutUsageError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `PutUsageError::Conflict`.
+    pub fn is_conflict(&self) -> bool {
+        matches!(&self, PutUsageError::Conflict(_))
+    }
+    /// Returns `true` if the error kind is `PutUsageError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, PutUsageError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `PutUsageError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, PutUsageError::InternalError(_))
+    }
+    /// Returns `true` if the error kind is `PutUsageError::Forbidden`.
+    pub fn is_forbidden(&self) -> bool {
+        matches!(&self, PutUsageError::Forbidden(_))
+    }
+    /// Returns `true` if the error kind is `PutUsageError::PayloadTooLarge`.
+    pub fn is_payload_too_large(&self) -> bool {
+        matches!(&self, PutUsageError::PayloadTooLarge(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            PutUsageError::ValidationException(_inner) => _inner.name(),
+            PutUsageError::Conflict(_inner) => _inner.name(),
+            PutUsageError::Unavailable(_inner) => _inner.name(),
+            PutUsageError::InternalError(_inner) => _inner.name(),
+            PutUsageError::Forbidden(_inner) => _inner.name(),
+            PutUsageError::PayloadTooLarge(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for PutUsageError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            PutUsageError::ValidationException(_inner) => Some(_inner),
+            PutUsageError::Conflict(_inner) => Some(_inner),
+            PutUsageError::Unavailable(_inner) => Some(_inner),
+            PutUsageError::InternalError(_inner) => Some(_inner),
+            PutUsageError::Forbidden(_inner) => Some(_inner),
+            PutUsageError::PayloadTooLarge(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::PutUsageError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::PutUsageError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Conflict> for crate::error::PutUsageError {
+    fn from(variant: crate::error::Conflict) -> crate::error::PutUsageError {
+        Self::Conflict(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::PutUsageError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::PutUsageError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::PutUsageError {
+    fn from(variant: crate::error::InternalError) -> crate::error::PutUsageError {
+        Self::InternalError(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Forbidden> for crate::error::PutUsageError {
+    fn from(variant: crate::error::Forbidden) -> crate::error::PutUsageError {
+        Self::Forbidden(variant)
+    }
+}
+impl ::std::convert::From<crate::error::PayloadTooLarge> for crate::error::PutUsageError {
+    fn from(variant: crate::error::PayloadTooLarge) -> crate::error::PutUsageError {
+        Self::PayloadTooLarge(variant)
+    }
+}
+
+/// Error type for the `ListUsage` operation.
+/// Each variant represents an error that can occur for the `ListUsage` operation.
+#[derive(::std::fmt::Debug)]
+pub enum ListUsageError {
+    /// A standard error for input validation failures. This should be thrown by services when a member of the input structure falls outside of the modeled or documented constraints.
+    ValidationException(crate::error::ValidationException),
+    /// 混んでいる・時間がかかりすぎた・呼ぶ先が答えない。少し待って送り直す。 時間切れは、どの操作の前でも効く（server の守りの層）。
+    Unavailable(crate::error::Unavailable),
+    /// server の中で失敗した（DB の誤りなど）。送り直しても直らない見込みなので、@retryable は付けない。 訳は server の記録に書き、答えの `message` は決まった字にする（中の誤りの字を外に出さない）。
+    InternalError(crate::error::InternalError),
+    /// 受けない要求。castlist を動かす機械の外からの名（`Host`）と、browser の中のページからの書く要求（`Origin` の付いた `GET`・`HEAD` のほか）を断る。どの操作の前でも効く（server の守りの層）。
+    Forbidden(crate::error::Forbidden),
+    /// 本文が上限より大きい。どの操作の前でも効く（server の守りの層。上限は server が決める）。
+    PayloadTooLarge(crate::error::PayloadTooLarge),
+}
+impl ::std::fmt::Display for ListUsageError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            ListUsageError::ValidationException(_inner) => _inner.fmt(f),
+            ListUsageError::Unavailable(_inner) => _inner.fmt(f),
+            ListUsageError::InternalError(_inner) => _inner.fmt(f),
+            ListUsageError::Forbidden(_inner) => _inner.fmt(f),
+            ListUsageError::PayloadTooLarge(_inner) => _inner.fmt(f),
+        }
+    }
+}
+impl ListUsageError {
+    /// Returns `true` if the error kind is `ListUsageError::ValidationException`.
+    pub fn is_validation_exception(&self) -> bool {
+        matches!(&self, ListUsageError::ValidationException(_))
+    }
+    /// Returns `true` if the error kind is `ListUsageError::Unavailable`.
+    pub fn is_unavailable(&self) -> bool {
+        matches!(&self, ListUsageError::Unavailable(_))
+    }
+    /// Returns `true` if the error kind is `ListUsageError::InternalError`.
+    pub fn is_internal_error(&self) -> bool {
+        matches!(&self, ListUsageError::InternalError(_))
+    }
+    /// Returns `true` if the error kind is `ListUsageError::Forbidden`.
+    pub fn is_forbidden(&self) -> bool {
+        matches!(&self, ListUsageError::Forbidden(_))
+    }
+    /// Returns `true` if the error kind is `ListUsageError::PayloadTooLarge`.
+    pub fn is_payload_too_large(&self) -> bool {
+        matches!(&self, ListUsageError::PayloadTooLarge(_))
+    }
+    /// Returns the error name string by matching the correct variant.
+    pub fn name(&self) -> &'static str {
+        match &self {
+            ListUsageError::ValidationException(_inner) => _inner.name(),
+            ListUsageError::Unavailable(_inner) => _inner.name(),
+            ListUsageError::InternalError(_inner) => _inner.name(),
+            ListUsageError::Forbidden(_inner) => _inner.name(),
+            ListUsageError::PayloadTooLarge(_inner) => _inner.name(),
+        }
+    }
+}
+impl ::std::error::Error for ListUsageError {
+    fn source(&self) -> std::option::Option<&(dyn ::std::error::Error + 'static)> {
+        match &self {
+            ListUsageError::ValidationException(_inner) => Some(_inner),
+            ListUsageError::Unavailable(_inner) => Some(_inner),
+            ListUsageError::InternalError(_inner) => Some(_inner),
+            ListUsageError::Forbidden(_inner) => Some(_inner),
+            ListUsageError::PayloadTooLarge(_inner) => Some(_inner),
+        }
+    }
+}
+impl ::std::convert::From<crate::error::ValidationException> for crate::error::ListUsageError {
+    fn from(variant: crate::error::ValidationException) -> crate::error::ListUsageError {
+        Self::ValidationException(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Unavailable> for crate::error::ListUsageError {
+    fn from(variant: crate::error::Unavailable) -> crate::error::ListUsageError {
+        Self::Unavailable(variant)
+    }
+}
+impl ::std::convert::From<crate::error::InternalError> for crate::error::ListUsageError {
+    fn from(variant: crate::error::InternalError) -> crate::error::ListUsageError {
+        Self::InternalError(variant)
+    }
+}
+impl ::std::convert::From<crate::error::Forbidden> for crate::error::ListUsageError {
+    fn from(variant: crate::error::Forbidden) -> crate::error::ListUsageError {
+        Self::Forbidden(variant)
+    }
+}
+impl ::std::convert::From<crate::error::PayloadTooLarge> for crate::error::ListUsageError {
+    fn from(variant: crate::error::PayloadTooLarge) -> crate::error::ListUsageError {
+        Self::PayloadTooLarge(variant)
+    }
+}
+
 /// 受けない要求。castlist を動かす機械の外からの名（`Host`）と、browser の中のページからの書く要求（`Origin` の付いた `GET`・`HEAD` のほか）を断る。どの操作の前でも効く（server の守りの層）。
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,

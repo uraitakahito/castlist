@@ -1360,7 +1360,7 @@ impl crate::constrained::Constrained for ActorRefs {
     type Unconstrained = crate::unconstrained::actor_refs_unconstrained::ActorRefsUnconstrained;
 }
 
-/// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+/// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
 ///
 /// This is a constrained type because its corresponding modeled Smithy shape has one or more
 /// [constraint traits]. Use [`SenderId::try_from`] to construct values of this type.
@@ -1858,6 +1858,192 @@ mod test_label_filter {
     }
 }
 
+/// 回の数（1 以上）。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`TurnCount::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct TurnCount(pub(crate) i64);
+#[allow(dead_code)]
+impl TurnCount {
+    /// Returns an immutable reference to the underlying [`i64`].
+    pub fn inner(&self) -> &i64 {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`i64`].
+    pub fn into_inner(self) -> i64 {
+        self.0
+    }
+}
+
+impl crate::constrained::Constrained for TurnCount {
+    type Unconstrained = i64;
+}
+
+impl ::std::convert::From<i64> for crate::constrained::MaybeConstrained<crate::model::TurnCount> {
+    fn from(value: i64) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for TurnCount {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<TurnCount> for i64 {
+    fn from(value: TurnCount) -> Self {
+        value.into_inner()
+    }
+}
+impl TurnCount {
+    fn check_range(
+        value: i64,
+    ) -> ::std::result::Result<(), crate::model::turn_count_internal::ConstraintViolation> {
+        if 1 <= value {
+            Ok(())
+        } else {
+            Err(crate::model::turn_count_internal::ConstraintViolation::Range(value))
+        }
+    }
+}
+impl ::std::convert::TryFrom<i64> for TurnCount {
+    type Error = crate::model::turn_count_internal::ConstraintViolation;
+
+    /// Constructs a `TurnCount` from an [`i64`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: i64) -> ::std::result::Result<Self, Self::Error> {
+        Self::check_range(value)?;
+
+        Ok(Self(value))
+    }
+}
+
+/// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`Amount::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct Amount(pub(crate) i64);
+#[allow(dead_code)]
+impl Amount {
+    /// Returns an immutable reference to the underlying [`i64`].
+    pub fn inner(&self) -> &i64 {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`i64`].
+    pub fn into_inner(self) -> i64 {
+        self.0
+    }
+}
+
+impl crate::constrained::Constrained for Amount {
+    type Unconstrained = i64;
+}
+
+impl ::std::convert::From<i64> for crate::constrained::MaybeConstrained<crate::model::Amount> {
+    fn from(value: i64) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for Amount {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<Amount> for i64 {
+    fn from(value: Amount) -> Self {
+        value.into_inner()
+    }
+}
+impl Amount {
+    fn check_range(
+        value: i64,
+    ) -> ::std::result::Result<(), crate::model::amount_internal::ConstraintViolation> {
+        if 0 <= value {
+            Ok(())
+        } else {
+            Err(crate::model::amount_internal::ConstraintViolation::Range(
+                value,
+            ))
+        }
+    }
+}
+impl ::std::convert::TryFrom<i64> for Amount {
+    type Error = crate::model::amount_internal::ConstraintViolation;
+
+    /// Constructs a `Amount` from an [`i64`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: i64) -> ::std::result::Result<Self, Self::Error> {
+        Self::check_range(value)?;
+
+        Ok(Self(value))
+    }
+}
+
+/// 段の並び（同じ段は 1 度だけ。段は 41 個）。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`UsageBuckets::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct UsageBuckets(pub(crate) ::std::vec::Vec<crate::model::UsageBucket>);
+impl UsageBuckets {
+    /// Consumes the value, returning the underlying [`::std::vec::Vec<crate::model::UsageBucket>`].
+    pub fn into_inner(self) -> ::std::vec::Vec<crate::model::UsageBucket> {
+        self.0
+    }
+
+    fn check_length(
+        length: usize,
+    ) -> ::std::result::Result<(), crate::model::usage_buckets_internal::ConstraintViolation> {
+        if (1..=41).contains(&length) {
+            Ok(())
+        } else {
+            Err(crate::model::usage_buckets_internal::ConstraintViolation::Length(length))
+        }
+    }
+}
+impl ::std::convert::TryFrom<::std::vec::Vec<crate::model::UsageBucket>> for UsageBuckets {
+    type Error = crate::model::usage_buckets_internal::ConstraintViolation;
+
+    /// Constructs a `UsageBuckets` from an [`::std::vec::Vec<crate::model::UsageBucket>`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(
+        value: ::std::vec::Vec<crate::model::UsageBucket>,
+    ) -> ::std::result::Result<Self, Self::Error> {
+        Self::check_length(value.len())?;
+
+        Ok(Self(value))
+    }
+}
+
+impl ::std::convert::From<UsageBuckets> for ::std::vec::Vec<crate::model::UsageBucket> {
+    fn from(value: UsageBuckets) -> Self {
+        value.into_inner()
+    }
+}
+impl crate::constrained::Constrained for UsageBuckets {
+    type Unconstrained =
+        crate::unconstrained::usage_buckets_unconstrained::UsageBucketsUnconstrained;
+}
+
 /// 付随する id 1 つ（claude.session・tpm.person・cmux.workspace.ref など）。
 #[derive(
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
@@ -1976,7 +2162,7 @@ impl ActorBinding {
 /// 出来事 1 つ（欄は EventFields）。
 #[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
 pub struct Event {
-    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub id: ::std::string::String,
     /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
     pub actor_id: ::std::string::String,
@@ -1992,7 +2178,7 @@ pub struct Event {
     pub clock_skew: bool,
 }
 impl Event {
-    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub fn id(&self) -> &str {
         use std::ops::Deref;
         self.id.deref()
@@ -2036,7 +2222,7 @@ impl Event {
     ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
 )]
 pub struct Link {
-    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub id: ::std::string::String,
     /// 線の種類: 起こした（`launched`）・後を継いだ（`continued`）。
     pub r#type: ::std::string::String,
@@ -2052,7 +2238,7 @@ pub struct Link {
     pub clock_skew: bool,
 }
 impl Link {
-    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub fn id(&self) -> &str {
         use std::ops::Deref;
         self.id.deref()
@@ -2251,7 +2437,7 @@ impl Resolution {
 /// 探した出来事の 1 行（出来事の欄に、アクターの名を足した物）。
 #[derive(::std::clone::Clone, ::std::cmp::PartialEq, ::std::fmt::Debug)]
 pub struct EventRow {
-    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub id: ::std::string::String,
     /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
     pub actor_id: ::std::string::String,
@@ -2269,7 +2455,7 @@ pub struct EventRow {
     pub actor_name: ::std::string::String,
 }
 impl EventRow {
-    /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+    /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
     pub fn id(&self) -> &str {
         use std::ops::Deref;
         self.id.deref()
@@ -2506,6 +2692,301 @@ impl TimelineEvent {
         crate::model::timeline_event::Builder::default()
     }
 }
+
+/// 文脈の長さの段 1 つの、回の数と額。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct UsageBucket {
+    /// 文脈の長さの段の番号: n 段は n×25,000 以上 (n+1)×25,000 未満のトークン。40 は 1,000,000 以上。
+    pub bucket: i32,
+    /// その段の回の数。
+    pub turns: i64,
+    /// その段の額（100 万分の 1 ドル）。
+    pub cost_micro_usd: i64,
+}
+impl UsageBucket {
+    /// 文脈の長さの段の番号: n 段は n×25,000 以上 (n+1)×25,000 未満のトークン。40 は 1,000,000 以上。
+    pub fn bucket(&self) -> i32 {
+        self.bucket
+    }
+    /// その段の回の数。
+    pub fn turns(&self) -> i64 {
+        self.turns
+    }
+    /// その段の額（100 万分の 1 ドル）。
+    pub fn cost_micro_usd(&self) -> i64 {
+        self.cost_micro_usd
+    }
+}
+impl crate::constrained::Constrained for crate::model::UsageBucket {
+    type Unconstrained = crate::model::usage_bucket_internal::Builder;
+}
+impl UsageBucket {
+    /// Creates a new builder-style object to manufacture [`UsageBucket`](crate::model::UsageBucket).
+    pub fn builder() -> crate::model::usage_bucket::Builder {
+        crate::model::usage_bucket::Builder::default()
+    }
+}
+
+/// トークンの数と費えの 1 行（欄は UsageFields）。
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub struct Usage {
+    /// 送り手の id。
+    pub id: ::std::string::String,
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub actor_id: ::std::string::String,
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub model: ::std::string::String,
+    /// 手伝い（subagent）の種類の名。本体の回なら無い。
+    pub agent: ::std::option::Option<::std::string::String>,
+    /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+    pub speed: ::std::string::String,
+    /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+    pub service_tier: ::std::string::String,
+    /// 区間の始めの回の時刻（ミリ秒まで）。
+    pub from_at: ::aws_smithy_types::DateTime,
+    /// 区間の終わりの回の時刻（ミリ秒まで）。
+    pub to_at: ::aws_smithy_types::DateTime,
+    /// 回の数（1 以上）。
+    pub turns: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub input_tokens: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub output_tokens: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub cache_read_tokens: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub cache_write5m_tokens: i64,
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub cache_write1h_tokens: i64,
+    /// web の検索の回数。
+    pub web_search_requests: i64,
+    /// web の取得の回数。
+    pub web_fetch_requests: i64,
+    /// 額（100 万分の 1 ドル）。
+    pub cost_micro_usd: i64,
+    /// 区間の内でいちばん長い文脈（トークン）。同じ時の行をまとめる時は、大きい方を取る。
+    pub max_context: i64,
+    /// 文脈の長さの段ごとの数（`bucket` の順）。
+    pub buckets: ::std::vec::Vec<crate::model::UsageBucket>,
+    /// 時刻（RFC 3339）。
+    pub sent_at: ::aws_smithy_types::DateTime,
+    /// 時刻（RFC 3339）。
+    pub received_at: ::aws_smithy_types::DateTime,
+    #[allow(missing_docs)] // documentation missing in model
+    pub clock_skew: bool,
+}
+impl Usage {
+    /// 送り手の id。
+    pub fn id(&self) -> &str {
+        use std::ops::Deref;
+        self.id.deref()
+    }
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn actor_id(&self) -> &str {
+        use std::ops::Deref;
+        self.actor_id.deref()
+    }
+    /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+    pub fn model(&self) -> &str {
+        use std::ops::Deref;
+        self.model.deref()
+    }
+    /// 手伝い（subagent）の種類の名。本体の回なら無い。
+    pub fn agent(&self) -> ::std::option::Option<&str> {
+        self.agent.as_deref()
+    }
+    /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+    pub fn speed(&self) -> &str {
+        use std::ops::Deref;
+        self.speed.deref()
+    }
+    /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+    pub fn service_tier(&self) -> &str {
+        use std::ops::Deref;
+        self.service_tier.deref()
+    }
+    /// 区間の始めの回の時刻（ミリ秒まで）。
+    pub fn from_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.from_at
+    }
+    /// 区間の終わりの回の時刻（ミリ秒まで）。
+    pub fn to_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.to_at
+    }
+    /// 回の数（1 以上）。
+    pub fn turns(&self) -> i64 {
+        self.turns
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn input_tokens(&self) -> i64 {
+        self.input_tokens
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn output_tokens(&self) -> i64 {
+        self.output_tokens
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn cache_read_tokens(&self) -> i64 {
+        self.cache_read_tokens
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn cache_write5m_tokens(&self) -> i64 {
+        self.cache_write5m_tokens
+    }
+    /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+    pub fn cache_write1h_tokens(&self) -> i64 {
+        self.cache_write1h_tokens
+    }
+    /// web の検索の回数。
+    pub fn web_search_requests(&self) -> i64 {
+        self.web_search_requests
+    }
+    /// web の取得の回数。
+    pub fn web_fetch_requests(&self) -> i64 {
+        self.web_fetch_requests
+    }
+    /// 額（100 万分の 1 ドル）。
+    pub fn cost_micro_usd(&self) -> i64 {
+        self.cost_micro_usd
+    }
+    /// 区間の内でいちばん長い文脈（トークン）。同じ時の行をまとめる時は、大きい方を取る。
+    pub fn max_context(&self) -> i64 {
+        self.max_context
+    }
+    /// 文脈の長さの段ごとの数（`bucket` の順）。
+    pub fn buckets(&self) -> &[crate::model::UsageBucket] {
+        use std::ops::Deref;
+        self.buckets.deref()
+    }
+    /// 時刻（RFC 3339）。
+    pub fn sent_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.sent_at
+    }
+    /// 時刻（RFC 3339）。
+    pub fn received_at(&self) -> &::aws_smithy_types::DateTime {
+        &self.received_at
+    }
+    #[allow(missing_docs)] // documentation missing in model
+    pub fn clock_skew(&self) -> bool {
+        self.clock_skew
+    }
+}
+impl Usage {
+    /// Creates a new builder-style object to manufacture [`Usage`](crate::model::Usage).
+    pub fn builder() -> crate::model::usage::Builder {
+        crate::model::usage::Builder::default()
+    }
+}
+
+/// トークンの数と費えの行に出てきたアクター（id・名・ラベル）。
+#[derive(::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug)]
+pub struct UsageActor {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub id: ::std::string::String,
+    /// `&lt;接頭辞&gt;.&lt;番号&gt;`。
+    pub name: ::std::string::String,
+    /// ラベル（JSON の鍵の順は決まらない）。
+    pub labels: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+}
+impl UsageActor {
+    /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+    pub fn id(&self) -> &str {
+        use std::ops::Deref;
+        self.id.deref()
+    }
+    /// `&lt;接頭辞&gt;.&lt;番号&gt;`。
+    pub fn name(&self) -> &str {
+        use std::ops::Deref;
+        self.name.deref()
+    }
+    /// ラベル（JSON の鍵の順は決まらない）。
+    pub fn labels(
+        &self,
+    ) -> &::std::collections::HashMap<::std::string::String, ::std::string::String> {
+        &self.labels
+    }
+}
+impl UsageActor {
+    /// Creates a new builder-style object to manufacture [`UsageActor`](crate::model::UsageActor).
+    pub fn builder() -> crate::model::usage_actor::Builder {
+        crate::model::usage_actor::Builder::default()
+    }
+}
+
+/// 文脈の長さの段の番号: n 段は n×25,000 以上 (n+1)×25,000 未満のトークン。40 は 1,000,000 以上。
+///
+/// This is a constrained type because its corresponding modeled Smithy shape has one or more
+/// [constraint traits]. Use [`UsageBucketIndex::try_from`] to construct values of this type.
+///
+/// [constraint traits]: https://smithy.io/2.0/spec/constraint-traits.html
+///
+#[derive(
+    ::std::clone::Clone, ::std::cmp::Eq, ::std::cmp::PartialEq, ::std::fmt::Debug, ::std::hash::Hash,
+)]
+pub(crate) struct UsageBucketIndex(pub(crate) i32);
+#[allow(dead_code)]
+impl UsageBucketIndex {
+    /// Returns an immutable reference to the underlying [`i32`].
+    pub fn inner(&self) -> &i32 {
+        &self.0
+    }
+
+    /// Consumes the value, returning the underlying [`i32`].
+    pub fn into_inner(self) -> i32 {
+        self.0
+    }
+}
+
+impl crate::constrained::Constrained for UsageBucketIndex {
+    type Unconstrained = i32;
+}
+
+impl ::std::convert::From<i32>
+    for crate::constrained::MaybeConstrained<crate::model::UsageBucketIndex>
+{
+    fn from(value: i32) -> Self {
+        Self::Unconstrained(value)
+    }
+}
+
+impl ::std::fmt::Display for UsageBucketIndex {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ::std::convert::From<UsageBucketIndex> for i32 {
+    fn from(value: UsageBucketIndex) -> Self {
+        value.into_inner()
+    }
+}
+impl UsageBucketIndex {
+    fn check_range(
+        value: i32,
+    ) -> ::std::result::Result<(), crate::model::usage_bucket_index_internal::ConstraintViolation>
+    {
+        if (0..=40).contains(&value) {
+            Ok(())
+        } else {
+            Err(crate::model::usage_bucket_index_internal::ConstraintViolation::Range(value))
+        }
+    }
+}
+impl ::std::convert::TryFrom<i32> for UsageBucketIndex {
+    type Error = crate::model::usage_bucket_index_internal::ConstraintViolation;
+
+    /// Constructs a `UsageBucketIndex` from an [`i32`], failing when the provided value does not satisfy the modeled constraints.
+    fn try_from(value: i32) -> ::std::result::Result<Self, Self::Error> {
+        Self::check_range(value)?;
+
+        Ok(Self(value))
+    }
+}
+
 pub(crate) mod name_internal {
 
     #[derive(Debug, PartialEq)]
@@ -3871,6 +4352,111 @@ pub(crate) mod label_filter_internal {
         }
     }
 }
+pub(crate) mod turn_count_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        Range(i64),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Value for `ai.castlist#TurnCount`failed to satisfy constraint: Member must be greater than or equal to 1")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            Self::Range(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must be greater than or equal to 1", &path),
+                            path,
+                        },
+                        }
+        }
+    }
+}
+pub(crate) mod amount_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        Range(i64),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Value for `ai.castlist#Amount`failed to satisfy constraint: Member must be greater than or equal to 0")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            Self::Range(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must be greater than or equal to 0", &path),
+                            path,
+                        },
+                        }
+        }
+    }
+}
+pub(crate) mod usage_buckets_internal {
+
+    #[allow(clippy::enum_variant_names)]
+    #[derive(Debug, PartialEq)]
+    pub(crate) enum ConstraintViolation {
+        /// Constraint violation error when the list doesn't have the required length
+        Length(usize),
+        /// Constraint violation error when an element doesn't satisfy its own constraints.
+        /// The first component of the tuple is the index in the collection where the
+        /// first constraint violation was found.
+        #[doc(hidden)]
+        Member(
+            usize,
+            crate::model::usage_bucket_internal::ConstraintViolation,
+        ),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let message = match self {
+                Self::Length(length) => {
+                    format!("Value with length {} provided for 'ai.castlist#UsageBuckets' failed to satisfy constraint: Member must have length between 1 and 41, inclusive", length)
+                }
+                Self::Member(index, failing_member) => format!(
+                    "Value at index {index} failed to satisfy constraint. {}",
+                    failing_member
+                ),
+            };
+            write!(f, "{message}")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                        Self::Length(length) => crate::model::ValidationExceptionField {
+                                message: format!("Value with length {} at '{}' failed to satisfy constraint: Member must have length between 1 and 41, inclusive", length, &path),
+                                path,
+                            },
+    Self::Member(index, member_constraint_violation) =>
+                        member_constraint_violation.as_validation_exception_field(path + "/" + &index.to_string())
+                    }
+        }
+    }
+}
 /// See [`Binding`](crate::model::Binding).
 pub(crate) mod binding_internal {
 
@@ -4313,7 +4899,7 @@ pub mod event {
         pub(crate) clock_skew: ::std::option::Option<bool>,
     }
     impl Builder {
-        /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+        /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
         pub fn id(mut self, input: ::std::string::String) -> Self {
             self.id = Some(input);
             self
@@ -4450,7 +5036,7 @@ pub mod link {
         pub(crate) clock_skew: ::std::option::Option<bool>,
     }
     impl Builder {
-        /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+        /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
         pub fn id(mut self, input: ::std::string::String) -> Self {
             self.id = Some(input);
             self
@@ -4908,7 +5494,7 @@ pub mod event_row {
         pub(crate) actor_name: ::std::option::Option<::std::string::String>,
     }
     impl Builder {
-        /// 送り手が付ける id（出来事・線・model と effort）: 空白の無い ASCII の印字できる字で 128 字まで。
+        /// 送り手が付ける id（出来事・線・model と effort・トークンの数と費え）: 空白の無い ASCII の印字できる字で 128 字まで。
         pub fn id(mut self, input: ::std::string::String) -> Self {
             self.id = Some(input);
             self
@@ -5384,6 +5970,636 @@ pub mod timeline_event {
                 inferred: self.inferred.ok_or(ConstraintViolation::MissingInferred)?,
                 reason: self.reason,
             })
+        }
+    }
+}
+/// See [`UsageBucket`](crate::model::UsageBucket).
+pub(crate) mod usage_bucket_internal {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[non_exhaustive]
+    #[allow(clippy::enum_variant_names)]
+    pub(crate) enum ConstraintViolation {
+        /// `bucket` was not provided but it is required when building `UsageBucket`.
+        MissingBucket,
+        /// Constraint violation occurred building member `bucket` when building `UsageBucket`.
+        #[doc(hidden)]
+        Bucket(crate::model::usage_bucket_index_internal::ConstraintViolation),
+        /// `turns` was not provided but it is required when building `UsageBucket`.
+        MissingTurns,
+        /// Constraint violation occurred building member `turns` when building `UsageBucket`.
+        #[doc(hidden)]
+        Turns(crate::model::amount_internal::ConstraintViolation),
+        /// `cost_micro_usd` was not provided but it is required when building `UsageBucket`.
+        MissingCostMicroUsd,
+        /// Constraint violation occurred building member `cost_micro_usd` when building `UsageBucket`.
+        #[doc(hidden)]
+        CostMicroUsd(crate::model::amount_internal::ConstraintViolation),
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingBucket => write!(f, "`bucket` was not provided but it is required when building `UsageBucket`"),
+                ConstraintViolation::Bucket(_) => write!(f, "constraint violation occurred building member `bucket` when building `UsageBucket`"),
+                ConstraintViolation::MissingTurns => write!(f, "`turns` was not provided but it is required when building `UsageBucket`"),
+                ConstraintViolation::Turns(_) => write!(f, "constraint violation occurred building member `turns` when building `UsageBucket`"),
+                ConstraintViolation::MissingCostMicroUsd => write!(f, "`cost_micro_usd` was not provided but it is required when building `UsageBucket`"),
+                ConstraintViolation::CostMicroUsd(_) => write!(f, "constraint violation occurred building member `cost_micro_usd` when building `UsageBucket`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+            ConstraintViolation::MissingBucket => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/bucket' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/bucket",
+                                            },
+            ConstraintViolation::Bucket(inner) => inner.as_validation_exception_field(path + "/bucket"),
+            ConstraintViolation::MissingTurns => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/turns' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/turns",
+                                            },
+            ConstraintViolation::Turns(inner) => inner.as_validation_exception_field(path + "/turns"),
+            ConstraintViolation::MissingCostMicroUsd => crate::model::ValidationExceptionField {
+                                                message: format!("Value at '{}/costMicroUsd' failed to satisfy constraint: Member must not be null", path),
+                                                path: path + "/costMicroUsd",
+                                            },
+            ConstraintViolation::CostMicroUsd(inner) => inner.as_validation_exception_field(path + "/costMicroUsd"),
+        }
+        }
+    }
+    impl ::std::convert::From<Builder>
+        for crate::constrained::MaybeConstrained<crate::model::UsageBucket>
+    {
+        fn from(builder: Builder) -> Self {
+            Self::Unconstrained(builder)
+        }
+    }
+    impl ::std::convert::TryFrom<Builder> for crate::model::UsageBucket {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`UsageBucket`](crate::model::UsageBucket).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub(crate) struct Builder {
+        pub(crate) bucket: ::std::option::Option<
+            crate::constrained::MaybeConstrained<crate::model::UsageBucketIndex>,
+        >,
+        pub(crate) turns:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        pub(crate) cost_micro_usd:
+            ::std::option::Option<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+    }
+    impl Builder {
+        /// 文脈の長さの段の番号: n 段は n×25,000 以上 (n+1)×25,000 未満のトークン。40 は 1,000,000 以上。
+        pub(crate) fn set_bucket(
+            mut self,
+            input: impl ::std::convert::Into<
+                crate::constrained::MaybeConstrained<crate::model::UsageBucketIndex>,
+            >,
+        ) -> Self {
+            self.bucket = Some(input.into());
+            self
+        }
+        /// その段の回の数。
+        pub(crate) fn set_turns(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.turns = Some(input.into());
+            self
+        }
+        /// その段の額（100 万分の 1 ドル）。
+        pub(crate) fn set_cost_micro_usd(
+            mut self,
+            input: impl ::std::convert::Into<crate::constrained::MaybeConstrained<crate::model::Amount>>,
+        ) -> Self {
+            self.cost_micro_usd = Some(input.into());
+            self
+        }
+        /// Consumes the builder and constructs a [`UsageBucket`](crate::model::UsageBucket).
+        ///
+        /// The builder fails to construct a [`UsageBucket`](crate::model::UsageBucket) if a [`ConstraintViolation`] occurs.
+        ///
+        /// If the builder fails, it will return the _first_ encountered [`ConstraintViolation`].
+        pub fn build(self) -> Result<crate::model::UsageBucket, ConstraintViolation> {
+            self.build_enforcing_all_constraints()
+        }
+        fn build_enforcing_all_constraints(
+            self,
+        ) -> Result<crate::model::UsageBucket, ConstraintViolation> {
+            Ok(crate::model::UsageBucket {
+                bucket: self
+                    .bucket
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Bucket))
+                    .transpose()?
+                    .map(|v: crate::model::UsageBucketIndex| v.into())
+                    .ok_or(ConstraintViolation::MissingBucket)?,
+                turns: self
+                    .turns
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::Turns))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingTurns)?,
+                cost_micro_usd: self
+                    .cost_micro_usd
+                    .map(|v| match v {
+                        crate::constrained::MaybeConstrained::Constrained(x) => Ok(x),
+                        crate::constrained::MaybeConstrained::Unconstrained(x) => x.try_into(),
+                    })
+                    .map(|res| res.map_err(ConstraintViolation::CostMicroUsd))
+                    .transpose()?
+                    .map(|v: crate::model::Amount| v.into())
+                    .ok_or(ConstraintViolation::MissingCostMicroUsd)?,
+            })
+        }
+    }
+}
+/// See [`UsageBucket`](crate::model::UsageBucket).
+pub mod usage_bucket {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `bucket` was not provided but it is required when building `UsageBucket`.
+        MissingBucket,
+        /// `turns` was not provided but it is required when building `UsageBucket`.
+        MissingTurns,
+        /// `cost_micro_usd` was not provided but it is required when building `UsageBucket`.
+        MissingCostMicroUsd,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingBucket => write!(f, "`bucket` was not provided but it is required when building `UsageBucket`"),
+                ConstraintViolation::MissingTurns => write!(f, "`turns` was not provided but it is required when building `UsageBucket`"),
+                ConstraintViolation::MissingCostMicroUsd => write!(f, "`cost_micro_usd` was not provided but it is required when building `UsageBucket`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::model::UsageBucket {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`UsageBucket`](crate::model::UsageBucket).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) bucket: ::std::option::Option<i32>,
+        pub(crate) turns: ::std::option::Option<i64>,
+        pub(crate) cost_micro_usd: ::std::option::Option<i64>,
+    }
+    impl Builder {
+        /// 文脈の長さの段の番号: n 段は n×25,000 以上 (n+1)×25,000 未満のトークン。40 は 1,000,000 以上。
+        pub fn bucket(mut self, input: i32) -> Self {
+            self.bucket = Some(input);
+            self
+        }
+        /// その段の回の数。
+        pub fn turns(mut self, input: i64) -> Self {
+            self.turns = Some(input);
+            self
+        }
+        /// その段の額（100 万分の 1 ドル）。
+        pub fn cost_micro_usd(mut self, input: i64) -> Self {
+            self.cost_micro_usd = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`UsageBucket`](crate::model::UsageBucket).
+        ///
+        /// The builder fails to construct a [`UsageBucket`](crate::model::UsageBucket) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::model::UsageBucket, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::model::UsageBucket, ConstraintViolation> {
+            Ok(crate::model::UsageBucket {
+                bucket: self.bucket.ok_or(ConstraintViolation::MissingBucket)?,
+                turns: self.turns.ok_or(ConstraintViolation::MissingTurns)?,
+                cost_micro_usd: self
+                    .cost_micro_usd
+                    .ok_or(ConstraintViolation::MissingCostMicroUsd)?,
+            })
+        }
+    }
+}
+/// See [`Usage`](crate::model::Usage).
+pub mod usage {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `id` was not provided but it is required when building `Usage`.
+        MissingId,
+        /// `actor_id` was not provided but it is required when building `Usage`.
+        MissingActorId,
+        /// `model` was not provided but it is required when building `Usage`.
+        MissingModel,
+        /// `speed` was not provided but it is required when building `Usage`.
+        MissingSpeed,
+        /// `service_tier` was not provided but it is required when building `Usage`.
+        MissingServiceTier,
+        /// `from_at` was not provided but it is required when building `Usage`.
+        MissingFromAt,
+        /// `to_at` was not provided but it is required when building `Usage`.
+        MissingToAt,
+        /// `turns` was not provided but it is required when building `Usage`.
+        MissingTurns,
+        /// `input_tokens` was not provided but it is required when building `Usage`.
+        MissingInputTokens,
+        /// `output_tokens` was not provided but it is required when building `Usage`.
+        MissingOutputTokens,
+        /// `cache_read_tokens` was not provided but it is required when building `Usage`.
+        MissingCacheReadTokens,
+        /// `cache_write5m_tokens` was not provided but it is required when building `Usage`.
+        MissingCacheWrite5mTokens,
+        /// `cache_write1h_tokens` was not provided but it is required when building `Usage`.
+        MissingCacheWrite1hTokens,
+        /// `web_search_requests` was not provided but it is required when building `Usage`.
+        MissingWebSearchRequests,
+        /// `web_fetch_requests` was not provided but it is required when building `Usage`.
+        MissingWebFetchRequests,
+        /// `cost_micro_usd` was not provided but it is required when building `Usage`.
+        MissingCostMicroUsd,
+        /// `max_context` was not provided but it is required when building `Usage`.
+        MissingMaxContext,
+        /// `buckets` was not provided but it is required when building `Usage`.
+        MissingBuckets,
+        /// `sent_at` was not provided but it is required when building `Usage`.
+        MissingSentAt,
+        /// `received_at` was not provided but it is required when building `Usage`.
+        MissingReceivedAt,
+        /// `clock_skew` was not provided but it is required when building `Usage`.
+        MissingClockSkew,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingId => write!(f, "`id` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingActorId => write!(f, "`actor_id` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingModel => write!(f, "`model` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingSpeed => write!(f, "`speed` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingServiceTier => write!(f, "`service_tier` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingFromAt => write!(f, "`from_at` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingToAt => write!(f, "`to_at` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingTurns => write!(f, "`turns` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingInputTokens => write!(f, "`input_tokens` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingOutputTokens => write!(f, "`output_tokens` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingCacheReadTokens => write!(f, "`cache_read_tokens` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingCacheWrite5mTokens => write!(f, "`cache_write5m_tokens` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingCacheWrite1hTokens => write!(f, "`cache_write1h_tokens` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingWebSearchRequests => write!(f, "`web_search_requests` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingWebFetchRequests => write!(f, "`web_fetch_requests` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingCostMicroUsd => write!(f, "`cost_micro_usd` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingMaxContext => write!(f, "`max_context` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingBuckets => write!(f, "`buckets` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingSentAt => write!(f, "`sent_at` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingReceivedAt => write!(f, "`received_at` was not provided but it is required when building `Usage`"),
+                ConstraintViolation::MissingClockSkew => write!(f, "`clock_skew` was not provided but it is required when building `Usage`"),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::model::Usage {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`Usage`](crate::model::Usage).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) actor_id: ::std::option::Option<::std::string::String>,
+        pub(crate) model: ::std::option::Option<::std::string::String>,
+        pub(crate) agent: ::std::option::Option<::std::string::String>,
+        pub(crate) speed: ::std::option::Option<::std::string::String>,
+        pub(crate) service_tier: ::std::option::Option<::std::string::String>,
+        pub(crate) from_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) to_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) turns: ::std::option::Option<i64>,
+        pub(crate) input_tokens: ::std::option::Option<i64>,
+        pub(crate) output_tokens: ::std::option::Option<i64>,
+        pub(crate) cache_read_tokens: ::std::option::Option<i64>,
+        pub(crate) cache_write5m_tokens: ::std::option::Option<i64>,
+        pub(crate) cache_write1h_tokens: ::std::option::Option<i64>,
+        pub(crate) web_search_requests: ::std::option::Option<i64>,
+        pub(crate) web_fetch_requests: ::std::option::Option<i64>,
+        pub(crate) cost_micro_usd: ::std::option::Option<i64>,
+        pub(crate) max_context: ::std::option::Option<i64>,
+        pub(crate) buckets: ::std::option::Option<::std::vec::Vec<crate::model::UsageBucket>>,
+        pub(crate) sent_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) received_at: ::std::option::Option<::aws_smithy_types::DateTime>,
+        pub(crate) clock_skew: ::std::option::Option<bool>,
+    }
+    impl Builder {
+        /// 送り手の id。
+        pub fn id(mut self, input: ::std::string::String) -> Self {
+            self.id = Some(input);
+            self
+        }
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn actor_id(mut self, input: ::std::string::String) -> Self {
+            self.actor_id = Some(input);
+            self
+        }
+        /// 出し手・付随する id の種類・ラベルの鍵・model・effort の名: 英小文字・数字・`-`・`.` で 64 字まで。
+        pub fn model(mut self, input: ::std::string::String) -> Self {
+            self.model = Some(input);
+            self
+        }
+        /// 手伝い（subagent）の種類の名。本体の回なら無い。
+        pub fn agent(mut self, input: ::std::option::Option<::std::string::String>) -> Self {
+            self.agent = input;
+            self
+        }
+        /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+        pub fn speed(mut self, input: ::std::string::String) -> Self {
+            self.speed = Some(input);
+            self
+        }
+        /// 値: 空でなく、制御文字（Unicode の Cc）の無い、256 字までの字。
+        pub fn service_tier(mut self, input: ::std::string::String) -> Self {
+            self.service_tier = Some(input);
+            self
+        }
+        /// 区間の始めの回の時刻（ミリ秒まで）。
+        pub fn from_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.from_at = Some(input);
+            self
+        }
+        /// 区間の終わりの回の時刻（ミリ秒まで）。
+        pub fn to_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.to_at = Some(input);
+            self
+        }
+        /// 回の数（1 以上）。
+        pub fn turns(mut self, input: i64) -> Self {
+            self.turns = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn input_tokens(mut self, input: i64) -> Self {
+            self.input_tokens = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn output_tokens(mut self, input: i64) -> Self {
+            self.output_tokens = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn cache_read_tokens(mut self, input: i64) -> Self {
+            self.cache_read_tokens = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn cache_write5m_tokens(mut self, input: i64) -> Self {
+            self.cache_write5m_tokens = Some(input);
+            self
+        }
+        /// 0 以上の数（トークンの数・web の検索と取得の回数・額・文脈の長さ）。
+        pub fn cache_write1h_tokens(mut self, input: i64) -> Self {
+            self.cache_write1h_tokens = Some(input);
+            self
+        }
+        /// web の検索の回数。
+        pub fn web_search_requests(mut self, input: i64) -> Self {
+            self.web_search_requests = Some(input);
+            self
+        }
+        /// web の取得の回数。
+        pub fn web_fetch_requests(mut self, input: i64) -> Self {
+            self.web_fetch_requests = Some(input);
+            self
+        }
+        /// 額（100 万分の 1 ドル）。
+        pub fn cost_micro_usd(mut self, input: i64) -> Self {
+            self.cost_micro_usd = Some(input);
+            self
+        }
+        /// 区間の内でいちばん長い文脈（トークン）。同じ時の行をまとめる時は、大きい方を取る。
+        pub fn max_context(mut self, input: i64) -> Self {
+            self.max_context = Some(input);
+            self
+        }
+        /// 文脈の長さの段ごとの数（`bucket` の順）。
+        pub fn buckets(mut self, input: ::std::vec::Vec<crate::model::UsageBucket>) -> Self {
+            self.buckets = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn sent_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.sent_at = Some(input);
+            self
+        }
+        /// 時刻（RFC 3339）。
+        pub fn received_at(mut self, input: ::aws_smithy_types::DateTime) -> Self {
+            self.received_at = Some(input);
+            self
+        }
+        #[allow(missing_docs)] // documentation missing in model
+        pub fn clock_skew(mut self, input: bool) -> Self {
+            self.clock_skew = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`Usage`](crate::model::Usage).
+        ///
+        /// The builder fails to construct a [`Usage`](crate::model::Usage) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::model::Usage, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::model::Usage, ConstraintViolation> {
+            Ok(crate::model::Usage {
+                id: self.id.ok_or(ConstraintViolation::MissingId)?,
+                actor_id: self.actor_id.ok_or(ConstraintViolation::MissingActorId)?,
+                model: self.model.ok_or(ConstraintViolation::MissingModel)?,
+                agent: self.agent,
+                speed: self.speed.ok_or(ConstraintViolation::MissingSpeed)?,
+                service_tier: self
+                    .service_tier
+                    .ok_or(ConstraintViolation::MissingServiceTier)?,
+                from_at: self.from_at.ok_or(ConstraintViolation::MissingFromAt)?,
+                to_at: self.to_at.ok_or(ConstraintViolation::MissingToAt)?,
+                turns: self.turns.ok_or(ConstraintViolation::MissingTurns)?,
+                input_tokens: self
+                    .input_tokens
+                    .ok_or(ConstraintViolation::MissingInputTokens)?,
+                output_tokens: self
+                    .output_tokens
+                    .ok_or(ConstraintViolation::MissingOutputTokens)?,
+                cache_read_tokens: self
+                    .cache_read_tokens
+                    .ok_or(ConstraintViolation::MissingCacheReadTokens)?,
+                cache_write5m_tokens: self
+                    .cache_write5m_tokens
+                    .ok_or(ConstraintViolation::MissingCacheWrite5mTokens)?,
+                cache_write1h_tokens: self
+                    .cache_write1h_tokens
+                    .ok_or(ConstraintViolation::MissingCacheWrite1hTokens)?,
+                web_search_requests: self
+                    .web_search_requests
+                    .ok_or(ConstraintViolation::MissingWebSearchRequests)?,
+                web_fetch_requests: self
+                    .web_fetch_requests
+                    .ok_or(ConstraintViolation::MissingWebFetchRequests)?,
+                cost_micro_usd: self
+                    .cost_micro_usd
+                    .ok_or(ConstraintViolation::MissingCostMicroUsd)?,
+                max_context: self
+                    .max_context
+                    .ok_or(ConstraintViolation::MissingMaxContext)?,
+                buckets: self.buckets.ok_or(ConstraintViolation::MissingBuckets)?,
+                sent_at: self.sent_at.ok_or(ConstraintViolation::MissingSentAt)?,
+                received_at: self
+                    .received_at
+                    .ok_or(ConstraintViolation::MissingReceivedAt)?,
+                clock_skew: self
+                    .clock_skew
+                    .ok_or(ConstraintViolation::MissingClockSkew)?,
+            })
+        }
+    }
+}
+/// See [`UsageActor`](crate::model::UsageActor).
+pub mod usage_actor {
+
+    #[derive(::std::cmp::PartialEq, ::std::fmt::Debug)]
+    /// Holds one variant for each of the ways the builder can fail.
+    #[allow(clippy::enum_variant_names)]
+    pub enum ConstraintViolation {
+        /// `id` was not provided but it is required when building `UsageActor`.
+        MissingId,
+        /// `name` was not provided but it is required when building `UsageActor`.
+        MissingName,
+        /// `labels` was not provided but it is required when building `UsageActor`.
+        MissingLabels,
+    }
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ConstraintViolation::MissingId => write!(
+                    f,
+                    "`id` was not provided but it is required when building `UsageActor`"
+                ),
+                ConstraintViolation::MissingName => write!(
+                    f,
+                    "`name` was not provided but it is required when building `UsageActor`"
+                ),
+                ConstraintViolation::MissingLabels => write!(
+                    f,
+                    "`labels` was not provided but it is required when building `UsageActor`"
+                ),
+            }
+        }
+    }
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ::std::convert::TryFrom<Builder> for crate::model::UsageActor {
+        type Error = ConstraintViolation;
+
+        fn try_from(builder: Builder) -> ::std::result::Result<Self, Self::Error> {
+            builder.build()
+        }
+    }
+    /// A builder for [`UsageActor`](crate::model::UsageActor).
+    #[derive(::std::clone::Clone, ::std::default::Default, ::std::fmt::Debug)]
+    pub struct Builder {
+        pub(crate) id: ::std::option::Option<::std::string::String>,
+        pub(crate) name: ::std::option::Option<::std::string::String>,
+        pub(crate) labels: ::std::option::Option<
+            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        >,
+    }
+    impl Builder {
+        /// アクターの id（castlist が出す UUID v7 の字。小文字の 16 進）。
+        pub fn id(mut self, input: ::std::string::String) -> Self {
+            self.id = Some(input);
+            self
+        }
+        /// `&lt;接頭辞&gt;.&lt;番号&gt;`。
+        pub fn name(mut self, input: ::std::string::String) -> Self {
+            self.name = Some(input);
+            self
+        }
+        /// ラベル（JSON の鍵の順は決まらない）。
+        pub fn labels(
+            mut self,
+            input: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        ) -> Self {
+            self.labels = Some(input);
+            self
+        }
+        /// Consumes the builder and constructs a [`UsageActor`](crate::model::UsageActor).
+        ///
+        /// The builder fails to construct a [`UsageActor`](crate::model::UsageActor) if you do not provide a value for all non-`Option`al members.
+        ///
+        pub fn build(self) -> Result<crate::model::UsageActor, ConstraintViolation> {
+            self.build_enforcing_required_and_enum_traits()
+        }
+        fn build_enforcing_required_and_enum_traits(
+            self,
+        ) -> Result<crate::model::UsageActor, ConstraintViolation> {
+            Ok(crate::model::UsageActor {
+                id: self.id.ok_or(ConstraintViolation::MissingId)?,
+                name: self.name.ok_or(ConstraintViolation::MissingName)?,
+                labels: self.labels.ok_or(ConstraintViolation::MissingLabels)?,
+            })
+        }
+    }
+}
+pub(crate) mod usage_bucket_index_internal {
+
+    #[derive(Debug, PartialEq)]
+    pub enum ConstraintViolation {
+        Range(i32),
+    }
+
+    impl ::std::fmt::Display for ConstraintViolation {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Value for `ai.castlist#UsageBucketIndex`failed to satisfy constraint: Member must be between 0 and 40, inclusive")
+        }
+    }
+
+    impl ::std::error::Error for ConstraintViolation {}
+    impl ConstraintViolation {
+        pub(crate) fn as_validation_exception_field(
+            self,
+            path: ::std::string::String,
+        ) -> crate::model::ValidationExceptionField {
+            match self {
+                            Self::Range(_) => crate::model::ValidationExceptionField {
+                            message: format!("Value at '{}' failed to satisfy constraint: Member must be between 0 and 40, inclusive", &path),
+                            path,
+                        },
+                        }
         }
     }
 }

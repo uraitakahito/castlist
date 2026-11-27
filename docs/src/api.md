@@ -22,7 +22,7 @@ API は Smithy の定義（`model/`）から作る。protocol は `aws.protocols
 | 問い合わせの引数 | 名は camelCase（`activeFrom`・`launchedBy`・`maxResults`・`nextToken`）。値の形（時刻・`鍵:値`・id・決まった字・数の範囲）は生成した層が 400 で断る。restJson1 は知らない引数を読み飛ばし、重ねられない引数を 2 度付ければ初めの物を使う。重ねられるのは list の引数（`label`・`type`）だけ。時刻の引数は DB に残す字（UTC・ミリ秒まで・24 字。ミリ秒より下は切る）に直して比べる |
 | 時間 | 1 つの問い合わせは 5 秒まで。過ぎれば 503。書く接続を 2 秒・読む接続を 3 秒待っても空かなければ 503「混んでいる」。どちらも、少し待ってから送り直す |
 
-名の形: issuer・付随する id の種類・ラベルの鍵・model・effort は、英小文字・数字・`-`・`.` で 64 字まで（`Name`）。名の接頭辞は、英小文字・数字・`-` で 32 字まで。値は空でなく、制御文字の無い 256 字まで（`Text`）。送り手の id（出来事・線・model と effort）は、空白の無い ASCII の印字できる字で 128 字まで（`SenderId`）。アクターの id は小文字の UUID（`ActorId`）。
+名の形: issuer・付随する id の種類・ラベルの鍵・model・effort は、英小文字・数字・`-`・`.` で 64 字まで（`Name`）。名の接頭辞は、英小文字・数字・`-` で 32 字まで。値は空でなく、制御文字の無い 256 字まで（`Text`）。送り手の id（出来事・線・model と effort・トークンの数と費え）は、空白の無い ASCII の印字できる字で 128 字まで（`SenderId`）。アクターの id は小文字の UUID（`ActorId`）。
 
 ## 操作
 
@@ -43,6 +43,8 @@ API は Smithy の定義（`model/`）から作る。protocol は `aws.protocols
 | `ResolveActors` | `POST /api/resolve` | 鍵の付随する id からアクターを引く |
 | `GetGraph` | `GET /api/graph` | 図の点と線 |
 | `GetTimeline` | `GET /api/timeline` | タイムラインを描く元の値（図の点と線と、その点の出来事と、model と effort の行の全部。1.1.0 から） |
+| `PutUsage` | `PUT /api/usage/{usageId}` | アクターのトークンの数と費えを 1 行足す（2.1.0 から） |
+| `ListUsage` | `GET /api/usage` | トークンの数と費えの行を、アクターをまたいで読む（2.1.0 から） |
 
 手の道（Smithy の外）: `GET /api/backup`（SQLite の file）・`GET /api/logs`（字）。画面は castlist に無い（2.0.0 で外した。アクターの一覧・プロフィール・タイムライン・相関図は、この API を通して [callboard](https://github.com/uraitakahito/callboard) が出す。前の画面の道 `/`・`/actors/{id}`・`/graph/…`・`/static/…` は 404）。
 
@@ -123,6 +125,47 @@ API は Smithy の定義（`model/`）から作る。protocol は `aws.protocols
 - 知らない model・effort の名も断らず、初めて来た時に一覧に足す。断るのは、形の違う名だけ（400）。
 - 201: 新しく足した。200: 同じ id で同じ本文が既にある、または新しい id でも、そのアクターの最新（seq で。`source` は比べない）と同じ model と effort（行を足さず、最新の行を返す。登録の時に頼んだ行なら `id` が無い）。その時の id は残らないので、同じ id を後で送り直すと、その時の最新と比べ直す。409: 同じ id で本文が違う。
 
+### `PutUsage` トークンの数と費え
+
+アクター（Claude Code の席）ごとの、トークンの数と費えを残す（2.1.0 から）。1 行は、**アクター 1 人の、時計の 1 時間（UTC の時）の内の、同じ種類（`model`・`agent`・`speed`・`serviceTier`）の回のまとめ**。
+
+```json
+{
+  "issuer": "tpm", "by": "claude.session:5f0c2a8e-…",
+  "model": "claude-opus-5-5", "agent": "Explore", "speed": "standard", "serviceTier": "standard",
+  "fromAt": "2026-11-24T10:05:00Z", "toAt": "2026-11-24T10:55:00Z",
+  "turns": 3,
+  "inputTokens": 30, "outputTokens": 1200, "cacheReadTokens": 90000, "cacheWrite5mTokens": 0, "cacheWrite1hTokens": 4000,
+  "webSearchRequests": 2, "webFetchRequests": 5,
+  "costMicroUsd": 250000, "maxContext": 61000,
+  "buckets": [{ "bucket": 1, "turns": 1, "costMicroUsd": 50000 }, { "bucket": 2, "turns": 2, "costMicroUsd": 200000 }],
+  "sentAt": "2026-11-24T11:00:00Z"
+}
+```
+
+```json
+{ "id": "u-1", "actorId": "019a…", "model": "claude-opus-5-5", "agent": "Explore", "…": "…", "sentAt": "…", "receivedAt": "…", "clockSkew": false }
+```
+
+| 欄 | 中身 |
+|---|---|
+| `issuer`・`by` | `PutSetting` と同じ（`by` は鍵の付随する id。アクターに引き当てる） |
+| `model` | model の名（`Name`）。知らない名も断らず、初めて来た時に一覧（`models`）に足す |
+| `agent` | 手伝い（subagent）の種類の名（`Text`）。本体の回なら付けない（答えにも、欄ごと無い） |
+| `speed`・`serviceTier` | 速さの種類・service tier の名（`Text`。例 `standard`） |
+| `fromAt`・`toAt` | 区間の始めの回と終わりの回の時刻（送り手の時計）。`fromAt` は `toAt` より後でなく、2 つは**同じ UTC の時（年月日と時が同じ）の内**。違えば 400。ミリ秒まで残す（それより下は切る） |
+| `turns` | 回の数（1 以上） |
+| `inputTokens`・`outputTokens`・`cacheReadTokens`・`cacheWrite5mTokens`・`cacheWrite1hTokens` | トークンの数（0 以上の整数。64 bit） |
+| `webSearchRequests`・`webFetchRequests` | web の検索と取得の回数（0 以上の整数。64 bit）。どちらも必ず要る（無ければ 400。無かった時は 0 を送る） |
+| `costMicroUsd` | 額（100 万分の 1 ドルの整数。0 以上） |
+| `maxContext` | 区間の内でいちばん長い文脈（トークン。0 以上） |
+| `buckets` | 文脈の長さの段ごとの数の並び（1〜41 個）。要素は `{bucket, turns, costMicroUsd}`。`bucket` は 0〜40（n 段は n×25,000 以上 (n+1)×25,000 未満のトークン。40 は 1,000,000 以上）。同じ `bucket` は 1 度だけで、`turns` の和は行の `turns` と、`costMicroUsd` の和は行の `costMicroUsd` と合う。違えば 400。並びは問わない（答えは `bucket` の順） |
+| `sentAt` | 送り手の時刻。答えには `receivedAt`・`clockSkew` が付く（ほかの行と同じ） |
+
+- **同じアクター・同じ時・同じ種類の行は、2 つ以上在りうる**（送り手が、増えた分を新しい id の行で送る）。**読む側は、数（`turns`・トークンの数・`webSearchRequests`・`webFetchRequests`・`costMicroUsd`・`buckets` の段ごとの `turns` と `costMicroUsd`）を足し、`maxContext` は大きい方を取る。**
+- 201: 新しく足した。200: 同じ id で同じ本文が既にある。409: 同じ id で本文が違う。`PutSetting` の「最新と同じなら 200」は無い（数は、同じ中身でも別の行でありうる。同じかは、id と本文の写しだけで決める）。
+- 400: `by` のアクターを引けない・区間が同じ時の内でない・段の決まりを破る（どれも `ValidationException` で、訳は `message`）。負の数・`turns` が 0・`bucket` が 0〜40 の外・要る欄が無い、は生成した層の 400（欄の path と訳）。区間と段の決まりは、同じ id かを見るより先に見る（決まりを破る本文は、id が在っても 400）。
+
 ### `ResolveActors` 引き当て
 
 ```json
@@ -174,7 +217,7 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 - `maxResults` は 1 ページの数（既定 100・1000 まで）。
 - 答えの `nextToken` を、次の要求の `nextToken` にそのまま渡す（中は読まない）。終わりでは `nextToken` が無い。
 - 並べる値と `seq` の続きから読む（keyset）ので、辿る間に行が足されても、元からあった行に穴も重なりも出ない（足された行は、並べ方によって後ろに出るか、もう過ぎた所に入って出ない）。
-- `ListActors` の頁の印は、検索の種類・`sort`・`order`・最後の行の並べる値と seq を 16 進にした字。`ListSettings` と `ListEvents` の物は、検索の種類と最後の行の seq を 16 進にした字。崩れた物・ほかの検索の物・`sort` か `order` の違う物は 400。ほかの条件は結ばない。
+- `ListActors` の頁の印は、検索の種類・`sort`・`order`・最後の行の並べる値と seq を 16 進にした字。`ListSettings`・`ListEvents`・`ListUsage` の物は、検索の種類と最後の行の seq を 16 進にした字。崩れた物・ほかの検索の物・`sort` か `order` の違う物は 400。ほかの条件は結ばない。
 - `ListActors` の並べる値（初めの登場・最後の退場）は出来事で動くので、もう出したアクターが辿る間に退場すると出直すことがある（動かない値で分けるなら並べ方の意味が変わるので、別の課題）。
 
 ### アクターの一覧の 1 行
@@ -331,6 +374,33 @@ Auditor の使い方（時刻は UTC。日本時間の 11:00〜12:00 は `02:00:
 - /clear で入った者の登場: `?type=entered&source=clear`
 - 前の答えの後に起きた物: `?from=<前の答えの asOf>`
 
+## トークンの数と費え
+
+### `ListUsage` トークンの数と費えの行を、アクターをまたいで
+
+`GET /api/usage`（2.1.0 から）。`PutUsage` で足した行を、そのまま返す。集計はしない（まとめるのは呼ぶ側）。条件はどれも AND。並びは受けた順（seq）。軽い読みの接続（`ListSettings`・`ListEvents` と同じ側）の、1 つの読む transaction の中で読む。
+
+| 引数 | 中身 |
+|---|---|
+| `from`・`to` | 区間の終わりの時刻（`toAt`）の窓。**始めは含み、終わりは含まない**（`from ≤ toAt < to`。隣り合う窓で、行が重ならない）。どちらも要る（無ければ 400）。`to − from` は 31 日まで（越えれば 400）。ほかの検索と違い、受けた時刻（`receivedAt`）とは比べない |
+| `label=鍵:値` | そのラベルを持つアクターの行（`ListActors` の `label` と同じ書き方・同じ意味）。何度でも付けられ、どれも持つアクターの行だけ |
+| `actorId=<アクターの id>` | そのアクターの行（`ActorId` の形だけ） |
+| `maxResults`・`nextToken` | ページ（受けた順。ほかの検索と同じ） |
+
+```json
+{
+  "asOf": "…",
+  "usage": [{ "id": "u-1", "actorId": "019a…", "model": "claude-opus-5-5", "speed": "standard", "serviceTier": "standard", "fromAt": "2026-11-24T10:05:00Z", "toAt": "2026-11-24T10:55:00Z", "turns": 3, "…": "…" }],
+  "actors": [{ "id": "019a…", "name": "se.1", "labels": { "project": "castlist", "tpm.key": "t-23zs" } }]
+}
+```
+
+- 行（`Usage`）は `PutUsage` の答えと同じ形（mixin の `UsageFields`）。アクターは `actorId` で指す。
+- `actors` は、**その頁の行に出てきたアクターを 1 度ずつ**（行に初めて出た順。`id`・`name`・`labels`）。次の頁には、その頁のアクターがまた付く。
+- **同じアクター・同じ時・同じ種類の行は、2 つ以上在りうる。読む側は、数を足し、`maxContext` は大きい方を取る**（上の `PutUsage`）。
+- `from > to` の窓と、行の無い窓は、空の答え（`usage` も `actors` も空）。
+- 2026-11-24 の 1 日（UTC）の、castlist の席の行: `?from=2026-11-24T00:00:00Z&to=2026-11-25T00:00:00Z&label=project:castlist`
+
 ## 図と画面
 
 - `GetGraph`（`GET /api/graph?label=鍵:値&from=…&to=…`）: 画面（callboard）の相関図が使う、アクターの点と線。ラベルと、登録を受けた時刻の窓（両端を含む）でアクターの組を絞り、組に触れる線（`from` か `to` が組の中）の全部と、その線の向こうの端のアクター（一歩だけ）も入れる（人の根が切れないように）。どれも無ければ全部のアクター。点も線も受けた順（seq）。重い読みの接続（2 本）の 1 つの読む transaction の中で読み、軽い読みの接続は使わない。引数はどれも 1 つだけ（重ねれば初めの物を使う）。
@@ -364,13 +434,13 @@ Auditor の使い方（時刻は UTC。日本時間の 11:00〜12:00 は `02:00:
 
 - DB は SQLite で、表は `crates/server/migrations/` の SQL で作る（[DB](db.md)）。決まり（足すだけの trigger・seq・外のキー）は表が持つ。
 - 台帳は足すだけで、書き替えも消しもしない。同じ id は 2 度足さない。
-- id の値（アクターの UUID v7・出来事・線・設定の送り手の id）は変えない（pagetray の送り手と roster が、同じ id を送り続けるため）。
+- id の値（アクターの UUID v7・出来事・線・設定・トークンの数と費えの送り手の id）は変えない（pagetray の送り手と roster が、同じ id を送り続けるため）。
 - 「最新」は seq で決める。`receivedAt` は戻らない（書く transaction の中で、今と、どの表の最新の `receivedAt` の遅い方にする）。
 - 0.4.x の DB は、v1.0.0 の image の `migrate` で新しい volume へ移した（AI-36 の切り替え。手順と照らしは [release を出す](release.md) の「切り替え（済み）」）。0.4.x から移した行の送り手の時刻は送られた字のまま残り（時差の付いた字もある）、読む所が UTC に直して返す。
 - server（`Db::open` と binary）は、後の版（移行を足した版）が書いた DB（`_sqlx_migrations` に、この server の最も新しい版より後の版がある物）を、移行を当てずに断る（訳は「この server より新しい版の DB。…書いた版の image で起こす」）。記録の置き場（`logs/`）と WAL の file（`-wal`・`-shm`）は書く。ほかの合わない移行（中身の写しの違う版など）も、移行を当てずに「DB の移行に落ちた」で断る。binary は 1 で終わる。試験は `crates/server/tests/migrations.rs`（出した migrations の中身が 1 byte も替わっていないことも見る）。
 - 同じ id で同じ本文かを見る写し（`body_hash`）は、下の形で取る。0.4.x から移した行の写しは 0.4.x の本文の形の物なので、その行と同じ id を送り直すと 409 になる。特別な決まり（移した印で 200 にする）は置かない: 送り手の roster は 409 を「もう在るので済んだ」とみなす。
 - 写しの形（`crates/server/src/body.rs`。替えれば、前に受けた物の送り直しが 409 になる）:
-  1. 本文の欄を、定義の名の JSON の物にする。道の id は入れない。出来事は `issuer`・`by`・`type`・`detail`・`sentAt`、線は `issuer`・`type`・`from`・`to`・`sentAt`、model と effort は `issuer`・`by`・`model`・`effort`・`source`・`sentAt`。
+  1. 本文の欄を、定義の名の JSON の物にする。道の id は入れない。出来事は `issuer`・`by`・`type`・`detail`・`sentAt`、線は `issuer`・`type`・`from`・`to`・`sentAt`、model と effort は `issuer`・`by`・`model`・`effort`・`source`・`sentAt`。トークンの数と費えは `issuer`・`by`・`model`・`agent`（本体の回なら欄ごと無い）・`speed`・`serviceTier`・`fromAt`・`toAt`・`turns`・`inputTokens`・`outputTokens`・`cacheReadTokens`・`cacheWrite5mTokens`・`cacheWrite1hTokens`・`webSearchRequests`・`webFetchRequests`・`costMicroUsd`・`maxContext`・`buckets`・`sentAt`（`fromAt`・`toAt` は DB に残す字（UTC・ミリ秒まで・24 字）、`buckets` は `bucket` の順に並べた物。同じ時刻の違う書き方と、段の並びの違いは、同じ本文）。
   2. `detail` は、無ければ（JSON の null も）空の物 `{}`。`by`・`from`・`to` は送られた参照の字（`種類:値`）のまま。
   3. `sentAt` は DB に残す送り手の時刻と同じ字（UTC の RFC 3339。秒の下は要る桁だけ。例 `2026-11-24T00:00:00Z`・`2026-11-24T00:00:00.5Z`）。同じ時刻の違う書き方は同じ字になる。
   4. どの深さの物も鍵を UTF-8 の byte の順に並べ、空白を入れずに書く。字と数は serde_json の書き方（字は `"`・`\`・制御文字だけを escape する。小数は短い字）。
@@ -384,5 +454,5 @@ Auditor の使い方（時刻は UTC。日本時間の 11:00〜12:00 は `02:00:
 ## 後で決める物（候補）
 
 - 鍵でない付随する id に、鍵と同じ種類の物を入れられる（例 `[claude.session:s-1, claude.session:s-2]`。s-2 は鍵でない行で残り、後で s-2 を鍵にした登録は別のアクターを作る）。
-- `asOf` は壁の時計から取るが、書く時の `receivedAt` は 6 つの表の最新より前にならないよう決める。機械の時計が戻ると、答えの `asOf` が同じ答えの行の `receivedAt` より前になり得る。読む transaction の中で表の最新を読み、今との遅い方を `asOf` にするかを決める。
-- `asOf` から後を問う時の抜け: 書く側は受けた時刻を transaction の初めに決め、その後で commit する。だから、受けた時刻が前の答えの `asOf` より前で、まだ commit していなかった行は、次に `from=<前の asOf>` で問うても入らない。読み手は、前の `asOf` より書く鍵の待ち（2 秒）ほど前から重ねて問い、id で重なりを除く。直すなら、読む写しの中の 6 つの表の最新の `receivedAt` を「次の起点」として返す欄を足す（`asOf` の意味は替えない）。
+- `asOf` は壁の時計から取るが、書く時の `receivedAt` は 7 つの表の最新より前にならないよう決める。機械の時計が戻ると、答えの `asOf` が同じ答えの行の `receivedAt` より前になり得る。読む transaction の中で表の最新を読み、今との遅い方を `asOf` にするかを決める。
+- `asOf` から後を問う時の抜け: 書く側は受けた時刻を transaction の初めに決め、その後で commit する。だから、受けた時刻が前の答えの `asOf` より前で、まだ commit していなかった行は、次に `from=<前の asOf>` で問うても入らない。読み手は、前の `asOf` より書く鍵の待ち（2 秒）ほど前から重ねて問い、id で重なりを除く。直すなら、読む写しの中の 7 つの表の最新の `receivedAt` を「次の起点」として返す欄を足す（`asOf` の意味は替えない）。

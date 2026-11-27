@@ -21,6 +21,7 @@ mod link;
 mod list_actors;
 mod list_events;
 mod list_settings;
+mod list_usage;
 mod register;
 mod resolve;
 mod rows;
@@ -28,6 +29,7 @@ pub mod runlog;
 pub mod search;
 mod setting;
 mod token;
+mod usage;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -131,6 +133,14 @@ pub fn app_with(db: Arc<Db>, config: Config) -> Router {
         .put_setting({
             let db = db.clone();
             move |input| setting::put_setting(db.clone(), input)
+        })
+        .put_usage({
+            let db = db.clone();
+            move |input| usage::put_usage(db.clone(), input)
+        })
+        .list_usage({
+            let db = db.clone();
+            move |input| list_usage::list_usage(db.clone(), input)
         })
         .build()
         .expect("どの操作にも handler がある");
