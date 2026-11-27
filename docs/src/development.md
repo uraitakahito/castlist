@@ -4,18 +4,13 @@
 
 Rust は `rustup` で入れる（Homebrew の `rust` は `rust-toolchain.toml` を読まない）。版は `rust-toolchain.toml` が決め、この repo の中で `cargo` を打つと、その版が入って使われる。
 
-画面の browser の試験（`e2e/`）だけは Node を使う。版は `e2e/.node-version`、pnpm の版は `e2e/package.json` の `packageManager`、Playwright の版は `e2e/pnpm-lock.yaml` が決める（公開から 2 日たっていない版は入れない。`e2e/pnpm-workspace.yaml`）。初めに `cd e2e && pnpm install --frozen-lockfile && pnpm exec playwright install chromium`。設定は `e2e/playwright.config.ts`（`CASTLIST_E2E_SERVER`・`CASTLIST_E2E_PORT`・`CASTLIST_E2E_CHANNEL`）。Node と Playwright は image にも binary にも入らない。
-
 ```sh
 cargo fmt --all --check
 cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
 cargo test --locked -p castlist_sdk                                 # 定義の例から作った、生成した骨の中の試験（protocol の試験）
 ci/check-sql.sh                                                    # 行を書き替える・消す SQL が無いか
-ci/check-vendor.sh                                                 # 取り込んだ cytoscape が npm の物と同じか（static/vendor/SOURCES.md）
 ci/test-check-release-version.sh                                   # release の tag と版の突き合わせの試験
-(cd e2e && pnpm install --frozen-lockfile && pnpm test)            # 相関図と期間の欄を本物の browser で見る（Playwright。castlist-server を作って空いた port で起こす）
-cargo build --locked --bin castlist-server && (cd e2e && CASTLIST_E2E_SERVER=../target/debug/castlist-server pnpm test)   # 作った binary を名指して同じ試験を流す（CI の job e2e の形）
 cargo test --locked --release -p castlist --test load -- --ignored --nocapture   # 負荷の試験（50 の客で 10 秒）
 CASTLIST_LISTEN=127.0.0.1:18802 CASTLIST_DB=/tmp/castlist-dev.db cargo run --bin castlist-server   # 手元で起こす（本物の castlist の 8802 とは別の port・別の DB）
 mdbook build docs                                                  # この本を作る
@@ -50,12 +45,11 @@ server は `crates/server`（package `castlist`・binary `castlist-server`）の
 | 層 | 中身 | 在り処 |
 |---|---|---|
 | 受け入れ | 本物の binary を空いた port で起こし、HTTP で叩く | `crates/server/tests/server.rs`（守りの層の誤りの形・HEAD・本文の上限・backup も。道具は `crates/server/tests/common/server.rs`） |
-| 道筋と DB | 試験ごとに一時の DB を作り、Router を直に呼ぶ。書く接続・読む接続を直に使って、DB の決まり（足すだけ・外のキー・索引）も見る | `crates/server/tests/` の `health.rs`・`register.rs`・`actor.rs`・`resolve.rs`・`events.rs`・`links.rs`・`settings.rs`・`lineage.rs`・`search_actors.rs`・`search_rows.rs`（監査の検索）・`graph.rs`・`db.rs`・`concurrency.rs`・`ui.rs`（画面）・`guard.rs`（守りの層）・`backup.rs`（backup と logs の道）・`migrations.rs`（出した移行の file が替わっていない・後の版が書いた DB を移行を当てずに断る）（道具は `crates/server/tests/common/mod.rs`・`common/sample.rs`） |
+| 道筋と DB | 試験ごとに一時の DB を作り、Router を直に呼ぶ。書く接続・読む接続を直に使って、DB の決まり（足すだけ・外のキー・索引）も見る | `crates/server/tests/` の `health.rs`・`register.rs`・`actor.rs`・`resolve.rs`・`events.rs`・`links.rs`・`settings.rs`・`lineage.rs`・`search_actors.rs`・`search_rows.rs`（監査の検索）・`graph.rs`・`db.rs`・`concurrency.rs`・`no_ui.rs`（前の画面の道が無いこと）・`guard.rs`（守りの層）・`backup.rs`（backup と logs の道）・`migrations.rs`（出した移行の file が替わっていない・後の版が書いた DB を移行を当てずに断る）（道具は `crates/server/tests/common/mod.rs`・`common/sample.rs`） |
 | 負荷 | 本物の binary を一時の DB で起こし、50 の客が 10 秒叩く（読む物の 2 割は監査の検索。ふだんは流さない）。CI では一時の DB を memory の上（`TMPDIR=/dev/shm`）に置く（CI の機械の disk の書き込みの詰まりを測らないため） | `crates/server/tests/load.rs`（CI の job `load`） |
 | 単体 | DB に触らない純な関数 | 各 file の `#[cfg(test)]` |
-| browser | 本物の castlist-server を空いた port と一時の DB で起こし、API で見本を置き、Chromium で相関図を開く。点と線の数・押した先・model と effort の絞り・色（明るい・暗い）・console の誤りと CSP の違反が 0・script を切った時の字を見る。一覧とタイムラインの期間の欄（日時の欄で入れた日本時間で絞る・送り直しても同じ値・期間をすぐ選ぶ link）も見る | `e2e/`（Playwright。CI の job `e2e`。Node の依存の弱点は job `advisories` の `pnpm audit`） |
 | 終わり方と記録 | 本物の binary を、試験ごとの空の folder の DB で起こす。止める合図・合図なしの切断・DB を開けない、の後に起こし直して、前回の終わり方の行を見る。問い合わせの行が記録の file にだけ残ること・多く問い合わせた後の `logs/` の大きさが上限の内であること・読む道 `GET /api/logs` も見る | `crates/server/tests/runlog.rs`（書き手と印の単体は `crates/server/src/runlog.rs`） |
-| image | 空の image の中で起き、断るべき物を断り、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、API で書いて読み返し、止めて起こし直した後も読めて、前回の終わり方を次の起動で出す | `ci/smoke-image.sh <image>`（CI の job `image` と release の `check`） |
+| image | 空の image の中で起き、断るべき物を断り、前の画面の道が 404 で、API で書いて読み返し、止めて起こし直した後も読めて、前回の終わり方を次の起動で出す | `ci/smoke-image.sh <image>`（CI の job `image` と release の `check`） |
 | release の版 | tag と `Cargo.toml` の版・`CHANGELOG.md` の節の突き合わせを、通る形と落ちる形で打つ | `ci/test-check-release-version.sh`（CI の job `test`） |
 
 ## 待たせない書き方

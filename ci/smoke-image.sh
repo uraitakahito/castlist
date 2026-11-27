@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # image が、空の image の中で起き、/healthz に答え、外の Host と browser からの書き込みを断り、
-# 画面（一覧・タイムライン・相関図）と CSS と script が CSP の決まりどおりに出て、止める合図で自分から終わり、
-# 起こし直しても答えるかを見る。API は /api の下で、断る答えは restJson1 の形（X-Amzn-Errortype）。
+# 前の画面の道が無く（404）、止める合図で自分から終わり、起こし直しても答えるかを見る。
+# API は /api の下で、断る答えは restJson1 の形（X-Amzn-Errortype）。
 # 登録して出来事を足し、読み返し、起こし直した後も同じ物が読めるかも見る。
-# 使い方: ci/smoke-image.sh <image>（repo の checkout の中で打つ。配る cytoscape を static/vendor/ の物と突き合わせる）
+# 使い方: ci/smoke-image.sh <image>
 # container の名は smoke-castlist にする（castlist の設定の「PM だけ」の match（--name castlist など）に当てないため）。
 # 手元で流す時は、名と port を SMOKE_NAME・SMOKE_PORT で替えられる（既定は smoke-castlist と 18802）。
 set -euo pipefail
@@ -49,56 +49,15 @@ for header in 'Host: evil.example' 'Origin: https://evil.example'; do
   tr -d '\r' <"$tmp/forbidden-head.txt" | grep -qix 'x-amzn-errortype: forbidden'
   jq -e '.message | length > 0' "$tmp/forbidden.json" >/dev/null
 done
-# 画面: 一覧に CSP が付き（crates/server/src/lib.rs の CSP と同じ字）、inline の script と style が無く、castlist の CSS を読む。
-csp="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
-curl -fsS -D "$tmp/head.txt" -o "$tmp/index.html" "$url/"
-tr -d '\r' <"$tmp/head.txt" | grep -qixF "content-security-policy: $csp"
-if grep -qiE '<script|<style|style=' "$tmp/index.html"; then
-  echo "NG: 一覧に inline の script か style がある" >&2
-  exit 1
-fi
-grep -qF '<link rel="stylesheet" href="/static/site.css' "$tmp/index.html"
-# 系図（前の /graph/tree）は消した。開くと 404。
-test "$(code "$url/graph/tree")" = 404
-# タイムライン: 同じ CSP が付き、inline の script と style が無い（空の DB なので、条件に合うアクターがいないと書く）。
-curl -fsS -D "$tmp/timeline-head.txt" -o "$tmp/timeline.html" "$url/graph/timeline"
-tr -d '\r' <"$tmp/timeline-head.txt" | grep -qixF "content-security-policy: $csp"
-if grep -qiE '<script|<style|style=' "$tmp/timeline.html"; then
-  echo "NG: タイムラインに inline の script か style がある" >&2
-  exit 1
-fi
-grep -qF '条件に合うアクターはいません' "$tmp/timeline.html"
-curl -fsS -D "$tmp/css-head.txt" -o "$tmp/site.css" "$url/static/site.css"
-tr -d '\r' <"$tmp/css-head.txt" | grep -qi '^content-type: text/css'
-test -s "$tmp/site.css"
-# 相関図: 同じ CSP が付き、inline の style が無く、script は castlist が配る 2 つ（cytoscape と network.js）を src で読むだけ。
-curl -fsS -D "$tmp/network-head.txt" -o "$tmp/network.html" "$url/graph/network"
-tr -d '\r' <"$tmp/network-head.txt" | grep -qixF "content-security-policy: $csp"
-if grep -qiE '<style|style=' "$tmp/network.html"; then
-  echo "NG: 相関図に inline の style がある" >&2
-  exit 1
-fi
-scripts=$(grep -oiE '<script[^>]*>' "$tmp/network.html" | sed -E 's/\?v=[0-9a-f]+"/"/' | LC_ALL=C sort)
-want_scripts='<script src="/static/network.js">
-<script src="/static/vendor/cytoscape-3.35.0.min.js">'
-if [ "$scripts" != "$want_scripts" ]; then
-  echo "NG: 相関図の script が、castlist の配る 2 つでない: $scripts" >&2
-  exit 1
-fi
-grep -qF 'data-src="/api/graph"' "$tmp/network.html"
-# 相関図の script（network.js）と cytoscape: JavaScript の型で、中身がある。cytoscape は static/vendor/ の物と同じ字。
-curl -fsS -D "$tmp/network-js-head.txt" -o "$tmp/network.js" "$url/static/network.js"
-tr -d '\r' <"$tmp/network-js-head.txt" | grep -qi '^content-type: application/javascript'
-tr -d '\r' <"$tmp/network-js-head.txt" | grep -qix 'x-content-type-options: nosniff'
-test -s "$tmp/network.js"
-curl -fsS -D "$tmp/cytoscape-head.txt" -o "$tmp/cytoscape.js" "$url/static/vendor/cytoscape-3.35.0.min.js"
-tr -d '\r' <"$tmp/cytoscape-head.txt" | grep -qi '^content-type: application/javascript'
-tr -d '\r' <"$tmp/cytoscape-head.txt" | grep -qix 'x-content-type-options: nosniff'
-cmp -s "$tmp/cytoscape.js" "$here/../static/vendor/cytoscape-3.35.0.min.js" || {
-  echo "NG: 配る cytoscape が static/vendor/cytoscape-3.35.0.min.js と違う" >&2
-  exit 1
-}
-# 書いて読み返す（画面の確かめは空の DB を前にするので、その後に書く）。
+# 画面は無い（2.0.0 で外した。画面は callboard が出す）。前の画面の道は、どれも 404 で、HTML を返さない。
+for path in / /actors/019a0000-0000-7000-8000-000000000001 /graph/timeline /graph/network /static/site.css /static/network.js; do
+  test "$(curl -s -D "$tmp/gone-head.txt" -o /dev/null -w '%{http_code}' "$url$path")" = 404
+  if tr -d '\r' <"$tmp/gone-head.txt" | grep -qiE '^content-type: text/html|^content-security-policy:'; then
+    echo "NG: $path が HTML か CSP を返した" >&2
+    exit 1
+  fi
+done
+# 書いて読み返す。
 # 登録（201）・出来事（201、同じ本文の送り直しは 200）・GetActor に出来事が付く。
 json='Content-Type: application/json'
 sent=2026-01-01T00:00:00Z

@@ -5,7 +5,6 @@
 # 使う
 
 - [動かす](run.md)
-- [画面](ui.md)
 - [API](api.md)
 - [DB](db.md)
 

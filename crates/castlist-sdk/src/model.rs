@@ -2129,7 +2129,7 @@ pub struct ActorRow {
     pub model: ::std::option::Option<::std::string::String>,
     /// 最新の effort（受けた順で）。
     pub effort: ::std::option::Option<::std::string::String>,
-    /// プロフィールの頁の path（`/actors/{id}`）。
+    /// プロフィールの画面の path（`/actors/{id}`）。画面は callboard が、この path で出す（castlist は 2.0.0 から画面を持たない）。
     pub url: ::std::string::String,
 }
 impl ActorRow {
@@ -2207,7 +2207,7 @@ impl ActorRow {
     pub fn effort(&self) -> ::std::option::Option<&str> {
         self.effort.as_deref()
     }
-    /// プロフィールの頁の path（`/actors/{id}`）。
+    /// プロフィールの画面の path（`/actors/{id}`）。画面は callboard が、この path で出す（castlist は 2.0.0 から画面を持たない）。
     pub fn url(&self) -> &str {
         use std::ops::Deref;
         self.url.deref()
@@ -4721,7 +4721,7 @@ pub mod actor_row {
             self.effort = input;
             self
         }
-        /// プロフィールの頁の path（`/actors/{id}`）。
+        /// プロフィールの画面の path（`/actors/{id}`）。画面は callboard が、この path で出す（castlist は 2.0.0 から画面を持たない）。
         pub fn url(mut self, input: ::std::string::String) -> Self {
             self.url = Some(input);
             self

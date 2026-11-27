@@ -11,7 +11,7 @@ Apple Container（`container` CLI）で、release の image を動かす。host�
 |---|---|
 | image | `ghcr.io/uraitakahito/castlist:v<version>`（[release](https://github.com/uraitakahito/castlist/releases) に digest がある。arm64） |
 | container | `castlist.box`（`127.0.0.1:8802` → 中の 8080。メモリは Apple Container の下限の 200 MiB、CPU は 1） |
-| URL | host の browser と roster からは `http://127.0.0.1:8802/`（[画面](ui.md)。[API](api.md) は `/api/`）。同じ network の container（置き場の pagetray など）からは `http://castlist.box:8080/` |
+| URL | host の roster と callboard からは `http://127.0.0.1:8802/`（[API](api.md) は `/api/`。画面は無い: 2.0.0 から、画面は callboard の `http://127.0.0.1:8803/`）。同じ network の container（画面の callboard・置き場の pagetray など）からは `http://castlist.box:8080/` |
 | DB | 名前つきの volume `castlist-data-v1`（中の `/data/castlist.db`。1.0.0 から）。host の folder は mount しない |
 | 記録 | 同じ volume の `/data/logs/`（0.3.0 から。合わせて 4 MiB と 64 KiB まで）。下の「落ちた後に調べる」 |
 | 設定 | 環境変数 `CASTLIST_DB`（既定 `/data/castlist.db`）・`CASTLIST_LISTEN`（既定 `0.0.0.0:8080`）。image の既定のままでよい |
@@ -31,10 +31,10 @@ castlist が 403 で断るのは、`Host` が `127.0.0.1`・`localhost` でな�
 ## 初めて起こす
 
 ```sh
-container image pull ghcr.io/uraitakahito/castlist:v1.1.0
-container image inspect ghcr.io/uraitakahito/castlist:v1.1.0 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
+container image pull ghcr.io/uraitakahito/castlist:v2.0.0
+container image inspect ghcr.io/uraitakahito/castlist:v2.0.0 | grep -o '"digest" *: *"sha256:[0-9a-f]*"'   # release の digest がこの中にあるか
 container volume create castlist-data-v1
-container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data-v1:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v1.1.0
+container run -d --name castlist.box -p 127.0.0.1:8802:8080 -v castlist-data-v1:/data -m 200M -c 1 ghcr.io/uraitakahito/castlist:v2.0.0
 ```
 
 - digest の見方: `container image list` に出る digest は、Apple Container が付ける別の値。release の digest は、`container image inspect` の `variants` の中の `digest` に出る。
@@ -59,7 +59,7 @@ container start castlist.box
 2. `curl -s http://127.0.0.1:8802/healthz` が `{"status":"ok","version":"<version>","now":"…"}` を返す（`version` が起こした版）。
 3. `lsof -nP -iTCP:8802 -sTCP:LISTEN` が `127.0.0.1:8802` だけを出す（`*:` で始まる行があれば LAN に開いている）。
 4. `container logs castlist.box` の頭の 2 行が、前回の終わり方（`previous: …`。下の「落ちた後に調べる」）と、`castlist <version> listen=0.0.0.0:8080 db=/data/castlist.db` で終わる行（0.3.0 から、どの行も頭に時刻と `INFO` などの重さが付く）。
-5. browser で `http://127.0.0.1:8802/` を開き、一覧が出る。
+5. `curl -s -o /dev/null -w '%{http_code}\n' 'http://127.0.0.1:8802/api/timeline?from=9000-01-01T00:00:00Z'` が `200` を返す（API が答える）。画面は castlist に無いので、アクターの一覧は callboard（`http://127.0.0.1:8803/actors/`）で見る。
 
 ## 落ちた後に調べる
 

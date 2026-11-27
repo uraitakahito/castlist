@@ -252,8 +252,8 @@ async fn reads_answer_within_100_ms_while_the_write_lock_is_held_for_2_seconds()
     println!("一番遅い読み: {slowest:?}");
 }
 
-/// タイムラインを組む重い計算は、tokio の糸の外（spawn_blocking）で走り、DB は重い読みの接続だけで読む。
-/// 500 のアクター（登場と model の替わり目つき）のタイムラインを並べて組ませている間も、引き当て（ResolveActors）は 100 ms で答える。
+/// タイムラインの元の値（GetTimeline）の重い読みは、DB の重い読みの接続だけを使う（並べる計算は、画面を持つ callboard がする）。
+/// 500 のアクター（登場と model の替わり目つき）のタイムラインの元の値を並べて引かせている間も、引き当て（ResolveActors）は 100 ms で答える。
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn resolving_answers_in_100_ms_while_timelines_of_500_actors_are_built() {
     let app = App::start().await;
@@ -286,18 +286,14 @@ async fn resolving_answers_in_100_ms_while_timelines_of_500_actors_are_built() {
             tokio::spawn(async move {
                 let mut done = 0;
                 while !stop.load(Ordering::Relaxed) {
-                    let response = router
-                        .clone()
-                        .oneshot(get("/graph/timeline"))
-                        .await
-                        .unwrap();
+                    let response = router.clone().oneshot(get("/api/timeline")).await.unwrap();
                     assert_eq!(response.status(), StatusCode::OK);
                     let bytes = http_body_util::BodyExt::collect(response.into_body())
                         .await
                         .unwrap()
                         .to_bytes();
-                    let body = String::from_utf8(bytes.to_vec()).unwrap();
-                    assert_eq!(body.matches("href=\"/actors/").count(), 501);
+                    let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+                    assert_eq!(body["nodes"].as_array().map(Vec::len), Some(501));
                     done += 1;
                 }
                 done
@@ -325,8 +321,8 @@ async fn resolving_answers_in_100_ms_while_timelines_of_500_actors_are_built() {
     for task in renders {
         rendered += task.await.unwrap();
     }
-    assert!(rendered > 0, "タイムラインを 1 度も組めていない");
-    println!("一番遅い引き当て: {slowest:?}・組んだタイムライン: {rendered}");
+    assert!(rendered > 0, "タイムラインの元の値を 1 度も引けていない");
+    println!("一番遅い引き当て: {slowest:?}・引いたタイムライン: {rendered}");
 }
 
 /// 重い読み（図の点と線・タイムライン）は、重い読みの接続（HEAVY_READS 本）だけを使い、軽い読みの接続（READS 本）には触れない。
@@ -352,7 +348,7 @@ async fn heavy_reads_use_only_the_heavy_read_connections() {
             let router = app.app.clone();
             let stop = stop.clone();
             let path = if i % 2 == 0 {
-                "/graph/timeline"
+                "/api/timeline"
             } else {
                 "/api/graph"
             };

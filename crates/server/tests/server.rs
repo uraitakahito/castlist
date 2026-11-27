@@ -88,30 +88,26 @@ fn 上限を_1_byte_超える本文は_payload_too_large_で断る() {
 }
 
 #[test]
-fn 画面の応答に_csp_を付ける() {
+fn 画面は無く_前の画面の道は_404() {
+    // 2.0.0 で画面を外した（画面は callboard が出す）。本物の接続でも、前の道は 404 で、HTML も CSP も返さない。
     let server = Server::start();
-    let answer = server.get("/");
-    assert_eq!(answer.status, 200, "{answer:?}");
-    assert!(
-        answer
-            .header("content-type")
-            .unwrap_or_default()
-            .starts_with("text/html"),
-        "{answer:?}"
-    );
-    assert_eq!(
-        answer.header("content-security-policy").as_deref(),
-        Some(castlist::CSP),
-        "{answer:?}"
-    );
-    assert_eq!(
-        answer.header("x-content-type-options").as_deref(),
-        Some("nosniff")
-    );
-    assert!(
-        !answer.text().contains("<script>"),
-        "inline の script を出さない"
-    );
+    for path in ["/", "/graph/network", "/static/site.css"] {
+        let answer = server.get(path);
+        assert_eq!(answer.status, 404, "{path}: {answer:?}");
+        assert!(
+            !answer
+                .header("content-type")
+                .unwrap_or_default()
+                .starts_with("text/html"),
+            "{path}: {answer:?}"
+        );
+        assert_eq!(answer.header("content-security-policy"), None, "{path}");
+        assert_eq!(
+            answer.header("x-content-type-options").as_deref(),
+            Some("nosniff"),
+            "{path}"
+        );
+    }
 }
 
 #[test]

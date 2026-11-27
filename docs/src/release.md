@@ -8,7 +8,7 @@ image は public で、だれでも取って中を見られる。**出すのは 
 4. `push`（`packages: write` と、release を書くための `contents: write`）が、確かめたその image（作り直さない）を `ghcr.io/uraitakahito/castlist:v<version>` に置き、release に digest と中身の一覧を書く。同じ tag がもう ghcr.io にあれば置かない。
 5. release の中身の一覧が「`castlist-server` と空の `data` だけ」であることを見る（この時、image はもう public。違っていたら、すぐ下の「機微な物が出てしまった時」をする）。
 6. 同じ tag の push で、docs の workflow（`.github/workflows/docs.yml`）が本を GitHub Pages（https://uraitakahito.github.io/castlist/）に出す。出たのを見る。
-7. roster で、`cli/src/castlist.ts` の `CASTLIST_VERSION` を新しい版にする PR を出す。roster は、castlist が止まっていて container も無い時に、この版で `container run` の 1 行を出すので、上げ忘れると古い版を起こす 1 行が出る（roster の docs の「開発」の「castlist を上げる時」）。
+7. roster で、`.castlist-version` と `cli/src/castlist.ts` の `CASTLIST_VERSION` を新しい版にする PR を出す。API を使う callboard（`ci/gen.sh` と `ci/upstream.env`）と pagetray（`ci/gen.sh`）も、定義が替わった版なら留め直す。roster は、castlist が止まっていて container も無い時に、この版で `container run` の 1 行を出すので、上げ忘れると古い版を起こす 1 行が出る（roster の docs の「開発」の「castlist を上げる時」）。
 8. Product Manager に、[動かす](run.md) の 1 行（初めてなら「初めて起こす」、2 度目からは「版を上げる」）を送る。castlist を起こすのは Product Manager だけ。
 
 - 出した tag は打ち直さない（digest が変わり、書き留めた値と合わなくなる）。直す時は、次の版を出す。
@@ -35,9 +35,9 @@ image は外に出す物なので、入ってよい物を決めてあり、CI（
 | image の file | binary 1 つ（`castlist-server`）と、空の `/data` だけ。layer は 2 枚 | `ci/image-contents.txt` |
 | 設定 | 環境変数は DB の path と待ち受けの 2 つだけ。label は `org.opencontainers.image.source`・`version`・`revision` だけ。開ける port は 8080 だけ | `ci/check-image.sh` の頭 |
 | binary の中の字 | home の path・mail の形・秘密の鍵や token の頭が無い。gitleaks も掛ける（source にも） | `ci/scan-binary.sh`・`ci/strings-deny.txt`・`ci/strings-allow.txt` |
-| 動くか | 空の image の中で起き、外の Host と browser からの書き込みを断り（断る答えは restJson1 の形）、画面（相関図も）と CSS と script が CSP の決まりどおりに出て、API（`/api`）で登録と出来事を書いて読み返し、止めて起こし直した後も書いた物が読める | `ci/smoke-image.sh <image>` |
+| 動くか | 空の image の中で起き、外の Host と browser からの書き込みを断り（断る答えは restJson1 の形）、前の画面の道が 404 で、API（`/api`）で登録と出来事を書いて読み返し、止めて起こし直した後も書いた物が読める | `ci/smoke-image.sh <image>` |
 
-- binary には、画面の template・CSS・script と、取り込んだ cytoscape（MIT。`static/vendor/`）が埋め込まれる。cytoscape は npm の物と同じかを `ci/check-vendor.sh` が見る。
+- binary に、画面の template・CSS・script・外の library は入らない（2.0.0 で画面を外した）。
 - build に秘密は要らない。`Containerfile` に `ARG` を書かず、`--build-arg`・`--secret` を使わない。label は、release の workflow が `--label` で付ける 3 つだけ。
 - 出どころの記録（provenance・SBOM）は付けない。付ける時は、中身を見てから。
 - release の workflow は、確かめる job（書き込みの権限が無い）と、置く job（`packages: write`・`contents: write`）に分かれている。置く job は、確かめた image の file を受け取り、checksum を見てから、そのまま置く。

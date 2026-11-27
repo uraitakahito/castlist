@@ -64,7 +64,7 @@ async fn a_write_with_an_origin_is_refused() {
 #[tokio::test]
 async fn a_foreign_host_gets_the_forbidden_error_shape_on_every_kind_of_path() {
     let app = App::start().await;
-    // 生成した道・画面・backup・知らない道のどれも、同じ形で断る。
+    // 生成した道・backup・知らない道（前の画面の道も）のどれも、同じ形で断る。
     for path in ["/healthz", "/api/actors", "/", "/api/backup", "/no/such"] {
         let (status, headers, body) = app.send(with_host("GET", path, "evil.example")).await;
         assert_eq!(status, StatusCode::FORBIDDEN, "{path}: {body}");
@@ -111,13 +111,12 @@ async fn head_is_answered_like_get_without_the_body() {
     let app = App::start().await;
     let answer = app.register(&ai("se", "s-1")).await;
     let id = answer["actor"]["id"].as_str().unwrap().to_owned();
-    // 生成した道（GET の操作）と画面の道のどちらも、GET と同じ状態と header で、本文なし。
-    // 3 つ目は、本文に今の時刻（/healthz の now・GetActor の asOf）が入るか。時刻の字は秒の下の終わりの 0 を落とすので、
-    // 問うたびに長さが替わりうる。その道では Content-Length が有ることだけを見て、同じ長さは時刻の無い道で見る。
+    // 生成した道（GET の操作）は、GET と同じ状態と header で、本文なし（画面の道は、2.0.0 で外した）。
+    // 組の 3 つ目は、本文に今の時刻（/healthz の now・GetActor の asOf）が入るか。時刻の字は秒の下の終わりの 0 を落とすので、
+    // 問うたびに長さが替わりうる。その道では Content-Length が有ることだけを見る。
     for (path, content_type, timed) in [
         ("/healthz".to_owned(), "application/json", true),
         (format!("/api/actors/{id}"), "application/json", true),
-        ("/".to_owned(), "text/html; charset=utf-8", false),
     ] {
         let (status, headers, body) = app.send(with_host("HEAD", &path, "127.0.0.1:8802")).await;
         assert_eq!(status, StatusCode::OK, "{path}: {body}");

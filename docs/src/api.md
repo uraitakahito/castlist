@@ -1,6 +1,6 @@
 # API
 
-API は Smithy の定義（`model/`）から作る。protocol は `aws.protocols#restJson1` で、本文はどれも JSON。道は `/api/` の下（画面の `/actors/{id}` などと重ならないように）で、`/healthz` だけは外。host（castlist を動かす機械）の外からは届かない。`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403（browser で開いたほかのページからの読み書きを断る物。同じ network の container は `Host: 127.0.0.1` で読み書きできる。[動かす](run.md) の「同じ network の container からは届く」）。
+API は Smithy の定義（`model/`）から作る。protocol は `aws.protocols#restJson1` で、本文はどれも JSON。道は `/api/` の下で、`/healthz` だけは外。host（castlist を動かす機械）の外からは届かない。`Host` が `127.0.0.1`・`localhost` でない要求と、`Origin` の付いた書く要求は 403（browser で開いたほかのページからの読み書きを断る物。同じ network の container は `Host: 127.0.0.1` で読み書きできる。[動かす](run.md) の「同じ network の container からは届く」）。
 
 - アクターは、鍵の付随する id（`種類:値`。例 `claude.session:5f0c…`・`tpm.person:pm`）で指す。本当の id への引き当ては castlist がする。値には `:` があってよい（初めの `:` で分ける）。
 - 定義の形の名は `ai.castlist`（castlist の操作）と `ai.common`（`model/model/common.smithy`。pagetray と共に使う誤り・時刻・ページ送りの形）。
@@ -44,7 +44,7 @@ API は Smithy の定義（`model/`）から作る。protocol は `aws.protocols
 | `GetGraph` | `GET /api/graph` | 図の点と線 |
 | `GetTimeline` | `GET /api/timeline` | タイムラインを描く元の値（図の点と線と、その点の出来事と、model と effort の行の全部。1.1.0 から） |
 
-手の道（Smithy の外）: 画面（`/`・`/actors/{id}`・`/graph/…`・`/static/…`。[画面](ui.md)）・`GET /api/backup`（SQLite の file）・`GET /api/logs`（字）。
+手の道（Smithy の外）: `GET /api/backup`（SQLite の file）・`GET /api/logs`（字）。画面は castlist に無い（2.0.0 で外した。アクターの一覧・プロフィール・タイムライン・相関図は、この API を通して [callboard](https://github.com/uraitakahito/callboard) が出す。前の画面の道 `/`・`/actors/{id}`・`/graph/…`・`/static/…` は 404）。
 
 - `GET /api/backup`（`crates/server/src/hand.rs`）: 動かしたまま、揃ったバックアップを 1 つの SQLite の file で返す。DB の隣の一時の file（`<DB>.backup-<pid>-<番号>`）に `VACUUM INTO` で作り、開いてから名を消し、`application/vnd.sqlite3`（`Content-Disposition: attachment; filename="castlist.db"`）で読みながら送る。DB 全体を読むので、重い読みの接続で作る（軽い読みの接続を取らない）。誤りは restJson1 の形の 503 `Unavailable`・500 `InternalError`。`curl -fsS -o castlist-backup-$(date +%Y%m%d-%H%M).db http://127.0.0.1:8802/api/backup`。
 - `GET /api/logs`: 残した記録（終わり方の印と、時刻つきの行）を、古い順の字で返す（`text/plain; charset=utf-8`。多くて 4 MiB と 64 KiB）。`curl -s http://127.0.0.1:8802/api/logs`。castlist を止めずに、落ちた後の調べに使う。中身の file と行の読み方は [動かす](run.md) の「落ちた後に調べる」。行の形は、この API の決まりに入らない（人が読むための字）。記録の置き場を付けた時（binary）だけ在り、無い時（Router を直に呼ぶ試験）は生成した層の 404。
@@ -90,7 +90,7 @@ API は Smithy の定義（`model/`）から作る。protocol は `aws.protocols
 
 `type` は次の 10 のどれか: `entered`・`reentered`・`forked`・`compacted`・`cleared`・`exited`・`closed`・`reported_in`・`model_unreadable`・`retracted`。`detail` は JSON の物（`{…}`。無ければ `{}`）で、ほかの形は 400。答えの `detail` は送られた物と同じ中身（鍵の順は送られた物と同じとは限らない）。
 
-推しの幕引き: 送り手が、終わりの出来事を送れずに落ちたと推して後から送る `closed` は、`detail` に `"inferred": true`（JSON の真偽の true）と訳（`reason`）を付ける。castlist は、これを状態の `inferred`（下の「1 つのアクター」と「アクターの一覧の 1 行」）と、画面の推しの帯と「停止（推し）」に使う。roster が送る訳は `workspace_gone`（居場所が消えた）と `superseded`（居場所に後から別の session が入った）。`GET /api/events?type=closed&reason=workspace_gone` で探せる。
+推しの幕引き: 送り手が、終わりの出来事を送れずに落ちたと推して後から送る `closed` は、`detail` に `"inferred": true`（JSON の真偽の true）と訳（`reason`）を付ける。castlist は、これを状態の `inferred`（下の「1 つのアクター」と「アクターの一覧の 1 行」）と、画面（callboard）の推しの帯と「停止（推し）」に使う。roster が送る訳は `workspace_gone`（居場所が消えた）と `superseded`（居場所に後から別の session が入った）。`GET /api/events?type=closed&reason=workspace_gone` で探せる。
 
 - 201: 新しく足した。200: 同じ id で同じ本文が既にある。409: 同じ id で本文が違う。400: `by` のアクターを引けない・`type` が決まりの外・`detail` が物でない。
 
@@ -201,7 +201,7 @@ Auditor（台帳の件を監査する AI の席）が、件の記録に残って
 - `presence`: 稼働を替える出来事（6 種）の最新の種類（`GetActor` の `state.presence` と同じ）。1 つも無ければ、欄ごと無い。1.1.0 で足した欄。
 - `skewed`: 時刻ずれの行（登録・出来事・model と effort のどれか）を持つか（絞りの `skewed` と同じ意味。線は見ない）。`clockSkew` は登録だけの印で、これとは別。1.1.0 で足した欄（前の版の答えには無い）。
 - `model`・`effort`: 最新（seq で）の名。
-- `url`: アクターのプロフィールの画面の path（[画面](ui.md)）。
+- `url`: アクターのプロフィールの画面の path（`/actors/{id}`）。画面は callboard が、この path で出す（[callboard の画面](https://uraitakahito.github.io/callboard/ui.html)）。castlist の番地に付けても開かない（2.0.0 から）。
 - 値の無い欄（まだ登場していない者の `firstEnteredAt` など）は、欄ごと無い。
 
 ### `ListActors` アクターを探す
@@ -333,7 +333,7 @@ Auditor の使い方（時刻は UTC。日本時間の 11:00〜12:00 は `02:00:
 
 ## 図と画面
 
-- `GetGraph`（`GET /api/graph?label=鍵:値&from=…&to=…`）: 画面の 2 つの図（タイムライン・相関図。[画面](ui.md)）が使う、アクターの点と線。ラベルと、登録を受けた時刻の窓（両端を含む）でアクターの組を絞り、組に触れる線（`from` か `to` が組の中）の全部と、その線の向こうの端のアクター（一歩だけ）も入れる（人の根が切れないように）。どれも無ければ全部のアクター。点も線も受けた順（seq）。重い読みの接続（2 本）の 1 つの読む transaction の中で読み、軽い読みの接続は使わない。引数はどれも 1 つだけ（重ねれば初めの物を使う）。
+- `GetGraph`（`GET /api/graph?label=鍵:値&from=…&to=…`）: 画面（callboard）の相関図が使う、アクターの点と線。ラベルと、登録を受けた時刻の窓（両端を含む）でアクターの組を絞り、組に触れる線（`from` か `to` が組の中）の全部と、その線の向こうの端のアクター（一歩だけ）も入れる（人の根が切れないように）。どれも無ければ全部のアクター。点も線も受けた順（seq）。重い読みの接続（2 本）の 1 つの読む transaction の中で読み、軽い読みの接続は使わない。引数はどれも 1 つだけ（重ねれば初めの物を使う）。
 - `GetTimeline`（`GET /api/timeline?label=鍵:値&from=…&to=…`。1.1.0 から）: タイムラインを描く元の値。引数と、点（`nodes`）と線（`edges`）は `GetGraph` と同じ（同じ絞り・同じ順）。それに、点のアクターの出来事の全部（`events`。受けた順。欄は `actorId`・`type`・`receivedAt`・`inferred`（推しの幕引きか）・`reason`（`detail.reason` が字の時だけ）で、`detail` の全部は出さない）と、model と effort の行の全部（`settings`。受けた順。`GetActor` の行と同じ形）を足す。4 つの並びは、重い読みの接続の 1 つの読む transaction の中で読んだ、揃った写し。並べる計算（帯・切れ・矢印・目盛り）は、呼ぶ側がする。頁は分けない（並べる計算は、組の全部を 1 度に要る）ので、答えの大きさは、組のアクターの出来事の数で決まる。広い組を引く時は、`label` か期間で絞る。
 - 点（`GraphNode`）は登録の欄と、`state`（`GetActor` の `state` と同じ形）と、`currentSettings`（`GetActor` の物と同じ形。無ければ無い）。線は `GetActor` の線と同じ形。
 
@@ -345,9 +345,7 @@ Auditor の使い方（時刻は UTC。日本時間の 11:00〜12:00 は `02:00:
 }
 ```
 
-- 画面（`/`・`/actors/{id}`・`/graph/timeline`・`/graph/network`・`/static/…`）は、同じ axum の Router に手の道として並べる（`crates/server/src/ui.rs`）。画面の URL の引数は snake_case（`active_from` など）で、生成した層でなく画面が自分で読む（`crates/server/src/ui/params.rs`）。タイムラインも重い読みの接続だけを使う。
-- 相関図の `data-src` は `GET /api/graph` を指し、期間を UTC・ミリ秒までの字にして渡す（API は時差の付いた時刻を受けない）。
-- `templates/`（`crates/server/askama.toml` が指す）と `static/`（配る file。binary に埋め込む）は repo の頭に置く。
+- 画面は castlist に無い（2.0.0 で外した）。図を描くのは callboard で、相関図は `GetGraph`、タイムラインは `GetTimeline` の答えから描く。
 
 ## 守りの層
 
@@ -355,7 +353,7 @@ Auditor の使い方（時刻は UTC。日本時間の 11:00〜12:00 は `02:00:
 
 | 順 | 守り | 振る舞い |
 |---|---|---|
-| 1 | 頭の印 | どの答えにも `X-Content-Type-Options: nosniff` と `Referrer-Policy: no-referrer` を、HTML の答えには CSP（[画面](ui.md)）を付ける（断った答えにも付く） |
+| 1 | 頭の印 | どの答えにも `X-Content-Type-Options: nosniff` と `Referrer-Policy: no-referrer` を付ける（断った答えにも付く。HTML の答えは無いので、CSP は付けない） |
 | 2 | 問い合わせの記録 | 1 つにつき 1 行（method・uri・status・latency。tower-http の TraceLayer）。記録の file にだけ書き、stdout には出さない。断った物も残る |
 | 3 | Host と Origin | `Host` が 127.0.0.1・localhost でなければ、`GET`・`HEAD` のほかの要求に `Origin` が付いていれば、403 `Forbidden` |
 | 3 | HEAD | `GET` にして通し、本文を捨てる（状態と header は `GET` と同じ。`Content-Length` も）。生成した骨の道は GET だけなので、ここで揃える（`HEAD /healthz` は 200）。GET の無い道の HEAD は、GET と同じ答え（405 か 404） |
