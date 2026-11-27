@@ -905,7 +905,8 @@ async fn the_usage_sql_uses_an_index_and_does_not_scan_a_big_table() {
         ("usage_hash", Some("sqlite_autoindex_usage_1")),
         ("usage_window", Some("usage_to")),
         ("usage_actor", None),
-        ("usage_labels", None),
+        // ラベルで絞る時も、窓の索引で引く（広いラベルのアクターの行を、初めから全部辿らない）。
+        ("usage_labels", Some("usage_to")),
         ("usage_all", None),
         ("usage_actors", None),
     ];
