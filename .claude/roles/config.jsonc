@@ -11,6 +11,8 @@
     // volume: 消す命令の castlist-data は、1.0.0 からの castlist-data-v1 に当たる（guard は字が含まれるかで見る）。
     // -v castlist-data は、castlist-data-v1 を付けて起こす命令（リストア・起きない時に記録を読む物）に当たり、volume に書く道も止める。
     // 字の castlist-data だけは match にしない（volume の名を grep するだけの読む命令まで断るため）。
+    // 末尾に * の項目は、命令の語で当てる roster の guard（t-7j37）の物で、* の語は前方一致（castlist-data* は castlist-data-v1 に当たる）。
+    // 字の含みで見る前の guard では * の項目は当たらず、* の無い項目が当たる。どちらの guard でも守りに穴が空かないよう、両方を並べて置く。
     "castlist": {
       "guard": "pm-only",
       "match": [
@@ -29,6 +31,9 @@
         "container volume delete castlist-data",
         "container volume rm castlist-data",
         "-v castlist-data",
+        "container volume delete castlist-data*",
+        "container volume rm castlist-data*",
+        "-v castlist-data*",
       ],
     },
   },
