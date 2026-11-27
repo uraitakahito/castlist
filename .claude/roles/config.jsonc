@@ -6,20 +6,19 @@
     // 「profileサーバーのdataのvolume削除も私だけとします」）。どの担当も打てない（pm-only）。
     // Product Manager が自分の terminal で直に打つ。担当は、打ってほしい 1 行を確認のページに書いて roster ask pm で送る。
     // container の名は castlist.box（0.1.1 から。同じ network の container が DNS の domain box で名で引く）。
-    // 前の名 castlist の match も残す（0.1.0 の docs の名で動かしている間と、前の名で起こし直す試みを止めるため）。
-    // guard は命令の字に match の字が含まれるかで見るので、前の名の字は新しい名の命令にも当たる。新しい名は、何に当たるかを読めるように書く。
-    // volume: 消す命令の castlist-data は、1.0.0 からの castlist-data-v1 に当たる（guard は字が含まれるかで見る）。
-    // -v castlist-data は、castlist-data-v1 を付けて起こす命令（リストア・起きない時に記録を読む物）に当たり、volume に書く道も止める。
-    // 字の castlist-data だけは match にしない（volume の名を grep するだけの読む命令まで断るため）。
-    // 末尾に * の項目は、命令の語で当てる roster の guard（t-7j37）の物で、* の語は前方一致（castlist-data* は castlist-data-v1 に当たる）。
-    // 字の含みで見る前の guard では * の項目は当たらず、* の無い項目が当たる。どちらの guard でも守りに穴が空かないよう、両方を並べて置く。
+    // 前の名 castlist の項目も残す（0.1.0 の docs の名で動かしている間と、前の名で起こし直す試みを止めるため）。
+    // volume は castlist-data-v1（1.0.0 から）。
+    // roster の guard の当て方（roster の docs-site の設定のページの「環境の手続き」）のうち、要るところだけ:
+    // - 項目は命令の語で当て、末尾に * の語は前方一致（castlist-data* は volume の castlist-data-v1 と、-v の値 castlist-data-v1:/data に当たる）。
+    //   container の命令の旗はそろえてから当てるので、--name=…・--volume …・--mount …,source=… も、--name …・-v … の項目で当たる。
+    //   語で当たらなくても、命令の字に項目の字（--name=… と --volume … の書き方も）が含まれれば止める。
+    // - 名を宣言した container（--name の項目）と volume（-v の項目）を的にする container の命令は、ここに書いていない動詞
+    //   （exec・cp・commit・export など）でも止まる。読むだけの logs・inspect・stats・ls（volume は inspect・ls）は通る（roster の t-d37r）。
+    // 裸の castlist-data は項目にしない（命令の字に含まれれば止まるので、volume の名を grep する読む命令まで止めるため）。
     "castlist": {
       "guard": "pm-only",
       "match": [
         "--name castlist.box",
-        // 名を = で繋ぐ形（--name=…）。語も字も、空白で繋ぐ形の項目とは別なので、並べて置く（roster の pagetray の宣言と同じ形。roster の t-vp6r・台帳 #291）。
-        "--name=castlist.box",
-        "--name=castlist",
         "container start castlist.box",
         "container stop castlist.box",
         "container kill castlist.box",
@@ -31,16 +30,11 @@
         "container kill castlist",
         "container delete castlist",
         "container rm castlist",
-        "container volume delete castlist-data",
-        "container volume rm castlist-data",
-        "-v castlist-data",
         "container volume delete castlist-data*",
         "container volume rm castlist-data*",
+        // castlist-data-v1 を付けて起こす命令（リストア・起きない時に記録を読む物）に当たり、volume に書く道も止める。
         "-v castlist-data*",
-        // volume を付ける旗の、長い形（--volume …）。
-        "--volume castlist-data",
-        "--volume castlist-data*",
-        // volume の略の v（container v rm …）。字も語も volume と違うので、略の形も並べる（roster の t-9tac）。
+        // volume の略の v（container v rm …）。語が volume と違うので、略の形も並べる（roster の t-9tac）。
         "container v delete castlist-data*",
         "container v rm castlist-data*",
       ],
