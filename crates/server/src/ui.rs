@@ -70,7 +70,7 @@ fn event_name(kind: &str) -> &str {
 
 // --- CSS と script ---
 
-// 配る file は repo の static/ の物（0.4.x の server と同じ file）を、binary に埋め込む。
+// 配る file は repo の static/ の物を、binary に埋め込む。
 const SITE_CSS: &str = include_str!("../../../static/site.css");
 
 /// 相関図（`/graph/network`）が使う cytoscape（npm の物をそのまま取り込んだ。static/vendor/SOURCES.md）。
