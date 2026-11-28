@@ -3,7 +3,7 @@
   // roster push が、push の前に流す確かめ（書き方は roster の docs-site の設定のページの「push の前の確かめ」）。
   // CI（ci.yml の test と docs.yml）の中で手元で速く流せる物。試験・image・e2e・model の検査は CI に任せる。
   // roster push は origin/main のこの欄を読むので、変えた一覧は merge の後から効く。
-  // 長さ（2026-11-28 に一時の worktree で測った）: fmt 1 秒・clippy 17 秒（作ったばかりの worktree）・0 秒（2 回目）・SQL と字と run の検査 1 秒・mdbook 1 秒未満。
+  // 長さ（2026-11-28 に一時の worktree で測った）: fmt 1 秒・clippy 17 秒（作ったばかりの worktree。target は worktree ごと）・0 秒（2 回目）・SQL と字と run の検査 1 秒・mdbook 1 秒未満。
   "push": {
     "checks": [
       {
@@ -25,6 +25,10 @@
       {
         "name": "check-run-docs",
         "run": ["ci/check-run-docs.sh"],
+      },
+      {
+        "name": "check-release-version",
+        "run": ["ci/test-check-release-version.sh"],
       },
       {
         "name": "docs-build",
