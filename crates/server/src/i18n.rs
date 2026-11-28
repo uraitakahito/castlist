@@ -16,6 +16,7 @@ use axum::extract::Request;
 use axum::http::header;
 use axum::middleware::Next;
 use axum::response::Response;
+use fluent_langneg::{NegotiationStrategy, accepted_languages, negotiate_languages};
 use fluent_templates::fluent_bundle::FluentValue;
 use fluent_templates::{LanguageIdentifier, Loader, langid};
 
@@ -57,9 +58,22 @@ tokio::task_local! {
 
 /// `Accept-Language` の値から言語を選ぶ。並びを前から見て、初めに当たった `ja`・`en`。無い・当たらなければ [`DEFAULT`]。
 pub fn negotiate(accept_language: Option<&str>) -> Lang {
-    // まだ言語を選ばない（今までどおり、いつも日本語）。次の commit で、頼みの Accept-Language から選ぶ。
-    let _ = accept_language;
-    Lang::Ja
+    let Some(value) = accept_language else {
+        return DEFAULT;
+    };
+    let requested = accepted_languages::parse(value);
+    let available = [EN.clone(), JA.clone()];
+    let chosen = negotiate_languages(
+        &requested,
+        &available,
+        Some(DEFAULT.id()),
+        NegotiationStrategy::Lookup,
+    );
+    match chosen.first() {
+        Some(lang) if **lang == JA => Lang::Ja,
+        Some(lang) if **lang == EN => Lang::En,
+        _ => DEFAULT,
+    }
 }
 
 /// 頼みの言語を決め、その頼みを捌く間、[`text`] がその言語で引くようにする（守りの層より外に掛ける）。
@@ -75,7 +89,7 @@ pub async fn scope(request: Request, next: Next) -> Response {
 
 /// 今の頼みの言語。[`scope`] の外では [`DEFAULT`]。
 pub fn asked() -> Lang {
-    ASKED.try_with(|lang| *lang).unwrap_or(Lang::Ja)
+    ASKED.try_with(|lang| *lang).unwrap_or(DEFAULT)
 }
 
 /// 鍵の文を、今の頼みの言語で返す。
