@@ -9,7 +9,8 @@
 //!   **答え（Response）を返す前に字にする**（本文が読まれるのは、この scope を抜けた後）。
 //! - ここを通らない文: 定義の形の検査（生成した骨）が返す 400 の文（英語のまま）と、起こす時の誤り（DB を開けない・移行に落ちた。
 //!   運ぶ人が読む物で、日本語のまま）。
-//! - 記録（log）は、いつも英語で書く。[`text`] で作った字（頼みの言語）を、記録に書かない（要る時は [`text_in`] で英語を名指す）。
+//! - 記録（log）は英語で書く（起こす時の誤りの字だけは、日本語のまま記録に入る）。[`text`] で作った字（頼みの言語）を、
+//!   記録に書かない（要る時は [`text_in`] で英語を名指す）。
 //! - 頼みの無い所（起こす binary の使い方の行）は、環境の言語で出す（[`from_env`]）。
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -116,20 +117,21 @@ pub fn text_in(lang: Lang, key: &str, values: &[(&'static str, &dyn Display)]) -
         .unwrap_or_else(|| key.to_owned())
 }
 
-/// 環境の言語（頼みの無い所: 起こす binary の使い方の行）。`LC_ALL` → `LC_MESSAGES` → `LANG` の順に見て、初めに決まっている物
-/// （`ja_JP.UTF-8` は `ja`）。空・`C`・`POSIX`（`C.UTF-8` も）は、決めていない物として読み飛ばす。どれも無い・`ja`・`en` の
-/// どちらでもなければ [`DEFAULT`]。`var` は環境変数を読む関数。
+/// 環境の言語（頼みの無い所: 起こす binary の使い方の行）。`LC_ALL` → `LC_MESSAGES` → `LANG` の順に見て、初めの空でない値で決める
+/// （POSIX の決まり: 空でない `LC_ALL` は、ほかをみな上書きする）。`ja_JP.UTF-8` は `ja`。`C`・`POSIX`（`C.UTF-8` も）は
+/// 「訳さない」の意味なので、英語。どれも無い・`ja`・`en` のどちらでもなければ [`DEFAULT`]。GNU の `LANGUAGE` は見ない。
+/// `var` は環境変数を読む関数。
 pub fn from_env(var: impl Fn(&str) -> Option<String>) -> Lang {
     let set = ["LC_ALL", "LC_MESSAGES", "LANG"]
         .iter()
         .filter_map(|name| var(name))
-        .map(|value| {
-            // `ja_JP.UTF-8@modifier` の、言語と地域だけを取る。
-            let locale = value.split(['.', '@']).next().unwrap_or_default();
-            locale.replace('_', "-")
-        })
-        .find(|locale| !matches!(locale.as_str(), "" | "C" | "POSIX"));
-    set.map_or(DEFAULT, |locale| negotiate(Some(&locale)))
+        .find(|value| !value.is_empty());
+    let Some(value) = set else {
+        return DEFAULT;
+    };
+    // `ja_JP.UTF-8@modifier` の、言語と地域だけを取る。`C`・`POSIX` は、当たる言語が無いので既定（英語）になる。
+    let locale = value.split(['.', '@']).next().unwrap_or_default();
+    negotiate(Some(&locale.replace('_', "-")))
 }
 
 /// 試験が、言語を決めて関数を呼ぶ（頼みを通さない単体の試験）。

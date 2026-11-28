@@ -287,7 +287,8 @@ fn 使い方の行は_環境の言語で出し_無ければ英語() {
         usage(&[("LANG", "en_US.UTF-8")]),
         (Some(2), USAGE_EN.to_owned())
     );
-    // LC_ALL → LC_MESSAGES → LANG の順に見る。C・POSIX・空は、決めていない物として読み飛ばす。
+    // LC_ALL → LC_MESSAGES → LANG の順に見て、初めの空でない値で決める（空でない LC_ALL は、ほかを上書きする）。
+    // C・POSIX は「訳さない」の意味なので、英語。
     assert_eq!(
         usage(&[("LC_ALL", "ja_JP.UTF-8"), ("LANG", "en_US.UTF-8")]),
         (Some(2), USAGE_JA.to_owned())
@@ -298,6 +299,14 @@ fn 使い方の行は_環境の言語で出し_無ければ英語() {
     );
     assert_eq!(
         usage(&[("LC_ALL", "C"), ("LANG", "ja_JP.UTF-8")]),
+        (Some(2), USAGE_EN.to_owned())
+    );
+    assert_eq!(
+        usage(&[("LC_ALL", "POSIX"), ("LANG", "ja_JP.UTF-8")]),
+        (Some(2), USAGE_EN.to_owned())
+    );
+    assert_eq!(
+        usage(&[("LC_ALL", ""), ("LANG", "ja_JP.UTF-8")]),
         (Some(2), USAGE_JA.to_owned())
     );
     assert_eq!(
