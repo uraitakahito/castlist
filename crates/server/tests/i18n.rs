@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use axum::body::Body;
 use axum::http::{HeaderMap, Request, StatusCode, header};
-use common::{App, ai, error_type};
+use common::{App, SE1, ai, error_type, event, get, put};
 use serde_json::Value;
 
 /// 断られる要求（Host が違う）。言語は `language` のとおりに付ける（None なら付けない）。
@@ -169,4 +169,139 @@ async fn 共通の送り方は_日本語を頼む() {
     // 付けてあれば、そのまま。
     let (_, _, body) = app.send(foreign_host(Some("en"))).await;
     assert!(body.contains(HOST_EN), "{body}");
+}
+
+/// 要求に言語を付ける。
+fn in_language(mut request: Request<Body>, language: &'static str) -> Request<Body> {
+    request
+        .headers_mut()
+        .insert(header::ACCEPT_LANGUAGE, language.parse().unwrap());
+    request
+}
+
+const NO_ACTOR: &str = "019abcde-0000-7000-8000-000000000001";
+
+#[tokio::test]
+async fn 無いアクターの文も_頼みの言語で返す() {
+    let app = App::start().await;
+    let path = format!("/api/actors/{NO_ACTOR}");
+    let (status, kind, message) = refused(&app, get(&path)).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(kind, "NotFound");
+    assert_eq!(message, format!("Actor {NO_ACTOR} does not exist"));
+    let (_, _, message) = refused(&app, in_language(get(&path), "ja")).await;
+    assert_eq!(message, format!("アクター {NO_ACTOR} は無い"));
+}
+
+#[tokio::test]
+async fn 引数を断る文も_頼みの言語で返す() {
+    let app = App::start().await;
+    let (status, kind, message) = refused(&app, get("/api/actors")).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(kind, "ValidationException");
+    assert_eq!(
+        message,
+        "Give at least one filter (one of label, binding, activeFrom, activeTo, active=true, model, effort, launchedBy, skewed)"
+    );
+    let (_, _, message) = refused(&app, in_language(get("/api/actors"), "ja")).await;
+    assert_eq!(
+        message,
+        "絞る条件を 1 つ以上付ける（label・binding・activeFrom・activeTo・active=true・model・effort・launchedBy・skewed のどれか）"
+    );
+}
+
+#[tokio::test]
+async fn 頁の印を断る文は_検索ごとの文を_頼みの言語で返す() {
+    let app = App::start().await;
+    // 崩れた印（16 進だが、字に戻せない）。
+    let broken = "/api/actors?label=project:castlist&nextToken=ff";
+    let (_, kind, message) = refused(&app, get(broken)).await;
+    assert_eq!(kind, "ValidationException");
+    assert_eq!(
+        message,
+        "Cannot read nextToken (pass the nextToken from the previous answer unchanged)"
+    );
+    let (_, _, message) = refused(&app, in_language(get(broken), "ja")).await;
+    assert_eq!(
+        message,
+        "nextToken が読めない（前の答えの nextToken を、そのまま渡す）"
+    );
+    // ほかの検索の印（出来事の検索の「events\n7」を、アクターの検索に渡す）。
+    let other = "/api/actors?label=project:castlist&nextToken=6576656e74730a37";
+    let (_, _, message) = refused(&app, get(other)).await;
+    assert_eq!(
+        message,
+        "Cannot read nextToken (it is not a nextToken of the actor search)"
+    );
+    let (_, _, message) = refused(&app, in_language(get(other), "ja")).await;
+    assert_eq!(
+        message,
+        "nextToken が読めない（アクターの検索の nextToken ではない）"
+    );
+}
+
+#[tokio::test]
+async fn 書く操作を断る文も_頼みの言語で返す() {
+    // DB の層が作る文（引けない by）。書く取引の中で作る文にも、頼みの言語が届く。
+    let app = App::start().await;
+    let body = event(SE1, "entered");
+    let (status, kind, message) = refused(&app, put("/api/events/e-1", &body)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(kind, "ValidationException");
+    assert_eq!(
+        message,
+        format!("The actor in by ({SE1}) is not among the key bindings of issuer tpm")
+    );
+    let (_, _, message) = refused(&app, in_language(put("/api/events/e-1", &body), "ja")).await;
+    assert_eq!(
+        message,
+        format!("by のアクター（{SE1}）が、出し手 tpm の鍵の付随する id に無い")
+    );
+}
+
+/// 引数を付けて起こした `castlist-server` の、使い方の行（stderr）と終了コード。環境変数は、名指した物だけを渡す。
+fn usage(env: &[(&str, &str)]) -> (Option<i32>, String) {
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_castlist-server"))
+        .arg("--help")
+        .env_clear()
+        .envs(env.iter().copied())
+        .output()
+        .expect("castlist-server を起こす");
+    (
+        out.status.code(),
+        String::from_utf8_lossy(&out.stderr).trim_end().to_owned(),
+    )
+}
+
+const USAGE_JA: &str = "使い方: castlist-server（環境変数 CASTLIST_DB・CASTLIST_LISTEN で起きる）";
+const USAGE_EN: &str = "Usage: castlist-server (starts from the environment variables CASTLIST_DB and CASTLIST_LISTEN)";
+
+#[test]
+fn 使い方の行は_環境の言語で出し_無ければ英語() {
+    assert_eq!(usage(&[]), (Some(2), USAGE_EN.to_owned()));
+    assert_eq!(
+        usage(&[("LANG", "ja_JP.UTF-8")]),
+        (Some(2), USAGE_JA.to_owned())
+    );
+    assert_eq!(
+        usage(&[("LANG", "en_US.UTF-8")]),
+        (Some(2), USAGE_EN.to_owned())
+    );
+    // LC_ALL → LC_MESSAGES → LANG の順に見る。C・POSIX・空は、決めていない物として読み飛ばす。
+    assert_eq!(
+        usage(&[("LC_ALL", "ja_JP.UTF-8"), ("LANG", "en_US.UTF-8")]),
+        (Some(2), USAGE_JA.to_owned())
+    );
+    assert_eq!(
+        usage(&[("LC_MESSAGES", "en_US.UTF-8"), ("LANG", "ja_JP.UTF-8")]),
+        (Some(2), USAGE_EN.to_owned())
+    );
+    assert_eq!(
+        usage(&[("LC_ALL", "C"), ("LANG", "ja_JP.UTF-8")]),
+        (Some(2), USAGE_JA.to_owned())
+    );
+    assert_eq!(
+        usage(&[("LC_ALL", ""), ("LANG", "C.UTF-8")]),
+        (Some(2), USAGE_EN.to_owned())
+    );
 }

@@ -16,7 +16,7 @@ mod get_timeline;
 pub mod graph;
 mod guard;
 mod hand;
-mod i18n;
+pub mod i18n;
 mod lineage;
 mod link;
 mod list_actors;
