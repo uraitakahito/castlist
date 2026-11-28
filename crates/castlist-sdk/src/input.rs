@@ -23,7 +23,7 @@ pub struct RegisterActorInput {
     pub kind: ::std::string::String,
     /// 名の接頭辞（名は `&lt;接頭辞&gt;.&lt;番号&gt;`）。
     pub name_prefix: ::std::string::String,
-    /// 札（project など）。新しく作った時だけ書く。
+    /// ラベル（project など）。新しく作った時だけ書く。
     pub labels: ::std::option::Option<
         ::std::collections::HashMap<::std::string::String, ::std::string::String>,
     >,
@@ -50,7 +50,7 @@ impl RegisterActorInput {
         use std::ops::Deref;
         self.name_prefix.deref()
     }
-    /// 札（project など）。新しく作った時だけ書く。
+    /// ラベル（project など）。新しく作った時だけ書く。
     pub fn labels(
         &self,
     ) -> ::std::option::Option<
@@ -1162,7 +1162,7 @@ pub(crate) mod register_actor_input_internal {
             self.name_prefix = Some(input.into());
             self
         }
-        /// 札（project など）。新しく作った時だけ書く。
+        /// ラベル（project など）。新しく作った時だけ書く。
         pub(crate) fn set_labels(
             mut self,
             input: Option<
@@ -1345,7 +1345,7 @@ pub mod register_actor_input {
             self.name_prefix = Some(input);
             self
         }
-        /// 札（project など）。新しく作った時だけ書く。
+        /// ラベル（project など）。新しく作った時だけ書く。
         pub fn labels(
             mut self,
             input: ::std::option::Option<

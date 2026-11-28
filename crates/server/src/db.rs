@@ -710,7 +710,7 @@ impl Db {
                 .bind(skew)
                 .execute(&mut *tx)
                 .await?;
-                // 札は新しく作る時だけ書く。
+                // ラベルは新しく作る時だけ書く。
                 for (key, value) in new.labels {
                     sqlx::query(
                         "insert into labels(actor_id, key, value, received_at) values(?1, ?2, ?3, ?4)",

@@ -475,7 +475,7 @@ async fn a_registration_waiting_too_long_for_the_write_connection_is_503_unavail
 #[tokio::test]
 async fn a_db_error_is_a_500_internal_error_with_a_fixed_message() {
     let app = App::start().await;
-    // 札の表を外して、札のある登録の insert を落とす。
+    // ラベルの表を外して、ラベルのある登録の insert を落とす。
     app.execute("alter table labels rename to labels_gone")
         .await;
     let mut body = ai("se", "s-1");

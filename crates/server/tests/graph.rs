@@ -157,7 +157,7 @@ async fn a_node_has_the_registration_the_state_and_the_latest_model_and_effort()
             actor.get("currentSettings"),
             "{n}"
         );
-        // ほかの欄は無い（札・付随する id・出来事は、図の答えに入れない）。
+        // ほかの欄は無い（ラベル・付随する id・出来事は、図の答えに入れない）。
         let mut keys: Vec<&str> = n.as_object().unwrap().keys().map(String::as_str).collect();
         keys.sort_unstable();
         let mut want = vec![
