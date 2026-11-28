@@ -420,7 +420,7 @@ dependencies = [
 
 [[package]]
 name = "castlist"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "aws-smithy-types",
  "axum",
