@@ -20,6 +20,11 @@ aws-smithy-types = "1.9.4"
 bytes = "1"
 http-body = "1"
 http-body-util = "0.1"
+# 外に出る誤りの文を、言語ごとの file（crates/server/locales/）から引く（Fluent。AI-48）。.ftl は build の時に binary へ埋める（macros）。
+# walkdir は、macro が build の時に locales/ を歩くのに要る（ignore か walkdir のどちらかが要る。小さい方）。
+fluent-templates = { version = "0.15.1", default-features = false, features = ["macros", "walkdir"] }
+# 頼みの Accept-Language から言語を選ぶ（fluent-templates が使う版に合わせる。0.14 は言語の型が違う）。
+fluent-langneg = "0.13"
 # 出来事の detail（DB の JSON の字）を、答えの Document に直す。
 serde_json = "1"
 # 同じ id で同じ本文かを見る写し（body_hash。SHA-256）。

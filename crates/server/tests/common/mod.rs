@@ -81,7 +81,20 @@ impl App {
     }
 
     /// 要求を 1 つ通し、状態と header と本文の byte を返す。
-    pub async fn send_bytes(&self, request: Request<Body>) -> (StatusCode, HeaderMap, Vec<u8>) {
+    ///
+    /// 言語を付けていない要求には、日本語を頼む（`Accept-Language: ja`）。castlist は、言語を付けない頼みに英語で返す（AI-48）が、
+    /// 試験の多くは日本語の字を見る（roster と担当が読む字）。言語の決まりを見る試験（tests/i18n.rs）は、[`App::send_raw`] で
+    /// 何も足さずに送る。
+    pub async fn send_bytes(&self, mut request: Request<Body>) -> (StatusCode, HeaderMap, Vec<u8>) {
+        request
+            .headers_mut()
+            .entry(header::ACCEPT_LANGUAGE)
+            .or_insert(axum::http::HeaderValue::from_static("ja"));
+        self.send_raw(request).await
+    }
+
+    /// 要求を、何も足さずに 1 つ通す（言語を付けない頼みを見る試験が使う）。
+    pub async fn send_raw(&self, request: Request<Body>) -> (StatusCode, HeaderMap, Vec<u8>) {
         let response = self.app.clone().oneshot(request).await.expect("oneshot");
         let (parts, body) = response.into_parts();
         let bytes = body.collect().await.expect("本文").to_bytes();

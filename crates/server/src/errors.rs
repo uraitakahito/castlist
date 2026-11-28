@@ -9,12 +9,13 @@ use castlist_sdk::error::{
 };
 
 use crate::db::WriteError;
+use crate::i18n::text;
 
 /// server の中の失敗（DB の誤りなど）。訳は記録に書き、答えは決まった字にする（中の誤りの字を外に出さない）。
 pub fn internal(operation: &str, error: &dyn std::fmt::Display) -> InternalError {
     tracing::error!(operation, %error, "server の中で失敗した");
     InternalError {
-        message: "castlist の中で失敗した（記録を見る）".to_owned(),
+        message: text("internal"),
     }
 }
 
@@ -35,7 +36,7 @@ pub fn reply(status: StatusCode, kind: &'static str, message: &str) -> Response 
 /// 混んでいる（503。送り直せば通る見込み）。
 pub fn busy() -> Unavailable {
     Unavailable {
-        message: "混んでいる。少し待ってから送り直す".to_owned(),
+        message: text("busy"),
     }
 }
 
