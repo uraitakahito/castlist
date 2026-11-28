@@ -16,6 +16,7 @@ mod get_timeline;
 pub mod graph;
 mod guard;
 mod hand;
+mod i18n;
 mod lineage;
 mod link;
 mod list_actors;
@@ -152,6 +153,8 @@ pub fn app_with(db: Arc<Db>, config: Config) -> Router {
             guard::timeout,
         ))
         .layer(middleware::from_fn(guard::guard))
+        // 頼みの言語を決める（守りの層が断る文も、その言語で返す。src/i18n.rs）。
+        .layer(middleware::from_fn(i18n::scope))
         // 問い合わせごとの 1 行（記録の file にだけ書く。src/runlog.rs の init）。guard が断った物も残る。 0.4.x の server と同じ。
         .layer(
             TraceLayer::new_for_http()

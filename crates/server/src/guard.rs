@@ -19,6 +19,7 @@ use http_body_util::{BodyExt, LengthLimitError, Limited};
 
 use crate::BODY_LIMIT;
 use crate::errors::reply;
+use crate::i18n::{text, text_with};
 
 /// host（castlist を動かす機械）の中からの要求だけを受ける（0.4.x の server の guard と同じ）。
 /// - `Host` が 127.0.0.1・localhost でなければ断る（外の site が名前を付け替えて届ける要求を防ぐ）。
@@ -33,21 +34,13 @@ pub async fn guard(mut request: Request, next: Next) -> Response {
         .and_then(|v| v.to_str().ok())
         .map(|v| v.rsplit_once(':').map_or(v, |(name, _port)| name));
     if !matches!(host, Some("127.0.0.1" | "localhost")) {
-        return reply(
-            StatusCode::FORBIDDEN,
-            "Forbidden",
-            "Host は 127.0.0.1 か localhost だけを受ける",
-        );
+        return reply(StatusCode::FORBIDDEN, "Forbidden", &text("guard-host"));
     }
     if request.method() != Method::GET
         && request.method() != Method::HEAD
         && request.headers().contains_key(header::ORIGIN)
     {
-        return reply(
-            StatusCode::FORBIDDEN,
-            "Forbidden",
-            "browser の中のページからは書けない",
-        );
+        return reply(StatusCode::FORBIDDEN, "Forbidden", &text("guard-origin"));
     }
     let head = request.method() == Method::HEAD;
     if head {
@@ -78,20 +71,17 @@ pub async fn timeout(State(limit): State<Duration>, request: Request, next: Next
         Err(_) => reply(
             StatusCode::SERVICE_UNAVAILABLE,
             "Unavailable",
-            &format!(
-                "時間がかかりすぎた（{}）。少し待ってから送り直す",
-                length(limit)
-            ),
+            &too_slow(limit),
         ),
     }
 }
 
-/// 長さの字（秒で割り切れれば秒、ほかは ms）。
-fn length(d: Duration) -> String {
-    if d.subsec_nanos() == 0 {
-        format!("{} 秒", d.as_secs())
+/// 時間切れの文。長さは、秒で割り切れれば秒、ほかは ms（単位ごとに文を分ける。言語で語順が違うため）。
+fn too_slow(limit: Duration) -> String {
+    if limit.subsec_nanos() == 0 {
+        text_with("guard-timeout-seconds", &[("n", &limit.as_secs())])
     } else {
-        format!("{} ms", d.as_millis())
+        text_with("guard-timeout-ms", &[("n", &limit.as_millis())])
     }
 }
 
@@ -107,7 +97,7 @@ pub async fn limit(request: Request, next: Next) -> Response {
         Err(e) if e.is::<LengthLimitError>() => reply(
             StatusCode::PAYLOAD_TOO_LARGE,
             "PayloadTooLarge",
-            &format!("本文は {} MiB まで", BODY_LIMIT / (1024 * 1024)),
+            &text_with("guard-too-large", &[("mib", &(BODY_LIMIT / (1024 * 1024)))]),
         ),
         // 送り手が途中で切った、など。生成した層が読めない本文に返すのと同じ型にする。
         Err(e) => {
@@ -115,7 +105,7 @@ pub async fn limit(request: Request, next: Next) -> Response {
             reply(
                 StatusCode::BAD_REQUEST,
                 "SerializationException",
-                "本文を読めない",
+                &text("guard-unreadable-body"),
             )
         }
     }
@@ -139,12 +129,26 @@ pub async fn stamp(request: Request, next: Next) -> Response {
 
 #[cfg(test)]
 mod tests {
-    use super::length;
     use std::time::Duration;
 
+    use super::too_slow;
+    use crate::i18n::{Lang, in_lang};
+
     #[test]
-    fn 長さの字() {
-        assert_eq!(length(Duration::from_secs(5)), "5 秒");
-        assert_eq!(length(Duration::from_millis(200)), "200 ms");
+    fn 時間切れの文は_長さを秒か_ms_で書く() {
+        let ja = |d| in_lang(Lang::Ja, || too_slow(d));
+        assert_eq!(
+            ja(Duration::from_secs(5)),
+            "時間がかかりすぎた（5 秒）。少し待ってから送り直す"
+        );
+        assert_eq!(
+            ja(Duration::from_millis(200)),
+            "時間がかかりすぎた（200 ms）。少し待ってから送り直す"
+        );
+        // 言語を決めない所（頼みの外）では、既定の英語。
+        assert_eq!(
+            too_slow(Duration::from_secs(5)),
+            "Took too long (5 s). Wait a moment and send again"
+        );
     }
 }
