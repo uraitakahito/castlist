@@ -14,7 +14,7 @@
   | 呼び手 | 前 | 今 | 日本語で受けるには |
   |---|---|---|---|
   | 言語を付けずに呼ぶ物（`curl`・自前の client） | 日本語 | 英語 | `Accept-Language: ja` を付ける |
-  | roster（PR #305 から。動かしている checkout に入れたのは 2026-11-28） | 日本語 | 日本語（いつも `Accept-Language: ja` を付ける） | — |
+  | roster（PR #305 から） | 日本語 | 日本語（いつも `Accept-Language: ja` を付ける） | — |
   | callboard（1.7.0 から） | 日本語 | 画面の言語（`ja` か `en` を付ける） | — |
   | callboard 1.6.0 まで・roster の #305 より前 | 日本語 | **英語**（言語を付けない） | 先に callboard と roster を上げる |
 
