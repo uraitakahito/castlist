@@ -78,14 +78,11 @@ impl Server {
             SEQ.fetch_add(1, Ordering::Relaxed)
         ));
         let stdout = std::fs::File::create(&out).expect("stdout の file");
-        // 起きられずに終わった時の訳を出すため、stderr も file に受ける。
-        let err = out.with_extension("stderr.txt");
-        let stderr = std::fs::File::create(&err).expect("stderr の file");
         let mut child = Command::new(binary())
             .env("CASTLIST_LISTEN", "127.0.0.1:0")
             .env("CASTLIST_DB", &db)
+            // stderr は受け継ぐ（落ちた時の訳が、試験の出力に出る）。
             .stdout(Stdio::from(stdout))
-            .stderr(Stdio::from(stderr))
             .spawn()
             .expect("castlist-server を起こす");
         let started = Instant::now();
@@ -95,8 +92,7 @@ impl Server {
                 break port;
             }
             if let Some(status) = child.try_wait().expect("try_wait") {
-                let err = std::fs::read_to_string(&err).unwrap_or_default();
-                panic!("待ち受ける前に終わった（{status}）: {text}{err}");
+                panic!("待ち受ける前に終わった（{status}）: {text}");
             }
             if started.elapsed() > Duration::from_secs(10) {
                 // 起こした物を残さない。

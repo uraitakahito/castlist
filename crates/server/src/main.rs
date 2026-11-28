@@ -51,6 +51,7 @@ async fn serve(path: &Path, log: &RunLog) -> Result<(), Box<dyn std::error::Erro
     // 受け口は、DB を開く前に作る。起きた行を見てすぐ合図を送る物（試験など）と、行を待たずに送る物（container を
     // 止める命令など）の合図も、受けてから閉じる（受け口の無い間に来ると、記録を書かずに殺されるか、PID 1 では
     // 無視されて SIGKILL まで待つ。t-q4kd）。DB を開く間・待ち受ける間に来た合図は、待ち受けた後に受けて、すぐ閉じる。
+    // serve に入る前（runtime と記録の置き場を用意する間）に来た合図は、まだ受けない。
     let mut term = signal(SignalKind::terminate())?;
     let mut int = signal(SignalKind::interrupt())?;
     // 開けない時（移行に落ちた・外のキーの崩れた行がある）は、訳を出して起きない。
