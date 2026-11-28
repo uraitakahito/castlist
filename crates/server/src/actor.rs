@@ -8,6 +8,7 @@ use castlist_sdk::output::GetActorOutput;
 
 use crate::db::{self, Db};
 use crate::errors::Failure;
+use crate::i18n::text_with;
 use crate::rows;
 
 const OPERATION: &str = "GetActor";
@@ -25,7 +26,7 @@ pub async fn get_actor(db: Arc<Db>, input: GetActorInput) -> Result<GetActorOutp
         .map_err(|e| Failure::db(OPERATION, e))?
     else {
         return Err(NotFound {
-            message: format!("アクター {} は無い", input.actor_id),
+            message: text_with("actor-not-found", &[("id", &input.actor_id)]),
         }
         .into());
     };

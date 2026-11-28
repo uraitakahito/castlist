@@ -10,6 +10,7 @@ use castlist_sdk::output::PutUsageOutput;
 
 use crate::db::{Bucket, Db, NewUsage, Put, Ref};
 use crate::errors::{Failure, PutFailure};
+use crate::i18n::text_with;
 use crate::{rows, stored_time};
 
 const OPERATION: &str = "PutUsage";
@@ -91,13 +92,15 @@ fn span(input: &PutUsageInput) -> Result<(String, String), String> {
     let from_at = stored_time("fromAt", &input.from_at)?;
     let to_at = stored_time("toAt", &input.to_at)?;
     if from_at > to_at {
-        return Err(format!(
-            "fromAt（{from_at}）は、toAt（{to_at}）より後にしない"
+        return Err(text_with(
+            "usage-from-after-to",
+            &[("fromAt", &from_at), ("toAt", &to_at)],
         ));
     }
     if from_at[..HOUR] != to_at[..HOUR] {
-        return Err(format!(
-            "fromAt（{from_at}）と toAt（{to_at}）は、同じ UTC の時（年月日と時が同じ）の内にする"
+        return Err(text_with(
+            "usage-not-same-hour",
+            &[("fromAt", &from_at), ("toAt", &to_at)],
         ));
     }
     Ok((from_at, to_at))
@@ -107,9 +110,9 @@ fn span(input: &PutUsageInput) -> Result<(String, String), String> {
 fn buckets(input: &PutUsageInput) -> Result<Vec<Bucket>, String> {
     let mut seen = HashSet::new();
     if let Some(twice) = input.buckets.iter().find(|b| !seen.insert(b.bucket)) {
-        return Err(format!(
-            "buckets に、同じ bucket（{}）が 2 つある",
-            twice.bucket
+        return Err(text_with(
+            "usage-bucket-twice",
+            &[("bucket", &twice.bucket)],
         ));
     }
     let sum = |f: fn(&UsageBucket) -> i64| -> i128 {
@@ -124,8 +127,9 @@ fn buckets(input: &PutUsageInput) -> Result<Vec<Bucket>, String> {
         ),
     ] {
         if sum != i128::from(row) {
-            return Err(format!(
-                "buckets の {name} の和（{sum}）が、行の {name}（{row}）と合わない"
+            return Err(text_with(
+                "usage-bucket-sum",
+                &[("name", &name), ("sum", &sum), ("row", &row)],
             ));
         }
     }

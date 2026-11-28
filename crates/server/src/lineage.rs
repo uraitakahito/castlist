@@ -7,6 +7,7 @@ use castlist_sdk::output::GetLineageOutput;
 
 use crate::db::{self, Db};
 use crate::errors::Failure;
+use crate::i18n::text_with;
 use crate::search::MAX_DEPTH;
 use crate::{datetime, rows};
 
@@ -36,7 +37,7 @@ pub async fn get_lineage(
         .map_err(|e| Failure::db(OPERATION, e))?
     else {
         return Err(NotFound {
-            message: format!("アクター {} は無い", input.actor_id),
+            message: text_with("actor-not-found", &[("id", &input.actor_id)]),
         }
         .into());
     };

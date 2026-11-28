@@ -165,6 +165,13 @@ pub fn app_with(db: Arc<Db>, config: Config) -> Router {
         .layer(middleware::from_fn(guard::stamp))
 }
 
+/// 使い方の 1 行（起こす binary が、引数を付けて起こされた時に stderr に出す）。頼みが無いので、環境の言語で出す
+/// （[`i18n::from_env`]）。
+pub fn usage() -> String {
+    let lang = i18n::from_env(|name| std::env::var(name).ok());
+    i18n::text_in(lang, "usage", &[])
+}
+
 async fn get_health(
     _input: castlist_sdk::input::GetHealthInput,
 ) -> Result<GetHealthOutput, GetHealthError> {
@@ -189,7 +196,7 @@ fn stored_time(name: &str, t: &aws_smithy_types::DateTime) -> Result<String, Str
         .ok()
         .filter(|t| (0..=9999).contains(&t.year()))
         .map(db::stamp)
-        .ok_or_else(|| format!("{name} は 0000 年から 9999 年までの時刻"))
+        .ok_or_else(|| i18n::text_with("time-range", &[("name", &name)]))
 }
 
 /// true だけを受ける絞り（付けなければ絞らない）。false は、絞らないのか逆に絞るのかが読めないので断る（その訳）。
@@ -197,12 +204,12 @@ fn only_true(name: &str, value: Option<bool>) -> Result<bool, String> {
     match value {
         None => Ok(false),
         Some(true) => Ok(true),
-        Some(false) => Err(format!("{name} は true だけ（絞らないなら付けない）")),
+        Some(false) => Err(i18n::text_with("only-true", &[("name", &name)])),
     }
 }
 
 /// 送り手の時刻を、time の時刻にする。扱えなければ、その訳。
 fn sent_time(t: &aws_smithy_types::DateTime) -> Result<time::OffsetDateTime, String> {
     time::OffsetDateTime::from_unix_timestamp_nanos(t.as_nanos())
-        .map_err(|_| "sentAt が扱える時刻の外".to_owned())
+        .map_err(|_| i18n::text("sent-at-out-of-range"))
 }

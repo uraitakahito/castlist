@@ -8,6 +8,7 @@ use serde_json::Value;
 
 use crate::db::{Db, NewEvent, Put, Ref};
 use crate::errors::{Failure, PutFailure};
+use crate::i18n::text;
 use crate::{body, rows};
 
 const OPERATION: &str = "PutEvent";
@@ -21,7 +22,7 @@ async fn put(db: &Db, input: PutEventInput) -> Result<PutEventOutput, PutFailure
     let detail = match input.detail.as_ref().map(body::json) {
         None | Some(Value::Null) => Value::Object(serde_json::Map::new()),
         Some(detail @ Value::Object(_)) => detail,
-        Some(_) => return Err(PutFailure::Invalid("detail は JSON の物（{…}）".to_owned())),
+        Some(_) => return Err(PutFailure::Invalid(text("event-detail-object"))),
     };
     let sent_at = crate::sent_time(&input.sent_at).map_err(PutFailure::Invalid)?;
     let put = db

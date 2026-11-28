@@ -9,6 +9,7 @@ use castlist_sdk::output::ListEventsOutput;
 use crate::db::{self, Db};
 use crate::errors::Failure;
 use crate::search::{EventQuery, LIMIT};
+use crate::token::Search;
 use crate::{datetime, only_true, rows, stored_time, token};
 
 const OPERATION: &str = "ListEvents";
@@ -63,7 +64,7 @@ fn query(input: ListEventsInput) -> Result<EventQuery, ListEventsError> {
         after: input
             .next_token
             .as_deref()
-            .map(|t| token::seq_after(t, TOKEN_KIND, "出来事の検索"))
+            .map(|t| token::seq_after(t, TOKEN_KIND, Search::Events))
             .transpose()
             .map_err(invalid)?
             .unwrap_or(0),

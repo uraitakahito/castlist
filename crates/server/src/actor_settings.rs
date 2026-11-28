@@ -10,11 +10,12 @@ use castlist_sdk::output::{GetActorSettingAtOutput, ListActorSettingsOutput};
 
 use crate::db::{self, Db};
 use crate::errors::Failure;
+use crate::i18n::{text, text_with};
 use crate::{datetime, rows, stored_time};
 
 fn not_found(id: &str) -> NotFound {
     NotFound {
-        message: format!("アクター {id} は無い"),
+        message: text_with("actor-not-found", &[("id", &id)]),
     }
 }
 
@@ -54,7 +55,7 @@ pub async fn get_actor_setting_at(
     };
     // 答えの at（RFC 3339）は 0001 年からしか書けないので、書けない時刻は先に断る。
     if input.time.fmt(Format::DateTime).is_err() {
-        return Err(invalid("time は 0001 年から 9999 年までの時刻".to_owned()).into());
+        return Err(invalid(text("setting-time-range")).into());
     }
     // 問いの時刻は DB に残す字（UTC・ミリ秒まで）に直して比べ、直した物を答えの at にする。
     let at = stored_time("time", &input.time).map_err(invalid)?;

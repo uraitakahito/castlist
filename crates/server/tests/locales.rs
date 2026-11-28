@@ -106,9 +106,16 @@ fn コードが引く鍵は_どちらの言語にも在り_使わない鍵は無
     assert!(unused.is_empty(), "コードが引かない鍵: {unused:?}");
 }
 
+/// 写しの 1 行: 鍵・見本の値（名と字）・その値を入れた字。
+type Copied = (
+    &'static str,
+    &'static [(&'static str, &'static str)],
+    &'static str,
+);
+
 /// 鍵へ移す前（castlist 2.1.1）の日本語の字の写し: 鍵・見本の値・その値を入れた字。
 /// 字を替える時は、ここと CHANGELOG を一緒に直す（roster は、この日本語を担当にそのまま出す）。
-const JA: &[(&str, &[(&str, &str)], &str)] = &[
+const JA: &[Copied] = &[
     (
         "guard-host",
         &[],

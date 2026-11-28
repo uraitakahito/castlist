@@ -8,7 +8,9 @@ use castlist_sdk::output::ListUsageOutput;
 
 use crate::db::{self, Db, Ref};
 use crate::errors::Failure;
+use crate::i18n::text;
 use crate::search::{LIMIT, UsageQuery};
+use crate::token::Search;
 use crate::{datetime, rows, stored_time, token};
 
 const OPERATION: &str = "ListUsage";
@@ -60,7 +62,7 @@ pub async fn list_usage(
 /// 引数を探す条件にする。
 fn query(input: ListUsageInput) -> Result<UsageQuery, ListUsageError> {
     if input.to.as_nanos() - input.from.as_nanos() > MAX_WINDOW.whole_nanoseconds() {
-        return Err(invalid("from から to までは 31 日まで"));
+        return Err(invalid(text("usage-span-too-long")));
     }
     Ok(UsageQuery {
         from: stored_time("from", &input.from).map_err(invalid)?,
@@ -78,7 +80,7 @@ fn query(input: ListUsageInput) -> Result<UsageQuery, ListUsageError> {
         after: input
             .next_token
             .as_deref()
-            .map(|t| token::seq_after(t, TOKEN_KIND, "使用量の検索"))
+            .map(|t| token::seq_after(t, TOKEN_KIND, Search::Usage))
             .transpose()
             .map_err(invalid)?
             .unwrap_or(0),
