@@ -32,6 +32,18 @@ server は `crates/server`（package `castlist`・binary `castlist-server`）の
 - server の試験は `crates/server/tests/`。定義に書く例（`@httpRequestTests`・`@httpResponseTests`）は wire の形を止める試験で、生成した骨の試験になる（試験用の handler を使うので、処理の正しさは見ない）。処理を引っ張る試験は、本物の handler を入れた Router に要求を通す振る舞いの試験で、処理より先に書く（下の節）。
 - 生成した service は `crates/server/src/generated.rs` の包みで axum の Router の fallback に入れ、守りの層をその前に掛ける。
 
+## 外に出す文
+
+API の誤りの `message` と、使い方の 1 行は、コードに字で書かず、言語ごとの file（`crates/server/locales/en/main.ftl`・`ja/main.ftl`。[Fluent](https://projectfluent.org/)）に置き、鍵で引く（`crates/server/src/i18n.rs` の `text("鍵")`・`text_with("鍵", &[("名", &値)])`）。
+
+- **文を足す**: 日本語と英語の 2 つの file に、同じ鍵と同じ値の名（`{ $名 }`）で 1 行ずつ足し、コードから `text(…)` で引く。鍵は `<所>-<中身>`（英小文字・数字・`-`）。鍵は、`text(` のすぐ後ろに字でじかに書く（試験が、コードの鍵と file の鍵を突き合わせる）。`{`・`}` の字は `{"{"}`・`{"}"}` と書く。
+- **言語**: 頼みの `Accept-Language` から決めた言語が、その頼みを捌く間だけ届く（tokio の `task_local`）。だから、文を作る所でそのまま `text(…)` を呼べばよい。決まりは 1 つ: **答えを返す前に字にする**。
+- **名詞を埋めて文を組まない**: 言語で語順が違うので、「{検索}の nextToken ではない」のような文は、種類ごとに文を分ける（`token.rs` の `Search`・`db.rs` の `Stored`）。欄の名・id・時刻・数は、値として埋めてよい（数も字にして入れる。桁の区切りは付けない）。
+- **日本語の字を替えない**: roster は、誤りの文を担当にそのまま出す。日本語の字を替える時は、`crates/server/tests/locales.rs` の写しの表（`JA`）と CHANGELOG を一緒に直す。
+- **記録（log）に、頼みの言語の字を書かない**: 記録は英語の決まった字で書く（要る時は `text_in(Lang::En, …)`）。
+- **試験**: `tests/locales.rs`（日英の鍵と値の名のそろい・英語の文にかなと漢字が無い・コードが引く鍵が在り使わない鍵が無い・日本語の字の写し）と、`tests/i18n.rs`（言語の決まり）。ほかの試験の共通の送り方（`tests/common` の `App::send`）は日本語を頼む。言語を付けない頼みを見る時は `App::send_raw`。
+- **言語を足す**: `locales/<言語>/main.ftl` を足し、`i18n.rs` の `Lang` と `negotiate` に足す。
+
 ## 試験を先に書く
 
 どの PR も、先に試験だけの commit を作り、落ちることを見てから、通る実装を足す。

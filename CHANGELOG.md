@@ -2,6 +2,28 @@
 
 版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/api/`。定義は `model/`）と DB の移行（`crates/server/migrations/`）が変わったかを書く。0.4.x までの節の API は `/v1/`、移行は repo の頭の `migrations/` の物（もう無い）。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
 
+## 2.2.0
+
+誤りの文を、頼みの言語（日本語か英語）で返す版（AI-48。Product Manager の答え「案 1 サーバーが文にする・API と CLI」「項目２は英語で」）。**言語を付けない頼みの誤りの文が、日本語から英語に変わる。**日本語で受けるには `Accept-Language: ja` を付ける。
+
+- **API の形は変えていない**（定義は v2.1.1 から変わっていない: `ci/gen.sh --diff`。`common.smithy` は変えていない。作り直した `crates/castlist-sdk/` も同じ）。変わるのは、誤りの `message` の字の言語だけ。誤りの種類（`X-Amzn-Errortype`）と状態の数は、言語で変わらない。
+- **言語の決め方**: 頼みの `Accept-Language` の並びを前から見て、初めに当たった `ja`・`en`（`ja-JP` は `ja`。重み `;q=` は見ない）。header が無い・`*`・どちらでもない言語は、英語。守りの層（Host・Origin・時間切れ・本文の上限）が断る文も同じ。生成した層が自分で返す文（定義の形の検査の 400 など）は、今までどおり英語。
+- **日本語の文は、2.1.1 の字と 1 字も違わない**（試験 `crates/server/tests/locales.rs` が、2.1.1 の字の写しと突き合わせる）。
+- **受ける字が変わる呼び手**:
+
+  | 呼び手 | 前 | 今 | 日本語で受けるには |
+  |---|---|---|---|
+  | 言語を付けずに呼ぶ物（`curl`・自前の client） | 日本語 | 英語 | `Accept-Language: ja` を付ける |
+  | roster（PR #305 から。動かしている checkout に入れたのは 2026-11-28） | 日本語 | 日本語（いつも `Accept-Language: ja` を付ける） | — |
+  | callboard（1.7.0 から） | 日本語 | 画面の言語（`ja` か `en` を付ける） | — |
+  | callboard 1.6.0 まで・roster の #305 より前 | 日本語 | **英語**（言語を付けない） | 先に callboard と roster を上げる |
+
+- **上げる順**: roster（#305）と callboard（1.7.0）を先に入れてから、この版にする。先にこの版にすると、担当の読む誤りの文と、日本語の画面の誤りの訳が、英語になる。
+- **文の置き場**: 外に出す文は、コードの中でなく `crates/server/locales/{en,ja}/main.ftl`（Fluent）に在る（`fluent-templates` で binary に埋める。image の中身は binary 1 つのまま）。足し方は、本の「開発」の「外に出す文」。
+- **使い方の 1 行**（引数を付けて起こした時の stderr）は、環境の言語（`LC_ALL` → `LC_MESSAGES` → `LANG` の初めの空でない値。`C`・`POSIX` は英語）で出す。無ければ英語。
+- **記録（log）**: 日本語だった記録の字（中の失敗・本文を読めない・中の失敗の訳の 3 つ）を英語にした。記録の行は、頼みの言語で変わらない。起こす時の誤り（DB を開けない・移行に落ちた）の字は、日本語のまま。
+- DB の移行の SQL は足していない（2.1.1 の volume でそのまま起き、2.1.1 の image へそのまま戻せる）。
+
 ## 2.1.1
 
 字だけの版（t-5dhg）。API・DB・動きは 2.1.0 と同じ。
