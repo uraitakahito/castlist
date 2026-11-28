@@ -14,7 +14,7 @@ pub async fn register(
     input: RegisterActorInput,
 ) -> Result<RegisterActorOutput, RegisterActorError> {
     let sent_at = crate::sent_time(&input.sent_at).map_err(invalid)?;
-    // 札は鍵の順に書く（同じ本文なら、行の並びも同じになる）。
+    // ラベルは鍵の順に書く（同じ本文なら、行の並びも同じになる）。
     let mut labels: Vec<(String, String)> = input.labels.unwrap_or_default().into_iter().collect();
     labels.sort();
     let bindings: Vec<Ref> = input

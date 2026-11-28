@@ -444,7 +444,7 @@ async fn internal_error(app: &App, id: &str, leak: &str) {
 async fn a_db_error_is_a_500_internal_error_with_a_fixed_message() {
     let app = App::start().await;
     let se1 = id(&app.register(&ai("se", "s-1")).await);
-    // 札の表を外して、札を読む所を落とす。
+    // ラベルの表を外して、ラベルを読む所を落とす。
     app.execute("alter table labels rename to labels_gone")
         .await;
     internal_error(&app, &se1, "labels").await;
