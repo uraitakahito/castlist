@@ -187,7 +187,7 @@ fn datetime(s: &str) -> Result<aws_smithy_types::DateTime, String> {
     time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339)
         .ok()
         .and_then(|t| aws_smithy_types::DateTime::from_nanos(t.unix_timestamp_nanos()).ok())
-        .ok_or_else(|| format!("DB の時刻が読めない: {s}"))
+        .ok_or_else(|| format!("unreadable time in the DB: {s}"))
 }
 
 /// 問いの時刻を、DB に残す字（UTC・ミリ秒まで・24 字。ミリ秒より下は切る）にする。字の順で比べられる。

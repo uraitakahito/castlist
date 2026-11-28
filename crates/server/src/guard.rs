@@ -101,7 +101,7 @@ pub async fn limit(request: Request, next: Next) -> Response {
         ),
         // 送り手が途中で切った、など。生成した層が読めない本文に返すのと同じ型にする。
         Err(e) => {
-            tracing::info!(error = %e, "本文を読めない");
+            tracing::info!(error = %e, "unreadable body");
             reply(
                 StatusCode::BAD_REQUEST,
                 "SerializationException",
