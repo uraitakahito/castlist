@@ -17,6 +17,7 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 use crate::body;
+use crate::i18n::{text, text_with};
 
 /// 書く接続を待つ長さ。過ぎれば「混んでいる」で返す。
 pub const WRITE_WAIT: Duration = Duration::from_secs(2);
@@ -488,7 +489,7 @@ fn skewed(sent: OffsetDateTime, received: &str) -> bool {
 fn sent_text(t: OffsetDateTime) -> Result<String, WriteError> {
     t.to_offset(time::UtcOffset::UTC)
         .format(&Rfc3339)
-        .map_err(|_| WriteError::Invalid("sentAt は 0000 年から 9999 年までの時刻".to_owned()))
+        .map_err(|_| WriteError::Invalid(text_with("time-range", &[("name", &"sentAt")])))
 }
 
 // --- 開く ---
@@ -666,9 +667,10 @@ impl Db {
     /// アクターを登録する。鍵の付随する id が出し手の中に既にあれば、そのアクターを返す（created = false）。
     /// その時は、変わった鍵でない付随する id と、変わった頼んだ model と effort だけを足す。
     pub async fn register(&self, new: &NewActor<'_>) -> Result<(ActorRef, bool), WriteError> {
-        let (key, rest) = new.bindings.split_first().ok_or_else(|| {
-            WriteError::Invalid("bindings に 1 つ以上（初めの物が鍵）".to_owned())
-        })?;
+        let (key, rest) = new
+            .bindings
+            .split_first()
+            .ok_or_else(|| WriteError::Invalid(text("register-needs-binding")))?;
         let mut tx = self.write.begin().await?;
         let received = received_at(&mut tx).await?;
         let skew = i64::from(skewed(new.sent_at, &received));
@@ -787,6 +789,28 @@ async fn stored_hash(
         .await
 }
 
+/// 送り手の id で足す物の種類（同じ id で違う中身の時の文を、種類ごとに引く。言語で語順が違うので、文を分ける）。
+#[derive(Clone, Copy)]
+enum Stored {
+    Event,
+    Link,
+    Setting,
+    Usage,
+}
+
+impl Stored {
+    /// 同じ id（`id`）の物が、違う中身で既にある時の文。
+    fn conflict(self, id: &str) -> String {
+        let id: &[(&'static str, &dyn std::fmt::Display)] = &[("id", &id)];
+        match self {
+            Stored::Event => text_with("conflict-event", id),
+            Stored::Link => text_with("conflict-link", id),
+            Stored::Setting => text_with("conflict-setting", id),
+            Stored::Usage => text_with("conflict-usage", id),
+        }
+    }
+}
+
 /// 同じ id の行が既にある時: 本文の写しが同じなら Same（その行を返す）、違えば Conflict（行はそのまま）。
 async fn same_or_conflict<T>(
     mut tx: Transaction<'_, Sqlite>,
@@ -794,15 +818,13 @@ async fn same_or_conflict<T>(
     sent: &str,
     select: &'static str,
     id: &str,
-    what: &str,
+    what: Stored,
 ) -> Result<Put<T>, WriteError>
 where
     T: for<'r> FromRow<'r, SqliteRow> + Send + Unpin,
 {
     if stored.as_deref() != Some(sent) {
-        return Err(WriteError::Conflict(format!(
-            "同じ id（{id}）の{what}が、違う中身で既にある"
-        )));
+        return Err(WriteError::Conflict(what.conflict(id)));
     }
     let row = sqlx::query_as(select).bind(id).fetch_one(&mut *tx).await?;
     tx.commit().await?;
@@ -823,8 +845,9 @@ async fn must_resolve(
         .fetch_optional(&mut **tx)
         .await?
         .ok_or_else(|| {
-            WriteError::Invalid(format!(
-                "{field} のアクター（{r}）が、出し手 {issuer} の鍵の付随する id に無い"
+            WriteError::Invalid(text_with(
+                "ref-not-found",
+                &[("field", &field), ("ref", &r), ("issuer", &issuer)],
             ))
         })
 }
@@ -843,7 +866,7 @@ impl Db {
         }));
         let mut tx = self.write.begin().await?;
         if let Some(stored) = stored_hash(&mut tx, EVENT_HASH, id).await? {
-            return same_or_conflict(tx, stored, &hash, EVENT, id, "出来事").await;
+            return same_or_conflict(tx, stored, &hash, EVENT, id, Stored::Event).await;
         }
         let actor = must_resolve(&mut tx, new.issuer, new.by, "by").await?;
         let received = received_at(&mut tx).await?;
@@ -879,14 +902,14 @@ impl Db {
         }));
         let mut tx = self.write.begin().await?;
         if let Some(stored) = stored_hash(&mut tx, LINK_HASH, id).await? {
-            return same_or_conflict(tx, stored, &hash, LINK, id, "線").await;
+            return same_or_conflict(tx, stored, &hash, LINK, id, Stored::Link).await;
         }
         let from = must_resolve(&mut tx, new.issuer, new.from, "from").await?;
         let to = must_resolve(&mut tx, new.issuer, new.to, "to").await?;
         if from.id == to.id {
-            return Err(WriteError::Invalid(format!(
-                "from と to が同じアクター（{}）",
-                from.name
+            return Err(WriteError::Invalid(text_with(
+                "link-same-actor",
+                &[("actor", &from.name)],
             )));
         }
         let received = received_at(&mut tx).await?;
@@ -907,9 +930,9 @@ impl Db {
         match inserted {
             // id は上で見たので、重なるのは「起こされるのは 1 度だけ」の索引（links_launched）。
             Err(sqlx::Error::Database(e)) if e.is_unique_violation() => {
-                return Err(WriteError::Conflict(format!(
-                    "{} は、もう別の線で起こされている",
-                    to.name
+                return Err(WriteError::Conflict(text_with(
+                    "link-already-launched",
+                    &[("actor", &to.name)],
                 )));
             }
             other => other?,
@@ -937,7 +960,7 @@ impl Db {
         }));
         let mut tx = self.write.begin().await?;
         if let Some(stored) = stored_hash(&mut tx, SETTING_HASH, id).await? {
-            return same_or_conflict(tx, stored, &hash, SETTING, id, "model と effort").await;
+            return same_or_conflict(tx, stored, &hash, SETTING, id, Stored::Setting).await;
         }
         let actor = must_resolve(&mut tx, new.issuer, new.by, "by").await?;
         let received = received_at(&mut tx).await?;
@@ -1012,7 +1035,7 @@ impl Db {
         let hash = body::hash(&body);
         let mut tx = self.write.begin().await?;
         if let Some(stored) = stored_hash(&mut tx, USAGE_HASH, id).await? {
-            return same_or_conflict(tx, stored, &hash, USAGE, id, "トークンの使用量").await;
+            return same_or_conflict(tx, stored, &hash, USAGE, id, Stored::Usage).await;
         }
         let actor = must_resolve(&mut tx, new.issuer, new.by, "by").await?;
         let received = received_at(&mut tx).await?;

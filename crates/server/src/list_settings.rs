@@ -9,6 +9,7 @@ use castlist_sdk::output::ListSettingsOutput;
 use crate::db::{self, Db};
 use crate::errors::Failure;
 use crate::search::{LIMIT, SettingQuery};
+use crate::token::Search;
 use crate::{datetime, only_true, rows, stored_time, token};
 
 const OPERATION: &str = "ListSettings";
@@ -64,7 +65,7 @@ fn query(input: ListSettingsInput) -> Result<SettingQuery, ListSettingsError> {
         after: input
             .next_token
             .as_deref()
-            .map(|t| token::seq_after(t, TOKEN_KIND, "model と effort の検索"))
+            .map(|t| token::seq_after(t, TOKEN_KIND, Search::Settings))
             .transpose()
             .map_err(invalid)?
             .unwrap_or(0),

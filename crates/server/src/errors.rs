@@ -13,7 +13,7 @@ use crate::i18n::text;
 
 /// server の中の失敗（DB の誤りなど）。訳は記録に書き、答えは決まった字にする（中の誤りの字を外に出さない）。
 pub fn internal(operation: &str, error: &dyn std::fmt::Display) -> InternalError {
-    tracing::error!(operation, %error, "server の中で失敗した");
+    tracing::error!(operation, %error, "internal failure");
     InternalError {
         message: text("internal"),
     }

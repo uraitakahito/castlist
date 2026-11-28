@@ -15,7 +15,7 @@ use tokio::signal::unix::{SignalKind, signal};
 async fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if !args.is_empty() {
-        eprintln!("{USAGE}");
+        eprintln!("{}", castlist::usage());
         return ExitCode::from(2);
     }
     let path = std::env::var("CASTLIST_DB").unwrap_or_else(|_| "/data/castlist.db".to_owned());
@@ -42,8 +42,6 @@ async fn main() -> ExitCode {
         }
     }
 }
-
-const USAGE: &str = "使い方: castlist-server（環境変数 CASTLIST_DB・CASTLIST_LISTEN で起きる）";
 
 /// 起きて、止める合図まで受け続ける。
 async fn serve(path: &Path, log: &RunLog) -> Result<(), Box<dyn std::error::Error>> {

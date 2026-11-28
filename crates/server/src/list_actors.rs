@@ -7,7 +7,9 @@ use castlist_sdk::output::ListActorsOutput;
 
 use crate::db::{self, Db, Ref};
 use crate::errors::Failure;
+use crate::i18n::text;
 use crate::search::{ActorItem, ActorQuery, LIMIT, Page, Sort};
+use crate::token::Search;
 use crate::{datetime, only_true, rows, stored_time, token};
 
 const OPERATION: &str = "ListActors";
@@ -30,9 +32,7 @@ pub async fn list_actors(
     let as_of = db::now();
     let query = query(input, &as_of)?;
     if !query.narrowed() {
-        return Err(invalid(
-            "絞る条件を 1 つ以上付ける（label・binding・activeFrom・activeTo・active=true・model・effort・launchedBy・skewed のどれか）",
-        ));
+        return Err(invalid(text("actors-need-filter")));
     }
     let page = db
         .search_actors(&query)
@@ -59,9 +59,7 @@ fn query(input: ListActorsInput, as_of: &str) -> Result<ActorQuery, ListActorsEr
     let binding = match (&input.binding, at) {
         (Some(b), at) => Some((Ref::parse(b), at.unwrap_or_else(|| as_of.to_owned()))),
         (None, Some(_)) => {
-            return Err(invalid(
-                "at は binding と一緒に付ける（稼働した期間で探すなら activeFrom・activeTo）",
-            ));
+            return Err(invalid(text("actors-at-needs-binding")));
         }
         (None, None) => None,
     };
@@ -129,14 +127,14 @@ fn next_token(query: &ActorQuery, page: &Page<ActorItem>) -> Option<String> {
 
 /// 頁の印を読む（前の頁の最後の並べる値と seq）。崩れた物・ほかの検索の物・sort か order の違う物は 400。
 fn after(token: &str, sort: Sort, desc: bool) -> Result<(String, i64), ListActorsError> {
-    let parts = token::read(token, TOKEN_KIND, 5, "アクターの検索").map_err(invalid)?;
+    let parts = token::read(token, TOKEN_KIND, 5, Search::Actors).map_err(invalid)?;
     let [_, token_sort, token_order, value, seq] = &parts[..] else {
-        return Err(invalid(token::BROKEN));
+        return Err(invalid(token::broken()));
     };
     if token_sort != sort_name(sort) || token_order != order_name(desc) {
-        return Err(invalid("nextToken は、同じ sort と order の答えの物を渡す"));
+        return Err(invalid(text("actors-token-other-order")));
     }
-    let seq = seq.parse().map_err(|_| invalid(token::BROKEN))?;
+    let seq = seq.parse().map_err(|_| invalid(token::broken()))?;
     Ok((value.clone(), seq))
 }
 

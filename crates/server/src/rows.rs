@@ -11,7 +11,7 @@ use crate::{db, graph, search};
 
 pub fn event(e: db::Event) -> Result<Event, String> {
     let detail = serde_json::from_str(&e.detail)
-        .map_err(|err| format!("出来事 {} の detail が読めない: {err}", e.id))?;
+        .map_err(|err| format!("unreadable detail of event {}: {err}", e.id))?;
     Ok(Event {
         sent_at: datetime(&e.sent_at)?,
         received_at: datetime(&e.received_at)?,
@@ -50,12 +50,7 @@ pub fn link(l: db::Link) -> Result<Link, String> {
 
 /// トークンの使用量の行を、答えの形にする（PutUsage の答えと、ListUsage の行で同じ形）。
 pub fn usage(u: db::Usage) -> Result<Usage, String> {
-    let broken = || {
-        format!(
-            "トークンの使用量 {} の buckets が読めない: {}",
-            u.id, u.buckets
-        )
-    };
+    let broken = || format!("unreadable buckets of usage {}: {}", u.id, u.buckets);
     let buckets: serde_json::Value = serde_json::from_str(&u.buckets).map_err(|_| broken())?;
     let buckets = buckets
         .as_array()
