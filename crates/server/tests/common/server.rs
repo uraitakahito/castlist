@@ -1,12 +1,13 @@
-//! 受け入れの試験の道具: 本物の binary（castlist-server）を空いた port で起こし、生の HTTP/1.1 で叩く。
+//! 受け入れの試験の道具: 本物の binary（castlist-server）を、server が自分で取った port で起こし、生の HTTP/1.1 で叩く。
 //! 0.4.x の server（v0.4.0 の tag）の tests/common/mod.rs の Server を移した物（起こす binary と、一時の DB の folder の名だけが違う）。
 // 試験の道具は同期で書く（async の中ではないので、糸を塞いでも困らない）。
 #![allow(clippy::disallowed_methods)]
 
 use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::TcpStream;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitStatus, Stdio};
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 
 use super::{remove_db, temp_db};
@@ -17,6 +18,8 @@ pub struct Server {
     pub port: u16,
     /// 一時の DB。落とす時に、folder ごと消す（`keep` なら残す）。
     pub db: PathBuf,
+    /// stdout を受ける file。
+    out: PathBuf,
     /// 起こし直して前回の終わり方を見る試験は、DB の folder を残す。
     keep: bool,
 }
@@ -63,58 +66,49 @@ impl Server {
     }
 
     /// この DB で起こす（同じ folder で起こし直せる）。落としても folder は消さない。stdout は DB の隣の file に受ける。
+    ///
+    /// port は server が自分で取る（`127.0.0.1:0` で待ち受け、取れた番号を stdout の起きた行（listen=）に出す）。
+    /// 試験が口を取って放してから渡すと、渡すまでの間に別の試験の server に取られうる（t-x36a・t-q4kd）。
     pub fn start_at(db: &Path) -> Self {
-        // 空いた port は「取って、放して、渡す」ので、並べて流れる別の試験の server に先に取られることがある。
-        // つながるかでは見分けられない（つながった先が別の server かもしれない）。自分の stdout に、待ち受けた後の
-        // 行（listen=）が出るまで待ち、待ち受けられずに終わったら、印を戻して別の port でやり直す。
+        static SEQ: AtomicU32 = AtomicU32::new(0);
         let db = db.to_owned();
-        let runs = db.with_file_name("logs").join("runs.log");
-        let before = std::fs::read(&runs).ok();
-        for _ in 0..20 {
-            let port = TcpListener::bind("127.0.0.1:0")
-                .and_then(|l| l.local_addr())
-                .expect("空いた port")
-                .port();
-            let out = db.with_file_name(format!("stdout-{port}.txt"));
-            let stdout = std::fs::File::create(&out).expect("stdout の file");
-            let mut child = Command::new(binary())
-                .env("CASTLIST_LISTEN", format!("127.0.0.1:{port}"))
-                .env("CASTLIST_DB", &db)
-                .stdout(Stdio::from(stdout))
-                .spawn()
-                .expect("castlist-server を起こす");
-            let started = Instant::now();
-            let listening = loop {
-                let text = std::fs::read_to_string(&out).unwrap_or_default();
-                if text.contains(&format!(" listen=127.0.0.1:{port} ")) {
-                    break true;
-                }
-                if child.try_wait().expect("try_wait").is_some() {
-                    break false;
-                }
-                if started.elapsed() > Duration::from_secs(10) {
-                    // 起こした物を残さない。
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    panic!("10 秒で受けられるようにならない: {text}");
-                }
-                std::thread::sleep(Duration::from_millis(20));
-            };
-            if listening {
-                return Self {
-                    child,
-                    port,
-                    db,
-                    keep: true,
-                };
+        // 同じ DB で起こし直す試験があるので、起こすごとに別の file に受ける。
+        let out = db.with_file_name(format!(
+            "stdout-{}.txt",
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let stdout = std::fs::File::create(&out).expect("stdout の file");
+        let mut child = Command::new(binary())
+            .env("CASTLIST_LISTEN", "127.0.0.1:0")
+            .env("CASTLIST_DB", &db)
+            // stderr は受け継ぐ（落ちた時の訳が、試験の出力に出る）。
+            .stdout(Stdio::from(stdout))
+            .spawn()
+            .expect("castlist-server を起こす");
+        let started = Instant::now();
+        let port = loop {
+            let text = std::fs::read_to_string(&out).unwrap_or_default();
+            if let Some(port) = listening_port(&text) {
+                break port;
             }
-            // 取られた port で終わった回の印を消す（試験が見るのは、やり直しの前までの印）。
-            match &before {
-                Some(bytes) => std::fs::write(&runs, bytes).expect("印を戻す"),
-                None => drop(std::fs::remove_file(&runs)),
+            if let Some(status) = child.try_wait().expect("try_wait") {
+                panic!("待ち受ける前に終わった（{status}）: {text}");
             }
+            if started.elapsed() > Duration::from_secs(10) {
+                // 起こした物を残さない。
+                let _ = child.kill();
+                let _ = child.wait();
+                panic!("10 秒の内に待ち受けない: {text}");
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        };
+        Self {
+            child,
+            port,
+            db,
+            out,
+            keep: true,
         }
-        panic!("20 回やり直しても、空いた port で起きない");
     }
 
     /// 生の要求を送り、答えを読む（要求は Connection: close にする）。
@@ -177,8 +171,7 @@ impl Server {
 
     /// stdout に出た字。
     pub fn stdout(&self) -> String {
-        std::fs::read_to_string(self.db.with_file_name(format!("stdout-{}.txt", self.port)))
-            .unwrap_or_default()
+        std::fs::read_to_string(&self.out).unwrap_or_default()
     }
 
     /// 止める合図を送り、終わるのを待つ。終わりの code を返す。
@@ -196,6 +189,13 @@ impl Server {
     pub fn try_wait(&mut self) -> Option<ExitStatus> {
         self.child.try_wait().expect("try_wait")
     }
+}
+
+/// stdout の起きた行（`listen=127.0.0.1:<port> `）から、取れた port を読む（0 は取れていない）。
+fn listening_port(stdout: &str) -> Option<u16> {
+    let (_, rest) = stdout.split_once(" listen=127.0.0.1:")?;
+    let (port, _) = rest.split_once(' ')?;
+    port.parse().ok().filter(|&port| port != 0)
 }
 
 /// chunked の本文をつなぐ（長さを前に言わない答え。backup の file など）。

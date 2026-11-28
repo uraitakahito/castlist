@@ -2,6 +2,14 @@
 
 版ごとに、API（[docs/src/api.md](docs/src/api.md) の `/api/`。定義は `model/`）と DB の移行（`crates/server/migrations/`）が変わったかを書く。0.4.x までの節の API は `/v1/`、移行は repo の頭の `migrations/` の物（もう無い）。release の workflow は、tag の版の節（`## <版>`）が無いと何も出さない（`ci/check-release-version.sh`）。
 
+## 2.2.1
+
+起きた行と止める合図の直しの版（t-q4kd）。API・DB・誤りの文は 2.2.0 と同じ（定義 `model/` は変えていない）。
+
+- **起きた行の `listen=` に、待ち受けた所を出す**（前は、設定 `CASTLIST_LISTEN` の字）。port を 0 にして起こすと、OS が取った port が出る（`listen=127.0.0.1:0` でなく `listen=127.0.0.1:41234` など）。callboard・usagescope の browser の試験が、この行から port を読めるようになる（それらの `e2e/listen-port.sh` が `lsof` で読む代わりを外すため）。名で書いた設定（`localhost:8080` など）は、解いて待ち受けた所（`127.0.0.1:8080` か `[::1]:8080`）で出る。既定の `0.0.0.0:8080` は、前と同じ字。
+- **止める合図の受け口を、DB を開く前に作る**（前は、起きた行を出した後）。起きた行を見てすぐ送った合図で、記録を書かずに殺されることが無くなった（Linux で、起きた行を見てすぐ SIGTERM を送ると、前は殺される回があった。pagetray の 2.1.0 の後の直し（pagetray #93）と同じ形）。DB を開く間・待ち受ける間に来た合図は、待ち受けた後に受けて、すぐ閉じる（前は、container の中では PID 1 なので無視され、止める命令の SIGKILL まで待った）。
+- DB の移行の SQL は足していない（2.2.0 の volume でそのまま起き、2.2.0 の image へそのまま戻せる）。
+
 ## 2.2.0
 
 誤りの文を、頼みの言語（日本語か英語）で返す版（AI-48。Product Manager の答え「案 1 サーバーが文にする・API と CLI」「項目２は英語で」）。**言語を付けない頼みの誤りの文が、日本語から英語に変わる。**日本語で受けるには `Accept-Language: ja` を付ける。
