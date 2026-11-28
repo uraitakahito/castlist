@@ -6,7 +6,7 @@
 
 誤りの文を、頼みの言語（日本語か英語）で返す版（AI-48。Product Manager の答え「案 1 サーバーが文にする・API と CLI」「項目２は英語で」）。**言語を付けない頼みの誤りの文が、日本語から英語に変わる。**日本語で受けるには `Accept-Language: ja` を付ける。
 
-- **API の形は変えていない**（定義は v2.1.1 から変わっていない: `ci/gen.sh --diff`。`common.smithy` は変えていない。作り直した `crates/castlist-sdk/` も同じ）。変わるのは、誤りの `message` の字の言語だけ。誤りの種類（`X-Amzn-Errortype`）と状態の数は、言語で変わらない。
+- **API の形は変えていない**（定義は v2.1.1 から壊す形に変わっていない: `ci/gen.sh --diff`。操作・型・欄は同じ。`model/model/castlist.smithy` は注釈だけが変わった（鍵と値の組の呼び方を「ラベル」に揃えた: #66）ので、file の digest は替わり、作り直した `crates/castlist-sdk/` も注釈だけが違う。`common.smithy` は変えていない）。定義を digest で固めて取る呼び手（callboard・roster）は、2.2.0 の tag に上げる時に `castlist.smithy` の digest を替えて、client を作り直す。変わるのは、誤りの `message` の字の言語だけ。誤りの種類（`X-Amzn-Errortype`）と状態の数は、言語で変わらない。
 - **言語の決め方**: 頼みの `Accept-Language` の並びを前から見て、初めに当たった `ja`・`en`（`ja-JP` は `ja`。重み `;q=` は見ない）。header が無い・`*`・どちらでもない言語は、英語。守りの層（Host・Origin・時間切れ・本文の上限）が断る文も同じ。生成した層が自分で返す文（定義の形の検査の 400 など）は、今までどおり英語。
 - **日本語の文は、2.1.1 の字と 1 字も違わない**（試験 `crates/server/tests/locales.rs` が、2.1.1 の字の写しと突き合わせる）。
 - **受ける字が変わる呼び手**:
